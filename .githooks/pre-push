@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Full unit tests before push. Skip with SKIP_GIT_HOOKS=1
+if [ "$SKIP_GIT_HOOKS" = "1" ]; then
+  exit 0
+fi
+
+echo "pre-push: tests"
+npm run test:ci

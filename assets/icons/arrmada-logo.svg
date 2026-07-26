@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Option S: library shelf + TV + film reel -->
+  <rect width="128" height="128" rx="26" fill="#0B0B0F"/>
+
+  <!-- Left bookshelf frame -->
+  <rect x="14" y="22" width="50" height="84" rx="6" fill="#F4F0E8"/>
+  <rect x="18" y="26" width="42" height="76" rx="3" fill="#1A1A22"/>
+  <!-- Shelf divider -->
+  <rect x="18" y="62" width="42" height="4" fill="#F4F0E8"/>
+  <!-- Top row spines -->
+  <rect x="21" y="30" width="6" height="28" rx="1" fill="#4DB6A5"/>
+  <rect x="22" y="34" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="22" y="38" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="29" y="30" width="6" height="28" rx="1" fill="#6BA3C9"/>
+  <rect x="30" y="34" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="30" y="38" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="37" y="30" width="6" height="28" rx="1" fill="#E8D9A8"/>
+  <rect x="38" y="34" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="45" y="30" width="6" height="28" rx="1" fill="#F5A524"/>
+  <rect x="46" y="34" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="53" y="30" width="5" height="28" rx="1" fill="#4DB6A5"/>
+  <!-- Bottom row spines -->
+  <rect x="21" y="70" width="6" height="28" rx="1" fill="#6BA3C9"/>
+  <rect x="22" y="74" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="29" y="70" width="6" height="28" rx="1" fill="#F5A524"/>
+  <rect x="30" y="74" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="37" y="70" width="6" height="28" rx="1" fill="#4DB6A5"/>
+  <rect x="38" y="74" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="45" y="70" width="6" height="28" rx="1" fill="#E8D9A8"/>
+  <rect x="46" y="74" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
+  <rect x="53" y="70" width="5" height="28" rx="1" fill="#6BA3C9"/>
+
+  <!-- Right TV / media panel -->
+  <rect x="60" y="22" width="54" height="84" rx="8" fill="#5B6B7A"/>
+  <rect x="66" y="28" width="42" height="54" rx="4" fill="#12151C"/>
+  <!-- Speaker vents -->
+  <rect x="68" y="90" width="14" height="3" rx="1.5" fill="#4DB6A5"/>
+  <rect x="68" y="96" width="14" height="3" rx="1.5" fill="#4DB6A5"/>
+  <rect x="68" y="102" width="10" height="3" rx="1.5" fill="#4DB6A5"/>
+  <!-- Dials -->
+  <circle cx="98" cy="94" r="5" fill="#F5A524"/>
+  <circle cx="98" cy="94" r="2" fill="#0B0B0F" opacity="0.35"/>
+  <circle cx="108" cy="94" r="5" fill="#F5A524"/>
+  <circle cx="108" cy="94" r="2" fill="#0B0B0F" opacity="0.35"/>
+
+  <!-- Film reel (overlaps the split) -->
+  <circle cx="78" cy="55" r="28" fill="#F4F0E8"/>
+  <circle cx="78" cy="55" r="22" fill="#2A3038"/>
+  <circle cx="78" cy="55" r="7" fill="#F4F0E8"/>
+  <circle cx="78" cy="55" r="3.5" fill="#1A1A22"/>
+  <!-- Reel holes -->
+  <circle cx="78" cy="38" r="5" fill="#F4F0E8"/>
+  <circle cx="93" cy="48" r="5" fill="#F4F0E8"/>
+  <circle cx="90" cy="66" r="5" fill="#F4F0E8"/>
+  <circle cx="66" cy="66" r="5" fill="#F4F0E8"/>
+  <circle cx="63" cy="48" r="5" fill="#F4F0E8"/>
+</svg>

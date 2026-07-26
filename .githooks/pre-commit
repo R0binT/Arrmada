@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Fast gate before commit. Skip with SKIP_GIT_HOOKS=1
+if [ "$SKIP_GIT_HOOKS" = "1" ]; then
+  exit 0
+fi
+
+echo "pre-commit: typecheck"
+npm run typecheck
