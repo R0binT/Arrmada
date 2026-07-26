@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from "react-native";
 import type { ServiceHealth } from "@/arr-client";
 import { ArrServiceLogo } from "@/components/ArrServiceLogo";
 import { t } from "@/i18n";
-import { colors, fonts, space } from "@/lib/theme";
+import { colors, fonts } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type ServiceHealthDotProps = {
   readonly health: ServiceHealth;
@@ -23,22 +24,38 @@ export const ServiceHealthDot = ({
   showLabel = true,
   useLogo = false,
 }: ServiceHealthDotProps) => {
+  const { space, fontSize, scale } = useUiSize();
   const statusLabel = health.online ? t("health.online") : t("health.offline");
   const serviceLabel = SERVICE_LABELS[health.service];
   const dotColor = health.online ? colors.success : colors.secondary;
+  const logoSize = Math.round(18 * scale);
+  const dotSize = Math.max(8, Math.round(8 * scale));
 
   return (
     <View
       accessibilityLabel={`${serviceLabel} ${statusLabel}`}
-      style={styles.container}
+      style={[styles.container, { gap: space.xs }]}
     >
-      {useLogo ? <ArrServiceLogo service={health.service} size={18} /> : null}
-      <View style={[styles.dot, { backgroundColor: dotColor }]} />
+      {useLogo ? (
+        <ArrServiceLogo service={health.service} size={logoSize} />
+      ) : null}
+      <View
+        style={[
+          styles.dot,
+          {
+            backgroundColor: dotColor,
+            borderRadius: dotSize / 2,
+            height: dotSize,
+            width: dotSize,
+          },
+        ]}
+      />
       {showLabel ? (
         useLogo ? (
           <Text
             style={[
               styles.status,
+              { fontSize: fontSize(12) },
               health.online ? styles.online : styles.offline,
             ]}
           >
@@ -46,10 +63,13 @@ export const ServiceHealthDot = ({
           </Text>
         ) : (
           <View style={styles.textBlock}>
-            <Text style={styles.service}>{serviceLabel}</Text>
+            <Text style={[styles.service, { fontSize: fontSize(14) }]}>
+              {serviceLabel}
+            </Text>
             <Text
               style={[
                 styles.status,
+                { fontSize: fontSize(12) },
                 health.online ? styles.online : styles.offline,
               ]}
             >
@@ -66,24 +86,17 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     flexDirection: "row",
-    gap: space.xs,
   },
-  dot: {
-    borderRadius: 4,
-    height: 8,
-    width: 8,
-  },
+  dot: {},
   textBlock: {
     gap: 2,
   },
   service: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   status: {
     fontFamily: fonts.ui,
-    fontSize: 12,
   },
   online: {
     color: colors.accent,

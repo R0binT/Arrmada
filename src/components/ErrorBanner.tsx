@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
 import { t } from "@/i18n";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type ErrorBannerProps = {
   readonly message: string;
@@ -9,25 +10,61 @@ type ErrorBannerProps = {
   readonly onSettings?: () => void;
 };
 
-export const ErrorBanner = ({ message, onRetry, onSettings }: ErrorBannerProps) => {
+export const ErrorBanner = ({
+  message,
+  onRetry,
+  onSettings,
+}: ErrorBannerProps) => {
+  const { space, fontSize, minTouchTarget } = useUiSize();
+
   return (
-    <View accessibilityRole="alert" style={styles.banner}>
-      <View style={styles.header}>
-        <Text style={styles.warningIcon}>⚠</Text>
-        <Text style={styles.message}>{message}</Text>
+    <View
+      accessibilityRole="alert"
+      style={[styles.banner, { gap: space.md, padding: space.md }]}
+    >
+      <View style={[styles.header, { gap: space.sm }]}>
+        <Text
+          style={[
+            styles.warningIcon,
+            { fontSize: fontSize(20), lineHeight: fontSize(24) },
+          ]}
+        >
+          ⚠
+        </Text>
+        <Text
+          style={[
+            styles.message,
+            { fontSize: fontSize(15), lineHeight: fontSize(22) },
+          ]}
+        >
+          {message}
+        </Text>
       </View>
       {(onRetry || onSettings) && (
-        <View style={styles.actions}>
+        <View style={[styles.actions, { gap: space.md }]}>
           {onRetry ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t("error.retry")}
               hitSlop={8}
               onPress={onRetry}
-              style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
+              style={({ pressed }) => [
+                {
+                  alignItems: "center",
+                  flexDirection: "row",
+                  gap: space.xs,
+                  minHeight: minTouchTarget,
+                  paddingHorizontal: space.sm,
+                },
+                pressed ? styles.pressed : null,
+              ]}
             >
-              <Text style={styles.actionIcon}>↻</Text>
-              <Text style={styles.actionText}>{t("error.retry")}</Text>
+              <Text style={[styles.actionIcon, { fontSize: fontSize(14) }]}>
+                ↻
+              </Text>
+              <Text style={[styles.actionText, { fontSize: fontSize(14) }]}>
+                {t("error.retry")}
+              </Text>
             </Pressable>
           ) : null}
           {onRetry && onSettings ? <View style={styles.divider} /> : null}
@@ -37,10 +74,23 @@ export const ErrorBanner = ({ message, onRetry, onSettings }: ErrorBannerProps) 
               accessibilityLabel={t("error.openSettingsA11y")}
               hitSlop={8}
               onPress={onSettings}
-              style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
+              style={({ pressed }) => [
+                {
+                  alignItems: "center",
+                  flexDirection: "row",
+                  gap: space.xs,
+                  minHeight: minTouchTarget,
+                  paddingHorizontal: space.sm,
+                },
+                pressed ? styles.pressed : null,
+              ]}
             >
-              <Text style={styles.actionIcon}>⚙</Text>
-              <Text style={styles.actionText}>{t("action.settings")}</Text>
+              <Text style={[styles.actionIcon, { fontSize: fontSize(14) }]}>
+                ⚙
+              </Text>
+              <Text style={[styles.actionText, { fontSize: fontSize(14) }]}>
+                {t("action.settings")}
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -55,46 +105,29 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     borderRadius: radii.md,
     borderWidth: 1,
-    gap: space.md,
-    padding: space.md,
   },
   header: {
     alignItems: "flex-start",
     flexDirection: "row",
-    gap: space.sm,
   },
   warningIcon: {
     color: colors.accent,
-    fontSize: 20,
-    lineHeight: 24,
   },
   message: {
     color: colors.text,
     flex: 1,
     fontFamily: fonts.ui,
-    fontSize: 15,
-    lineHeight: 22,
   },
   actions: {
     alignItems: "center",
     flexDirection: "row",
-    gap: space.md,
-  },
-  action: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: space.xs,
-    minHeight: minTouchTarget,
-    paddingHorizontal: space.sm,
   },
   actionIcon: {
     color: colors.accent,
-    fontSize: 14,
   },
   actionText: {
     color: colors.accent,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   divider: {
     backgroundColor: colors.accent,

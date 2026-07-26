@@ -16,7 +16,8 @@ import type {
     PrimaryDestination,
 } from "@/features/media-quick/types";
 import { t } from "@/i18n";
-import { colors, radii, space } from "@/lib/theme";
+import { colors, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type MediaQuickSheetProps = {
   readonly selection: MediaQuickSelection | undefined;
@@ -35,6 +36,7 @@ export const MediaQuickSheet = ({
 }: MediaQuickSheetProps) => {
   const visible = selection !== undefined;
   const insets = useSafeAreaInsets();
+  const { space, scale } = useUiSize();
   const translateY = useRef(new Animated.Value(SHEET_OFFSCREEN)).current;
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
@@ -137,10 +139,24 @@ export const MediaQuickSheet = ({
             accessibilityLabel={t("mediaQuick.handle")}
             accessibilityRole="adjustable"
             hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
-            style={styles.dragHandle}
+            style={[
+              styles.dragHandle,
+              {
+                paddingBottom: space.xs,
+                paddingTop: space.sm,
+              },
+            ]}
             {...panResponder.panHandlers}
           >
-            <View style={styles.dragHandleBar} />
+            <View
+              style={[
+                styles.dragHandleBar,
+                {
+                  height: Math.max(4, Math.round(4 * scale)),
+                  width: Math.round(40 * scale),
+                },
+              ]}
+            />
           </View>
           <MediaQuickPanel
             onOpenPrimary={onOpenPrimary}
@@ -170,13 +186,9 @@ const styles = StyleSheet.create({
   dragHandle: {
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: space.xs,
-    paddingTop: space.sm,
   },
   dragHandleBar: {
     backgroundColor: "rgba(244, 240, 232, 0.35)",
     borderRadius: 2,
-    height: 4,
-    width: 40,
   },
 });

@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, space } from "@/lib/theme";
+import { colors } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type ScreenProps = {
   readonly children: ReactNode;
@@ -10,11 +11,17 @@ type ScreenProps = {
 };
 
 export const Screen = ({ children, scroll = false }: ScreenProps) => {
+  const { space } = useUiSize();
+  const contentPadding = {
+    paddingHorizontal: space.md,
+    paddingVertical: space.md,
+  };
+
   if (scroll) {
     return (
       <SafeAreaView edges={["top", "left", "right"]} style={styles.safe}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, contentPadding]}
           keyboardShouldPersistTaps="handled"
           style={styles.scroll}
         >
@@ -26,7 +33,7 @@ export const Screen = ({ children, scroll = false }: ScreenProps) => {
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.safe}>
-      <View style={styles.content}>{children}</View>
+      <View style={[styles.content, contentPadding]}>{children}</View>
     </SafeAreaView>
   );
 };
@@ -39,8 +46,6 @@ const styles = StyleSheet.create({
   content: {
     backgroundColor: colors.bg,
     flex: 1,
-    paddingHorizontal: space.md,
-    paddingVertical: space.md,
   },
   scroll: {
     backgroundColor: colors.bg,
@@ -48,7 +53,5 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: space.md,
-    paddingVertical: space.md,
   },
 });

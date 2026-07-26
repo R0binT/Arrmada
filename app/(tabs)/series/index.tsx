@@ -1,5 +1,5 @@
-import { router } from "expo-router";
 import { openSettingsServices } from "@/features/settings/open-settings";
+import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
     FlatList,
@@ -30,13 +30,19 @@ import {
     useSeriesList,
 } from "@/features/series/use-series";
 import { useI18n } from "@/i18n";
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
+import { colors, fonts, radii, space } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 const CARD_WIDTH = 108;
 const CARD_GAP = space.sm;
 
 export default function SeriesScreen() {
   const { t, locale } = useI18n();
+  const {
+    fontSize,
+    space: scaledSpace,
+    minTouchTarget: touchTarget,
+  } = useUiSize();
   const [filter, setFilter] = useState<SeriesFilter>("all");
   const [search, setSearch] = useState("");
   const seriesQuery = useSeriesList();
@@ -55,11 +61,23 @@ export default function SeriesScreen() {
     openSettingsServices();
   }, []);
 
+  const titleStyle = [styles.title, { fontSize: fontSize(32) }];
+  const searchStyle = [
+    styles.searchInput,
+    {
+      fontSize: fontSize(15),
+      marginBottom: scaledSpace.md,
+      minHeight: touchTarget,
+      paddingHorizontal: scaledSpace.md,
+    },
+  ];
+  const filterLabelStyle = [styles.filterLabel, { fontSize: fontSize(14) }];
+
   if (!seriesQuery.isLoading && seriesQuery.isError) {
     return (
       <Screen>
-        <View style={styles.header}>
-          <Text style={styles.title}>{t("tabs.series")}</Text>
+        <View style={[styles.header, { marginBottom: scaledSpace.md }]}>
+          <Text style={titleStyle}>{t("tabs.series")}</Text>
           <IconButton
             accessibilityLabel={t("library.addSeriesA11y")}
             icon="+"
@@ -78,8 +96,8 @@ export default function SeriesScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t("tabs.series")}</Text>
+      <View style={[styles.header, { marginBottom: scaledSpace.md }]}>
+        <Text style={titleStyle}>{t("tabs.series")}</Text>
         <IconButton
           accessibilityLabel={t("library.addSeriesA11y")}
           icon="+"
@@ -95,15 +113,18 @@ export default function SeriesScreen() {
         onChangeText={setSearch}
         placeholder={t("library.searchPlaceholder")}
         placeholderTextColor={colors.secondary}
-        style={styles.searchInput}
+        style={searchStyle}
         value={search}
       />
 
       <ScrollView
         horizontal
-        contentContainerStyle={styles.filters}
+        contentContainerStyle={[
+          styles.filters,
+          { gap: scaledSpace.sm, paddingRight: scaledSpace.md },
+        ]}
         showsHorizontalScrollIndicator={false}
-        style={styles.filtersBar}
+        style={[styles.filtersBar, { marginBottom: scaledSpace.md }]}
       >
         {filterChips.map((item) => {
           const isActive = filter === item.key;
@@ -116,13 +137,17 @@ export default function SeriesScreen() {
               onPress={() => setFilter(item.key)}
               style={({ pressed }) => [
                 styles.filterChip,
+                {
+                  height: touchTarget,
+                  paddingHorizontal: scaledSpace.md,
+                },
                 isActive ? styles.filterChipActive : null,
                 pressed ? styles.pressed : null,
               ]}
             >
               <Text
                 style={[
-                  styles.filterLabel,
+                  filterLabelStyle,
                   isActive ? styles.filterLabelActive : null,
                 ]}
               >
@@ -138,7 +163,9 @@ export default function SeriesScreen() {
       ) : filteredSeries.length === 0 ? (
         <EmptyState
           actionLabel={
-            seriesQuery.data?.length === 0 ? t("library.addSeriesA11y") : undefined
+            seriesQuery.data?.length === 0
+              ? t("library.addSeriesA11y")
+              : undefined
           }
           message={
             seriesQuery.data?.length === 0
@@ -146,7 +173,11 @@ export default function SeriesScreen() {
               : t("library.emptyFilterSeriesBody")
           }
           onAction={seriesQuery.data?.length === 0 ? handleOpenAdd : undefined}
-          title={seriesQuery.data?.length === 0 ? t("library.emptySeriesTitle") : t("library.emptyFilterTitle")}
+          title={
+            seriesQuery.data?.length === 0
+              ? t("library.emptySeriesTitle")
+              : t("library.emptyFilterTitle")
+          }
         />
       ) : (
         <FlatList
@@ -186,13 +217,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: space.md,
   },
   title: {
     color: colors.text,
     flex: 1,
     fontFamily: fonts.display,
-    fontSize: 32,
   },
   searchInput: {
     backgroundColor: colors.surface,
@@ -201,30 +230,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.text,
     fontFamily: fonts.ui,
-    fontSize: 15,
-    marginBottom: space.md,
-    minHeight: minTouchTarget,
-    paddingHorizontal: space.md,
   },
   filtersBar: {
     flexGrow: 0,
     flexShrink: 0,
-    marginBottom: space.md,
   },
   filters: {
     alignItems: "center",
     flexDirection: "row",
-    gap: space.sm,
-    paddingRight: space.md,
   },
   filterChip: {
     alignItems: "center",
     borderColor: "rgba(244, 240, 232, 0.12)",
     borderRadius: radii.md,
     borderWidth: 1,
-    height: minTouchTarget,
     justifyContent: "center",
-    paddingHorizontal: space.md,
   },
   filterChipActive: {
     backgroundColor: colors.accent,
@@ -233,7 +253,6 @@ const styles = StyleSheet.create({
   filterLabel: {
     color: colors.secondary,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   filterLabelActive: {
     color: colors.bg,

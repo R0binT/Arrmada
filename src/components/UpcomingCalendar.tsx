@@ -5,7 +5,8 @@ import type { Availability, CalendarEvent } from "@/arr-client";
 import { upcomingDayKey } from "@/arr-client";
 import { UpcomingRow } from "@/components/UpcomingRow";
 import { availabilityLabel, getI18nLocale, localeToBcp47, t } from "@/i18n";
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type UpcomingCalendarProps = {
   readonly events: readonly CalendarEvent[];
@@ -79,6 +80,12 @@ export const UpcomingCalendar = ({
   onMonthChange,
   onPressItem,
 }: UpcomingCalendarProps) => {
+  const { fontSize, space: scaledSpace, minTouchTarget, scale } = useUiSize();
+  const dayCellMinHeight = Math.round(84 * scale);
+  const chipPaddingH = Math.max(2, Math.round(3 * scale));
+  const chipPaddingV = Math.max(1, Math.round(1 * scale));
+  const chipGap = Math.max(2, Math.round(2 * scale));
+  const legendSwatchSize = Math.max(8, Math.round(10 * scale));
   const [selectedDay, setSelectedDay] = useState(() => toDayKey(new Date()));
   const todayKey = toDayKey(new Date());
 
@@ -137,30 +144,55 @@ export const UpcomingCalendar = ({
   const weekdays = WEEKDAY_LABELS();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { gap: scaledSpace.md }]}>
       <View style={styles.monthHeader}>
         <Pressable
           accessibilityLabel={t("calendar.prevMonthA11y")}
           accessibilityRole="button"
           onPress={() => onMonthChange(addMonths(month, -1))}
-          style={styles.navButton}
+          style={[
+            styles.navButton,
+            { height: minTouchTarget, width: minTouchTarget },
+          ]}
         >
-          <Text style={styles.navText}>‹</Text>
+          <Text
+            style={[
+              styles.navText,
+              { fontSize: fontSize(28), lineHeight: fontSize(32) },
+            ]}
+          >
+            ‹
+          </Text>
         </Pressable>
-        <Text style={styles.monthLabel}>{monthLabel}</Text>
+        <Text style={[styles.monthLabel, { fontSize: fontSize(18) }]}>
+          {monthLabel}
+        </Text>
         <Pressable
           accessibilityLabel={t("calendar.nextMonthA11y")}
           accessibilityRole="button"
           onPress={() => onMonthChange(addMonths(month, 1))}
-          style={styles.navButton}
+          style={[
+            styles.navButton,
+            { height: minTouchTarget, width: minTouchTarget },
+          ]}
         >
-          <Text style={styles.navText}>›</Text>
+          <Text
+            style={[
+              styles.navText,
+              { fontSize: fontSize(28), lineHeight: fontSize(32) },
+            ]}
+          >
+            ›
+          </Text>
         </Pressable>
       </View>
 
       <View style={styles.weekdayRow}>
         {weekdays.map((label, index) => (
-          <Text key={`${label}-${index}`} style={styles.weekday}>
+          <Text
+            key={`${label}-${index}`}
+            style={[styles.weekday, { fontSize: fontSize(12) }]}
+          >
             {label}
           </Text>
         ))}
@@ -169,7 +201,12 @@ export const UpcomingCalendar = ({
       <View style={styles.grid}>
         {cells.map((cell) => {
           if (cell.dayNumber === undefined) {
-            return <View key={cell.key} style={styles.dayCell} />;
+            return (
+              <View
+                key={cell.key}
+                style={[styles.dayCell, { minHeight: dayCellMinHeight }]}
+              />
+            );
           }
           const dayEvents = eventsByDay.get(cell.dayKey) ?? [];
           const visible = dayEvents.slice(0, MAX_CHIPS);
@@ -193,6 +230,11 @@ export const UpcomingCalendar = ({
               onPress={() => setSelectedDay(cell.dayKey)}
               style={[
                 styles.dayCell,
+                {
+                  minHeight: dayCellMinHeight,
+                  paddingHorizontal: chipPaddingH,
+                  paddingVertical: chipPaddingV + 1,
+                },
                 isToday ? styles.dayToday : null,
                 isSelected ? styles.daySelected : null,
               ]}
@@ -200,12 +242,13 @@ export const UpcomingCalendar = ({
               <Text
                 style={[
                   styles.dayNumber,
+                  { fontSize: fontSize(12), marginBottom: chipGap },
                   isSelected ? styles.dayNumberSelected : null,
                 ]}
               >
                 {cell.dayNumber}
               </Text>
-              <View style={styles.chips}>
+              <View style={[styles.chips, { gap: chipGap }]}>
                 {visible.map((event) => (
                   <Pressable
                     key={`${event.kind}-${event.id}`}
@@ -214,14 +257,21 @@ export const UpcomingCalendar = ({
                     onPress={() => onPressItem(event)}
                     style={[
                       styles.chip,
-                      { backgroundColor: chipBackground(event.availability) },
+                      {
+                        backgroundColor: chipBackground(event.availability),
+                        paddingHorizontal: chipPaddingH,
+                        paddingVertical: chipPaddingV,
+                      },
                     ]}
                   >
                     <Text
                       numberOfLines={1}
                       style={[
                         styles.chipText,
-                        { color: chipTextColor(event.availability) },
+                        {
+                          color: chipTextColor(event.availability),
+                          fontSize: fontSize(9),
+                        },
                       ]}
                     >
                       {chipLabel(event)}
@@ -229,7 +279,14 @@ export const UpcomingCalendar = ({
                   </Pressable>
                 ))}
                 {overflow > 0 ? (
-                  <Text style={styles.overflow}>+{overflow}</Text>
+                  <Text
+                    style={[
+                      styles.overflow,
+                      { fontSize: fontSize(9), marginTop: chipPaddingV },
+                    ]}
+                  >
+                    +{overflow}
+                  </Text>
                 ) : null}
               </View>
             </Pressable>
@@ -237,35 +294,64 @@ export const UpcomingCalendar = ({
         })}
       </View>
 
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View
-            style={[styles.legendSwatch, { backgroundColor: colors.success }]}
-          />
-          <Text style={styles.legendLabel}>{t("availability.dispo")}</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View
-            style={[styles.legendSwatch, { backgroundColor: colors.accent }]}
-          />
-          <Text style={styles.legendLabel}>
-            {t("availability.aTelecharger")}
-          </Text>
-        </View>
-        <View style={styles.legendItem}>
+      <View style={[styles.legend, { gap: scaledSpace.md }]}>
+        <View style={[styles.legendItem, { gap: scaledSpace.xs }]}>
           <View
             style={[
               styles.legendSwatch,
-              { backgroundColor: "rgba(154, 149, 140, 0.55)" },
+              {
+                backgroundColor: colors.success,
+                height: legendSwatchSize,
+                width: legendSwatchSize,
+              },
             ]}
           />
-          <Text style={styles.legendLabel}>{t("availability.aVenir")}</Text>
+          <Text style={[styles.legendLabel, { fontSize: fontSize(12) }]}>
+            {t("availability.dispo")}
+          </Text>
+        </View>
+        <View style={[styles.legendItem, { gap: scaledSpace.xs }]}>
+          <View
+            style={[
+              styles.legendSwatch,
+              {
+                backgroundColor: colors.accent,
+                height: legendSwatchSize,
+                width: legendSwatchSize,
+              },
+            ]}
+          />
+          <Text style={[styles.legendLabel, { fontSize: fontSize(12) }]}>
+            {t("availability.aTelecharger")}
+          </Text>
+        </View>
+        <View style={[styles.legendItem, { gap: scaledSpace.xs }]}>
+          <View
+            style={[
+              styles.legendSwatch,
+              {
+                backgroundColor: "rgba(154, 149, 140, 0.55)",
+                height: legendSwatchSize,
+                width: legendSwatchSize,
+              },
+            ]}
+          />
+          <Text style={[styles.legendLabel, { fontSize: fontSize(12) }]}>
+            {t("availability.aVenir")}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.dayList}>
+      <View style={[styles.dayList, { gap: scaledSpace.sm }]}>
         {selectedItems.length === 0 ? (
-          <Text style={styles.emptyDay}>{t("upcoming.nothingThatDay")}</Text>
+          <Text
+            style={[
+              styles.emptyDay,
+              { fontSize: fontSize(14), paddingVertical: scaledSpace.sm },
+            ]}
+          >
+            {t("upcoming.nothingThatDay")}
+          </Text>
         ) : (
           selectedItems.map((item) => (
             <UpcomingRow
@@ -281,9 +367,7 @@ export const UpcomingCalendar = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    gap: space.md,
-  },
+  container: {},
   monthHeader: {
     alignItems: "center",
     flexDirection: "row",
@@ -292,20 +376,15 @@ const styles = StyleSheet.create({
   monthLabel: {
     color: colors.text,
     fontFamily: fonts.uiBold,
-    fontSize: 18,
     textTransform: "capitalize",
   },
   navButton: {
     alignItems: "center",
-    height: minTouchTarget,
     justifyContent: "center",
-    width: minTouchTarget,
   },
   navText: {
     color: colors.accent,
     fontFamily: fonts.uiBold,
-    fontSize: 28,
-    lineHeight: 32,
   },
   weekdayRow: {
     flexDirection: "row",
@@ -314,7 +393,6 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     flex: 1,
     fontFamily: fonts.uiMedium,
-    fontSize: 12,
     textAlign: "center",
   },
   grid: {
@@ -322,9 +400,6 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   dayCell: {
-    minHeight: 84,
-    paddingHorizontal: 2,
-    paddingVertical: 4,
     width: `${100 / 7}%`,
   },
   dayToday: {
@@ -339,59 +414,41 @@ const styles = StyleSheet.create({
   dayNumber: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 12,
-    marginBottom: 2,
     textAlign: "center",
   },
   dayNumberSelected: {
     color: colors.accent,
   },
-  chips: {
-    gap: 2,
-  },
+  chips: {},
   chip: {
     borderRadius: 3,
-    paddingHorizontal: 3,
-    paddingVertical: 1,
   },
   chipText: {
     fontFamily: fonts.uiMedium,
-    fontSize: 9,
   },
   overflow: {
     color: colors.secondary,
     fontFamily: fonts.uiMedium,
-    fontSize: 9,
-    marginTop: 1,
     textAlign: "center",
   },
   legend: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: space.md,
   },
   legendItem: {
     alignItems: "center",
     flexDirection: "row",
-    gap: space.xs,
   },
   legendSwatch: {
     borderRadius: 3,
-    height: 10,
-    width: 10,
   },
   legendLabel: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 12,
   },
-  dayList: {
-    gap: space.sm,
-  },
+  dayList: {},
   emptyDay: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 14,
-    paddingVertical: space.sm,
   },
 });

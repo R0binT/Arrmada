@@ -10,7 +10,6 @@ import {
     View,
 } from "react-native";
 
-import { openSettingsServices } from "@/features/settings/open-settings";
 import type { CalendarEvent, UpcomingItem } from "@/arr-client";
 import {
     EmptyState,
@@ -19,27 +18,32 @@ import {
     UpcomingCalendar,
     UpcomingRow,
 } from "@/components";
+import { openSettingsServices } from "@/features/settings/open-settings";
 import {
     loadUpcomingViewMode,
     saveUpcomingViewMode,
     type UpcomingViewMode,
 } from "@/features/upcoming/upcoming-view-preference";
 import { useUpcoming } from "@/features/upcoming/use-upcoming";
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
 import { useI18n } from "@/i18n";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 const startOfMonth = (date: Date): Date =>
   new Date(date.getFullYear(), date.getMonth(), 1);
 
 export default function UpcomingScreen() {
   const { t } = useI18n();
+  const {
+    fontSize,
+    space: scaledSpace,
+    minTouchTarget: touchTarget,
+  } = useUiSize();
   const [viewMode, setViewMode] = useState<UpcomingViewMode>("list");
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfMonth(new Date()),
   );
-  const upcoming = useUpcoming(
-    viewMode === "calendar" ? { visibleMonth } : {},
-  );
+  const upcoming = useUpcoming(viewMode === "calendar" ? { visibleMonth } : {});
 
   useFocusEffect(
     useCallback(() => {
@@ -74,8 +78,15 @@ export default function UpcomingScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t("upcoming.title")}</Text>
+      <View
+        style={[
+          styles.header,
+          { gap: scaledSpace.md, marginBottom: scaledSpace.md },
+        ]}
+      >
+        <Text style={[styles.title, { fontSize: fontSize(28) }]}>
+          {t("upcoming.title")}
+        </Text>
         <View style={styles.toggle}>
           <Pressable
             accessibilityLabel={t("upcoming.listA11y")}
@@ -84,12 +95,17 @@ export default function UpcomingScreen() {
             onPress={() => handleSetViewMode("list")}
             style={[
               styles.toggleButton,
+              {
+                minHeight: touchTarget - 8,
+                paddingHorizontal: scaledSpace.md,
+              },
               viewMode === "list" ? styles.toggleActive : null,
             ]}
           >
             <Text
               style={[
                 styles.toggleText,
+                { fontSize: fontSize(14) },
                 viewMode === "list" ? styles.toggleTextActive : null,
               ]}
             >
@@ -103,12 +119,17 @@ export default function UpcomingScreen() {
             onPress={() => handleSetViewMode("calendar")}
             style={[
               styles.toggleButton,
+              {
+                minHeight: touchTarget - 8,
+                paddingHorizontal: scaledSpace.md,
+              },
               viewMode === "calendar" ? styles.toggleActive : null,
             ]}
           >
             <Text
               style={[
                 styles.toggleText,
+                { fontSize: fontSize(14) },
                 viewMode === "calendar" ? styles.toggleTextActive : null,
               ]}
             >
@@ -119,7 +140,10 @@ export default function UpcomingScreen() {
       </View>
 
       {upcoming.networkErrors.map((entry) => (
-        <View key={entry.service} style={styles.bannerWrap}>
+        <View
+          key={entry.service}
+          style={[styles.bannerWrap, { marginBottom: scaledSpace.md }]}
+        >
           <ErrorBanner
             message={entry.message}
             onRetry={() => upcoming.refetchService(entry.service)}
@@ -133,7 +157,7 @@ export default function UpcomingScreen() {
           <ActivityIndicator color={colors.accent} size="large" />
         </View>
       ) : viewMode === "calendar" ? (
-        <ScrollView contentContainerStyle={styles.calendarContent}>
+        <ScrollView contentContainerStyle={{ paddingBottom: scaledSpace.xl }}>
           <UpcomingCalendar
             events={upcoming.calendarEvents}
             month={visibleMonth}
@@ -148,13 +172,18 @@ export default function UpcomingScreen() {
         />
       ) : (
         <FlatList
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{
+            gap: scaledSpace.sm,
+            paddingBottom: scaledSpace.xl,
+          }}
           data={[...upcoming.items]}
           keyExtractor={(item) => `${item.kind}-${item.id}`}
           renderItem={({ item }) => (
             <UpcomingRow item={item} onPress={() => handleOpenItem(item)} />
           )}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => (
+            <View style={{ height: scaledSpace.sm }} />
+          )}
         />
       )}
     </Screen>
@@ -162,14 +191,10 @@ export default function UpcomingScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: space.md,
-    marginBottom: space.md,
-  },
+  header: {},
   title: {
     color: colors.text,
     fontFamily: fonts.display,
-    fontSize: 28,
   },
   toggle: {
     alignSelf: "flex-start",
@@ -180,9 +205,7 @@ const styles = StyleSheet.create({
   },
   toggleButton: {
     borderRadius: radii.md - 2,
-    minHeight: minTouchTarget - 8,
     justifyContent: "center",
-    paddingHorizontal: space.md,
   },
   toggleActive: {
     backgroundColor: "rgba(245, 165, 36, 0.18)",
@@ -190,27 +213,14 @@ const styles = StyleSheet.create({
   toggleText: {
     color: colors.secondary,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   toggleTextActive: {
     color: colors.accent,
   },
-  bannerWrap: {
-    marginBottom: space.md,
-  },
+  bannerWrap: {},
   loading: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-  },
-  listContent: {
-    gap: space.sm,
-    paddingBottom: space.xl,
-  },
-  calendarContent: {
-    paddingBottom: space.xl,
-  },
-  separator: {
-    height: space.sm,
   },
 });
