@@ -7,16 +7,14 @@ import {
   type ArrConfig,
 } from "@/lib/secure-config";
 
-const ENV_KEYS = {
-  radarrUrl: "EXPO_PUBLIC_RADARR_URL",
-  radarrApiKey: "EXPO_PUBLIC_RADARR_API_KEY",
-  sonarrUrl: "EXPO_PUBLIC_SONARR_URL",
-  sonarrApiKey: "EXPO_PUBLIC_SONARR_API_KEY",
-} as const;
+type PublicArrEnv = {
+  readonly EXPO_PUBLIC_RADARR_URL?: string;
+  readonly EXPO_PUBLIC_RADARR_API_KEY?: string;
+  readonly EXPO_PUBLIC_SONARR_URL?: string;
+  readonly EXPO_PUBLIC_SONARR_API_KEY?: string;
+};
 
-const readOptionalEnv = (name: string): string | undefined => {
-  // Dynamic key access so Expo/Metro does not inline EXPO_PUBLIC_* to undefined in tests.
-  const value = process.env[name];
+const trimEnv = (value: string | undefined): string | undefined => {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -24,13 +22,15 @@ const readOptionalEnv = (name: string): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-/** Build-time defaults from Expo public env (inlined into the bundle). */
-export const readEnvArrConfig = (): Partial<ArrConfig> => {
+/** Pure reader — used by tests; production passes Metro-inlined env. */
+export const readEnvArrConfigFrom = (
+  env: PublicArrEnv,
+): Partial<ArrConfig> => {
   const config: Partial<ArrConfig> = {};
-  const radarrUrl = readOptionalEnv(ENV_KEYS.radarrUrl);
-  const radarrApiKey = readOptionalEnv(ENV_KEYS.radarrApiKey);
-  const sonarrUrl = readOptionalEnv(ENV_KEYS.sonarrUrl);
-  const sonarrApiKey = readOptionalEnv(ENV_KEYS.sonarrApiKey);
+  const radarrUrl = trimEnv(env.EXPO_PUBLIC_RADARR_URL);
+  const radarrApiKey = trimEnv(env.EXPO_PUBLIC_RADARR_API_KEY);
+  const sonarrUrl = trimEnv(env.EXPO_PUBLIC_SONARR_URL);
+  const sonarrApiKey = trimEnv(env.EXPO_PUBLIC_SONARR_API_KEY);
   if (radarrUrl) config.radarrUrl = radarrUrl;
   if (radarrApiKey) config.radarrApiKey = radarrApiKey;
   if (sonarrUrl) config.sonarrUrl = sonarrUrl;
@@ -39,13 +39,26 @@ export const readEnvArrConfig = (): Partial<ArrConfig> => {
 };
 
 /**
+ * Build-time defaults from Expo public env (inlined into the bundle).
+ * Static `process.env.EXPO_PUBLIC_*` access is required — Metro only inlines
+ * those; dynamic `process.env[name]` is empty in release APKs.
+ */
+export const readEnvArrConfig = (): Partial<ArrConfig> =>
+  readEnvArrConfigFrom({
+    EXPO_PUBLIC_RADARR_URL: process.env.EXPO_PUBLIC_RADARR_URL,
+    EXPO_PUBLIC_RADARR_API_KEY: process.env.EXPO_PUBLIC_RADARR_API_KEY,
+    EXPO_PUBLIC_SONARR_URL: process.env.EXPO_PUBLIC_SONARR_URL,
+    EXPO_PUBLIC_SONARR_API_KEY: process.env.EXPO_PUBLIC_SONARR_API_KEY,
+  });
+
+/**
  * If Secure Store has no complete config but `.env` does, seed Secure Store once.
  * Never overwrites an existing complete store (Settings / prior onboarding win).
  * After a successful seed, never seeds again — even if the store is wiped later.
  */
-export const ensureArrConfigBootstrapped = async (): Promise<
-  ArrConfig | undefined
-> => {
+export const ensureArrConfigBootstrapped = async (
+  readEnv: () => Partial<ArrConfig> = readEnvArrConfig,
+): Promise<ArrConfig | undefined> => {
   const stored = await loadArrConfig();
   if (isConfigComplete(stored)) {
     return stored;
@@ -53,7 +66,7 @@ export const ensureArrConfigBootstrapped = async (): Promise<
   if (await wasEnvBootstrapped()) {
     return undefined;
   }
-  const fromEnv = readEnvArrConfig();
+  const fromEnv = readEnv();
   if (!isConfigComplete(fromEnv)) {
     return undefined;
   }
