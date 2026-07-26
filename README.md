@@ -9,9 +9,8 @@
 </p>
 
 <p align="center">
-  Android-first Expo app for a non-technical home user: browse Movies and Series,
-  add titles, follow releases, and control Downloads — talking
-  <em>directly</em> to one Radarr and one Sonarr on your Wi‑Fi.
+  Browse movies and series, add what you want, follow upcoming releases,
+  and manage downloads — all from your phone at home.
   UI language follows the phone (<code>fr*</code> → French, otherwise English),
   with an override in Settings → Preferences.
 </p>
