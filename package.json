@@ -36,6 +36,8 @@
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.0",
     "jest-expo": "^57.0.2",
     "typescript": "~6.0.3"
   },
@@ -45,6 +47,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "expo:doctor": "npx expo-doctor",
     "test": "jest",
     "test:ci": "jest --ci --coverage=false",
     "prepare": "node -e \"try{require('child_process').execSync('git rev-parse --is-inside-work-tree',{stdio:'ignore'});require('child_process').execSync('git config core.hooksPath .githooks',{stdio:'ignore'})}catch(e){}\""

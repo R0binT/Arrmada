@@ -1,10 +1,10 @@
 import type { ReleaseOffer } from "@/arr-client";
-import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
-    pickReleaseForAudioPreference,
-    resolveReleaseDecision,
-    type RankedRelease,
-    type ReleaseDecision,
+  pickReleaseForAudioPreference,
+  resolveReleaseDecision,
+  type AudioPreference,
+  type RankedRelease,
+  type ReleaseDecision,
 } from "@/features/releases/resolve-release-decision";
 
 export type PendingAudioChoice = {

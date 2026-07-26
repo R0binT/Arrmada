@@ -6,7 +6,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { colors, radii } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 
 type ProgressBarProps = {
   readonly progress: number;
