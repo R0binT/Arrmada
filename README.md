@@ -88,8 +88,16 @@ cp .env.example .env
 npm start
 ```
 
+| Variable                         | Purpose                          |
+| -------------------------------- | -------------------------------- |
+| `EXPO_PUBLIC_RADARR_URL`         | Radarr base URL (LAN IP + port)  |
+| `EXPO_PUBLIC_RADARR_API_KEY`     | Radarr API key (read/write)      |
+| `EXPO_PUBLIC_SONARR_URL`         | Sonarr base URL (LAN IP + port)  |
+| `EXPO_PUBLIC_SONARR_API_KEY`     | Sonarr API key (read/write)      |
+
+All four are required for the seed to run; leave them unset (or omit `.env`) to use onboarding instead.  
 On first launch Arrmada seeds Secure Store from that env and opens the app.  
-`EXPO_PUBLIC_*` values are **inlined into the JS bundle** — fine for your own phone/APK, not for distributing secrets.
+`EXPO_PUBLIC_*` values are **inlined into the JS bundle** — fine for your own phone/APK, not for distributing secrets. `.env` is gitignored; commit only `.env.example`.
 
 ### LAN & HTTP
 
