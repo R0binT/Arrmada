@@ -7,7 +7,8 @@ import { IconButton } from "@/components/IconButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { StatusChip } from "@/components/StatusChip";
 import { t } from "@/i18n";
-import { colors, fonts, radii, space } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type QueueRowProps = {
   readonly item: QueueItem;
@@ -16,18 +17,34 @@ type QueueRowProps = {
 };
 
 export const QueueRow = ({ item, onPause, onRemove }: QueueRowProps) => {
+  const { space, fontSize, scale } = useUiSize();
   const downloaded = item.size - item.sizeLeft;
   const percent = Math.round(item.progress * 100);
   const isPaused = item.status === "paused";
   const showPause = item.canPause && onPause !== undefined;
+  const posterWidth = Math.round(36 * scale);
+  const posterHeight = Math.round(54 * scale);
+  const actionSize = Math.round(36 * scale);
 
   return (
     <View
       accessibilityLabel={t("queue.itemA11y", { title: item.title })}
-      style={styles.card}
+      style={[
+        styles.card,
+        {
+          gap: space.sm,
+          paddingHorizontal: space.md,
+          paddingVertical: space.sm,
+        },
+      ]}
     >
-      <View style={styles.topRow}>
-        <View style={styles.posterWrap}>
+      <View style={[styles.topRow, { gap: space.sm }]}>
+        <View
+          style={[
+            styles.posterWrap,
+            { height: posterHeight, width: posterWidth },
+          ]}
+        >
           {item.posterUrl ? (
             <Image
               accessibilityIgnoresInvertColors
@@ -38,17 +55,22 @@ export const QueueRow = ({ item, onPause, onRemove }: QueueRowProps) => {
             />
           ) : (
             <View style={styles.posterPlaceholder}>
-              <Text style={styles.posterInitial}>{item.title.slice(0, 1)}</Text>
+              <Text style={[styles.posterInitial, { fontSize: fontSize(14) }]}>
+                {item.title.slice(0, 1)}
+              </Text>
             </View>
           )}
         </View>
         <View style={styles.meta}>
-          <Text numberOfLines={1} style={styles.title}>
+          <Text
+            numberOfLines={1}
+            style={[styles.title, { fontSize: fontSize(14) }]}
+          >
             {item.title}
           </Text>
           <StatusChip status={item.status} />
         </View>
-        <View style={styles.actions}>
+        <View style={[styles.actions, { gap: space.xs }]}>
           {showPause ? (
             <IconButton
               accessibilityLabel={
@@ -58,7 +80,7 @@ export const QueueRow = ({ item, onPause, onRemove }: QueueRowProps) => {
               }
               icon={isPaused ? "▶" : "❚❚"}
               onPress={onPause}
-              style={styles.actionButton}
+              style={{ minHeight: actionSize, minWidth: actionSize }}
               variant="outline"
             />
           ) : null}
@@ -68,19 +90,29 @@ export const QueueRow = ({ item, onPause, onRemove }: QueueRowProps) => {
             })}
             icon="✕"
             onPress={onRemove}
-            style={styles.actionButton}
+            style={{ minHeight: actionSize, minWidth: actionSize }}
           />
         </View>
       </View>
 
       <View style={styles.progressSection}>
-        <View style={styles.progressRow}>
+        <View style={[styles.progressRow, { gap: space.sm }]}>
           <View style={styles.progressBarWrap}>
             <ProgressBar progress={item.progress} height={3} />
           </View>
-          <Text style={styles.percent}>{percent}%</Text>
+          <Text
+            style={[
+              styles.percent,
+              { fontSize: fontSize(12), minWidth: Math.round(36 * scale) },
+            ]}
+          >
+            {percent}%
+          </Text>
         </View>
-        <Text numberOfLines={1} style={styles.detail}>
+        <Text
+          numberOfLines={1}
+          style={[styles.detail, { fontSize: fontSize(12) }]}
+        >
           {`Restant ${formatEta(item.etaSeconds)} · ${formatBytes(downloaded)} / ${formatBytes(item.size)}`}
         </Text>
       </View>
@@ -92,20 +124,14 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.md,
-    gap: space.sm,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
   },
   topRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: space.sm,
   },
   posterWrap: {
     borderRadius: 8,
-    height: 54,
     overflow: "hidden",
-    width: 36,
   },
   poster: {
     height: "100%",
@@ -120,7 +146,6 @@ const styles = StyleSheet.create({
   posterInitial: {
     color: colors.secondary,
     fontFamily: fonts.display,
-    fontSize: 14,
   },
   meta: {
     flex: 1,
@@ -131,15 +156,9 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   actions: {
     flexDirection: "row",
-    gap: space.xs,
-  },
-  actionButton: {
-    minHeight: 36,
-    minWidth: 36,
   },
   progressSection: {
     gap: 4,
@@ -147,7 +166,6 @@ const styles = StyleSheet.create({
   progressRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: space.sm,
   },
   progressBarWrap: {
     flex: 1,
@@ -155,13 +173,10 @@ const styles = StyleSheet.create({
   percent: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 12,
-    minWidth: 36,
     textAlign: "right",
   },
   detail: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 12,
   },
 });

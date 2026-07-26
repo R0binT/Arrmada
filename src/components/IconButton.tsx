@@ -6,7 +6,8 @@ import {
     type ViewStyle,
 } from "react-native";
 
-import { colors, minTouchTarget, radii } from "@/lib/theme";
+import { colors, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type IconButtonProps = {
   readonly accessibilityLabel: string;
@@ -25,6 +26,7 @@ export const IconButton = ({
   disabled = false,
   style,
 }: IconButtonProps) => {
+  const { fontSize, minTouchTarget } = useUiSize();
   const variantStyle =
     variant === "accent"
       ? styles.accent
@@ -47,13 +49,18 @@ export const IconButton = ({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
+        {
+          minHeight: minTouchTarget,
+          minWidth: minTouchTarget,
+        },
         variantStyle,
+        variant === "outline" ? { borderRadius: minTouchTarget / 2 } : null,
         pressed && !disabled ? styles.pressed : null,
         disabled ? styles.disabled : null,
         style,
       ]}
     >
-      <Text style={textStyle}>{icon}</Text>
+      <Text style={[textStyle, { fontSize: fontSize(16) }]}>{icon}</Text>
     </Pressable>
   );
 };
@@ -63,8 +70,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "flex-start",
     justifyContent: "center",
-    minHeight: minTouchTarget,
-    minWidth: minTouchTarget,
     borderRadius: radii.md,
   },
   default: {
@@ -77,16 +82,13 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderColor: colors.accent,
     borderWidth: 1.5,
-    borderRadius: minTouchTarget / 2,
   },
   iconDefault: {
     color: colors.text,
-    fontSize: 16,
     fontFamily: "Figtree_500Medium",
   },
   iconAccent: {
     color: colors.accent,
-    fontSize: 16,
     fontFamily: "Figtree_500Medium",
   },
   pressed: {

@@ -3,17 +3,32 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components";
 import { t } from "@/i18n";
-import { colors, fonts, space } from "@/lib/theme";
+import { colors, fonts } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 export default function NotFoundScreen() {
+  const { space, fontSize } = useUiSize();
+
   return (
     <>
       <Stack.Screen options={{ title: t("notFound.title") }} />
       <Screen>
-        <View style={styles.container}>
-          <Text style={styles.title}>{t("notFound.body")}</Text>
-          <Link href="/" style={styles.link}>
-            <Text style={styles.linkText}>{t("notFound.homeLink")}</Text>
+        <View
+          style={[
+            styles.container,
+            { padding: space.lg },
+          ]}
+        >
+          <Text style={[styles.title, { fontSize: fontSize(22) }]}>
+            {t("notFound.body")}
+          </Text>
+          <Link
+            href="/"
+            style={{ marginTop: space.md, paddingVertical: space.md }}
+          >
+            <Text style={[styles.linkText, { fontSize: fontSize(15) }]}>
+              {t("notFound.homeLink")}
+            </Text>
           </Link>
         </View>
       </Screen>
@@ -26,21 +41,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    padding: space.lg,
   },
   title: {
     color: colors.text,
     fontFamily: fonts.display,
-    fontSize: 22,
     textAlign: "center",
-  },
-  link: {
-    marginTop: space.md,
-    paddingVertical: space.md,
   },
   linkText: {
     color: colors.accent,
     fontFamily: fonts.uiMedium,
-    fontSize: 15,
   },
 });

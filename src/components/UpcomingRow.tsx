@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { UpcomingItem } from "@/arr-client";
 import { formatUpcomingDate } from "@/arr-client";
 import { localeToBcp47, useI18n } from "@/i18n";
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type UpcomingRowProps = {
   readonly item: UpcomingItem;
@@ -13,19 +14,35 @@ type UpcomingRowProps = {
 
 export const UpcomingRow = ({ item, onPress }: UpcomingRowProps) => {
   const { t, locale } = useI18n();
+  const { space, fontSize, minTouchTarget, scale } = useUiSize();
   const kindLabel =
     item.kind === "movie" ? t("upcoming.kindMovie") : t("upcoming.kindEpisode");
   const dateLabel = formatUpcomingDate(item.date, localeToBcp47(locale));
   const accessibilityLabel = `${item.title}, ${kindLabel}, ${dateLabel}`;
+  const posterWidth = Math.round(48 * scale);
+  const posterHeight = Math.round(72 * scale);
 
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
+      style={({ pressed }) => [
+        styles.row,
+        {
+          gap: space.md,
+          minHeight: minTouchTarget,
+          padding: space.sm,
+        },
+        pressed ? styles.pressed : null,
+      ]}
     >
-      <View style={styles.posterWrap}>
+      <View
+        style={[
+          styles.posterWrap,
+          { height: posterHeight, width: posterWidth },
+        ]}
+      >
         {item.posterUrl ? (
           <Image
             accessibilityIgnoresInvertColors
@@ -38,15 +55,21 @@ export const UpcomingRow = ({ item, onPress }: UpcomingRowProps) => {
         )}
       </View>
       <View style={styles.body}>
-        <Text numberOfLines={1} style={styles.title}>
+        <Text
+          numberOfLines={1}
+          style={[styles.title, { fontSize: fontSize(16) }]}
+        >
           {item.title}
         </Text>
         {item.subtitle ? (
-          <Text numberOfLines={1} style={styles.subtitle}>
+          <Text
+            numberOfLines={1}
+            style={[styles.subtitle, { fontSize: fontSize(14) }]}
+          >
             {item.subtitle}
           </Text>
         ) : null}
-        <Text style={styles.meta}>
+        <Text style={[styles.meta, { fontSize: fontSize(13) }]}>
           {kindLabel} · {dateLabel}
         </Text>
       </View>
@@ -60,18 +83,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radii.md,
     flexDirection: "row",
-    gap: space.md,
-    minHeight: minTouchTarget,
-    padding: space.sm,
   },
   pressed: {
     opacity: 0.85,
   },
   posterWrap: {
     borderRadius: radii.md,
-    height: 72,
     overflow: "hidden",
-    width: 48,
   },
   poster: {
     height: "100%",
@@ -88,17 +106,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
   subtitle: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 14,
   },
   meta: {
     color: colors.accent,
     fontFamily: fonts.uiMedium,
-    fontSize: 13,
     marginTop: 2,
   },
 });

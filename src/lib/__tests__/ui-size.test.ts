@@ -9,6 +9,7 @@ import {
     scaledMinTouchTarget,
     scaleFontSize,
     scaleSpace,
+    scaleStyleValues,
     UI_SIZE_SCALES,
 } from "@/lib/ui-size";
 
@@ -50,5 +51,30 @@ describe("ui-size", () => {
     expect(await loadUiSize()).toBe("comfortable");
     await AsyncStorage.setItem("arr.uiSize", "nope");
     expect(await loadUiSize()).toBe("normal");
+  });
+
+  it("scales typography and spacing style props only", () => {
+    const actual = scaleStyleValues(
+      {
+        color: "#fff",
+        fontSize: 16,
+        lineHeight: 22,
+        padding: 16,
+        width: 108,
+        height: "100%",
+      },
+      1.15,
+    );
+    expect(actual.fontSize).toBe(18.4);
+    expect(actual.lineHeight).toBe(25.3);
+    expect(actual.padding).toBe(18);
+    expect(actual.width).toBe(108);
+    expect(actual.height).toBe("100%");
+    expect(actual.color).toBe("#fff");
+  });
+
+  it("returns same object reference when scale is 1", () => {
+    const input = { fontSize: 16, padding: 8 };
+    expect(scaleStyleValues(input, 1)).toBe(input);
   });
 });

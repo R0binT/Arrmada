@@ -146,7 +146,13 @@ export default function HomeScreen() {
           <ActivityIndicator color={colors.accent} size="large" />
         </View>
       ) : (
-        <Animated.View entering={FadeIn.duration(350)} style={styles.content}>
+        <Animated.View
+          entering={FadeIn.duration(350)}
+          style={[
+            styles.content,
+            { gap: scaledSpace.xl, paddingBottom: scaledSpace.xl },
+          ]}
+        >
           {home.hero ? (
             <HeroBanner
               kind={home.hero.kind}
@@ -159,7 +165,9 @@ export default function HomeScreen() {
           ) : null}
 
           {home.downloadingItems.length > 0 ? (
-            <View style={styles.rowWrap}>
+            <View
+              style={[styles.rowWrap, { marginHorizontal: -scaledSpace.md }]}
+            >
               <PosterRow
                 onSeeAll={handleOpenQueue}
                 title={t("home.inProgress")}
@@ -177,6 +185,7 @@ export default function HomeScreen() {
                       progress={item.progress > 0 ? item.progress : undefined}
                       selected={quick.selected?.key === selection.key}
                       title={item.title}
+                      width={Math.round(112 * scale)}
                     />
                   );
                 })}
@@ -185,7 +194,9 @@ export default function HomeScreen() {
           ) : null}
 
           {upcoming.previewItems.length > 0 ? (
-            <View style={styles.rowWrap}>
+            <View
+              style={[styles.rowWrap, { marginHorizontal: -scaledSpace.md }]}
+            >
               <PosterRow
                 onSeeAll={handleOpenUpcoming}
                 title={t("home.sectionUpcoming")}
@@ -207,6 +218,7 @@ export default function HomeScreen() {
                       posterUrl={item.posterUrl}
                       selected={quick.selected?.key === selection.key}
                       title={item.title}
+                      width={Math.round(112 * scale)}
                     />
                   );
                 })}
@@ -215,7 +227,9 @@ export default function HomeScreen() {
           ) : null}
 
           {home.recentMovies.length > 0 ? (
-            <View style={styles.rowWrap}>
+            <View
+              style={[styles.rowWrap, { marginHorizontal: -scaledSpace.md }]}
+            >
               <PosterRow
                 onSeeAll={handleOpenMovies}
                 title={t("home.sectionRecentMovies")}
@@ -233,6 +247,7 @@ export default function HomeScreen() {
                       posterUrl={movie.posterUrl}
                       selected={quick.selected?.key === selection.key}
                       title={movie.title}
+                      width={Math.round(112 * scale)}
                     />
                   );
                 })}
@@ -241,7 +256,9 @@ export default function HomeScreen() {
           ) : null}
 
           {home.recentSeries.length > 0 ? (
-            <View style={styles.rowWrap}>
+            <View
+              style={[styles.rowWrap, { marginHorizontal: -scaledSpace.md }]}
+            >
               <PosterRow
                 onSeeAll={handleOpenSeries}
                 title={t("home.sectionRecentSeries")}
@@ -259,6 +276,7 @@ export default function HomeScreen() {
                       posterUrl={series.posterUrl}
                       selected={quick.selected?.key === selection.key}
                       title={series.title}
+                      width={Math.round(112 * scale)}
                     />
                   );
                 })}
@@ -294,11 +312,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 240,
   },
-  content: {
-    gap: space.xl,
-    paddingBottom: space.xl,
-  },
-  rowWrap: {
-    marginHorizontal: -space.md,
-  },
+  content: {},
+  rowWrap: {},
 });
