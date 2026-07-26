@@ -1,6 +1,6 @@
 import {
   ensureArrConfigBootstrapped,
-  readEnvArrConfig,
+  readEnvArrConfigFrom,
 } from "@/lib/env-arr-config";
 import {
   isConfigComplete,
@@ -27,50 +27,44 @@ const mockMarkBootstrapped = markEnvBootstrapped as jest.MockedFunction<
   typeof markEnvBootstrapped
 >;
 
-describe("readEnvArrConfig", () => {
-  const env = process.env;
+const completeEnv = {
+  EXPO_PUBLIC_RADARR_URL: "http://192.168.1.10:7878",
+  EXPO_PUBLIC_RADARR_API_KEY: "radarr-key",
+  EXPO_PUBLIC_SONARR_URL: "http://192.168.1.10:8989",
+  EXPO_PUBLIC_SONARR_API_KEY: "sonarr-key",
+} as const;
 
-  beforeEach(() => {
-    process.env = { ...env };
-    delete process.env.EXPO_PUBLIC_RADARR_URL;
-    delete process.env.EXPO_PUBLIC_RADARR_API_KEY;
-    delete process.env.EXPO_PUBLIC_SONARR_URL;
-    delete process.env.EXPO_PUBLIC_SONARR_API_KEY;
-  });
-
-  afterAll(() => {
-    process.env = env;
-  });
-
+describe("readEnvArrConfigFrom", () => {
   it("returns empty when env vars are missing", () => {
-    expect(readEnvArrConfig()).toEqual({});
+    expect(readEnvArrConfigFrom({})).toEqual({});
   });
 
   it("trims and ignores blank values", () => {
-    process.env.EXPO_PUBLIC_RADARR_URL = "  http://192.168.1.10:7878  ";
-    process.env.EXPO_PUBLIC_RADARR_API_KEY = "   ";
-    expect(readEnvArrConfig()).toEqual({
+    expect(
+      readEnvArrConfigFrom({
+        EXPO_PUBLIC_RADARR_URL: "  http://192.168.1.10:7878  ",
+        EXPO_PUBLIC_RADARR_API_KEY: "   ",
+      }),
+    ).toEqual({
       radarrUrl: "http://192.168.1.10:7878",
+    });
+  });
+
+  it("reads all four EXPO_PUBLIC keys", () => {
+    expect(readEnvArrConfigFrom(completeEnv)).toEqual({
+      radarrUrl: "http://192.168.1.10:7878",
+      radarrApiKey: "radarr-key",
+      sonarrUrl: "http://192.168.1.10:8989",
+      sonarrApiKey: "sonarr-key",
     });
   });
 });
 
 describe("ensureArrConfigBootstrapped", () => {
-  const env = process.env;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...env };
-    process.env.EXPO_PUBLIC_RADARR_URL = "http://192.168.1.10:7878";
-    process.env.EXPO_PUBLIC_RADARR_API_KEY = "radarr-key";
-    process.env.EXPO_PUBLIC_SONARR_URL = "http://192.168.1.10:8989";
-    process.env.EXPO_PUBLIC_SONARR_API_KEY = "sonarr-key";
     mockWasBootstrapped.mockResolvedValue(false);
     mockMarkBootstrapped.mockResolvedValue(undefined);
-  });
-
-  afterAll(() => {
-    process.env = env;
   });
 
   it("keeps an existing complete Secure Store config", async () => {
@@ -81,7 +75,9 @@ describe("ensureArrConfigBootstrapped", () => {
       sonarrApiKey: "stored-s",
     };
     mockLoad.mockResolvedValue(stored);
-    const actual = await ensureArrConfigBootstrapped();
+    const actual = await ensureArrConfigBootstrapped(() =>
+      readEnvArrConfigFrom(completeEnv),
+    );
     expect(actual).toEqual(stored);
     expect(mockSave).not.toHaveBeenCalled();
   });
@@ -89,7 +85,9 @@ describe("ensureArrConfigBootstrapped", () => {
   it("seeds Secure Store from env when store is empty", async () => {
     mockLoad.mockResolvedValue({});
     mockSave.mockResolvedValue(undefined);
-    const actual = await ensureArrConfigBootstrapped();
+    const actual = await ensureArrConfigBootstrapped(() =>
+      readEnvArrConfigFrom(completeEnv),
+    );
     expect(isConfigComplete(actual ?? {})).toBe(true);
     expect(mockSave).toHaveBeenCalledWith({
       radarrUrl: "http://192.168.1.10:7878",
@@ -103,7 +101,9 @@ describe("ensureArrConfigBootstrapped", () => {
   it("does not re-seed after a prior bootstrap when store was wiped", async () => {
     mockLoad.mockResolvedValue({});
     mockWasBootstrapped.mockResolvedValue(true);
-    const actual = await ensureArrConfigBootstrapped();
+    const actual = await ensureArrConfigBootstrapped(() =>
+      readEnvArrConfigFrom(completeEnv),
+    );
     expect(actual).toBeUndefined();
     expect(mockSave).not.toHaveBeenCalled();
     expect(mockMarkBootstrapped).not.toHaveBeenCalled();
@@ -111,8 +111,12 @@ describe("ensureArrConfigBootstrapped", () => {
 
   it("returns undefined when neither store nor env is complete", async () => {
     mockLoad.mockResolvedValue({});
-    process.env.EXPO_PUBLIC_SONARR_API_KEY = "";
-    const actual = await ensureArrConfigBootstrapped();
+    const actual = await ensureArrConfigBootstrapped(() =>
+      readEnvArrConfigFrom({
+        ...completeEnv,
+        EXPO_PUBLIC_SONARR_API_KEY: "",
+      }),
+    );
     expect(actual).toBeUndefined();
     expect(mockSave).not.toHaveBeenCalled();
   });
