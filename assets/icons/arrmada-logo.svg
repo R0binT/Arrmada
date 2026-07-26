@@ -1,57 +1,77 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
-  <!-- Option S: library shelf + TV + film reel -->
-  <rect width="128" height="128" rx="26" fill="#0B0B0F"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <!-- Arrmada mark — vector match of arrmada-logo.png -->
+  <rect width="1024" height="1024" fill="#000000"/>
+  <rect x="70" y="70" width="884" height="884" rx="163" fill="#0B0B11"/>
 
-  <!-- Left bookshelf frame -->
-  <rect x="14" y="22" width="50" height="84" rx="6" fill="#F4F0E8"/>
-  <rect x="18" y="26" width="42" height="76" rx="3" fill="#1A1A22"/>
+  <!-- Left bookshelf (cream), rounded on the outer left only -->
+  <path
+    fill="#F6EDDB"
+    d="M498 155
+       H210
+       C171.3 155 140 186.3 140 225
+       V797
+       C140 835.7 171.3 867 210 867
+       H498
+       Z"
+  />
+  <!-- Shelf well -->
+  <rect x="183" y="199" width="287" height="626" rx="10" fill="#0B0B11"/>
   <!-- Shelf divider -->
-  <rect x="18" y="62" width="42" height="4" fill="#F4F0E8"/>
-  <!-- Top row spines -->
-  <rect x="21" y="30" width="6" height="28" rx="1" fill="#4DB6A5"/>
-  <rect x="22" y="34" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="22" y="38" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="29" y="30" width="6" height="28" rx="1" fill="#6BA3C9"/>
-  <rect x="30" y="34" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="30" y="38" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="37" y="30" width="6" height="28" rx="1" fill="#E8D9A8"/>
-  <rect x="38" y="34" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="45" y="30" width="6" height="28" rx="1" fill="#F5A524"/>
-  <rect x="46" y="34" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="53" y="30" width="5" height="28" rx="1" fill="#4DB6A5"/>
-  <!-- Bottom row spines -->
-  <rect x="21" y="70" width="6" height="28" rx="1" fill="#6BA3C9"/>
-  <rect x="22" y="74" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="29" y="70" width="6" height="28" rx="1" fill="#F5A524"/>
-  <rect x="30" y="74" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="37" y="70" width="6" height="28" rx="1" fill="#4DB6A5"/>
-  <rect x="38" y="74" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="45" y="70" width="6" height="28" rx="1" fill="#E8D9A8"/>
-  <rect x="46" y="74" width="4" height="1.5" fill="#0B0B0F" opacity="0.35"/>
-  <rect x="53" y="70" width="5" height="28" rx="1" fill="#6BA3C9"/>
+  <rect x="183" y="490" width="287" height="26" fill="#F6EDDB"/>
 
-  <!-- Right TV / media panel -->
-  <rect x="60" y="22" width="54" height="84" rx="8" fill="#5B6B7A"/>
-  <rect x="66" y="28" width="42" height="54" rx="4" fill="#12151C"/>
-  <!-- Speaker vents -->
-  <rect x="68" y="90" width="14" height="3" rx="1.5" fill="#4DB6A5"/>
-  <rect x="68" y="96" width="14" height="3" rx="1.5" fill="#4DB6A5"/>
-  <rect x="68" y="102" width="10" height="3" rx="1.5" fill="#4DB6A5"/>
-  <!-- Dials -->
-  <circle cx="98" cy="94" r="5" fill="#F5A524"/>
-  <circle cx="98" cy="94" r="2" fill="#0B0B0F" opacity="0.35"/>
-  <circle cx="108" cy="94" r="5" fill="#F5A524"/>
-  <circle cx="108" cy="94" r="2" fill="#0B0B0F" opacity="0.35"/>
+  <!-- Top spines: teal, blue, cream, amber -->
+  <rect x="196" y="238" width="58" height="249" rx="3" fill="#4EA298"/>
+  <rect x="263" y="238" width="58" height="249" rx="3" fill="#618FB8"/>
+  <rect x="331" y="238" width="58" height="249" rx="3" fill="#EFDFBD"/>
+  <rect x="399" y="238" width="58" height="249" rx="3" fill="#F3A11C"/>
 
-  <!-- Film reel (overlaps the split) -->
-  <circle cx="78" cy="55" r="28" fill="#F4F0E8"/>
-  <circle cx="78" cy="55" r="22" fill="#2A3038"/>
-  <circle cx="78" cy="55" r="7" fill="#F4F0E8"/>
-  <circle cx="78" cy="55" r="3.5" fill="#1A1A22"/>
-  <!-- Reel holes -->
-  <circle cx="78" cy="38" r="5" fill="#F4F0E8"/>
-  <circle cx="93" cy="48" r="5" fill="#F4F0E8"/>
-  <circle cx="90" cy="66" r="5" fill="#F4F0E8"/>
-  <circle cx="66" cy="66" r="5" fill="#F4F0E8"/>
-  <circle cx="63" cy="48" r="5" fill="#F4F0E8"/>
+  <!-- Bottom spines: amber, cream, blue, teal -->
+  <rect x="196" y="555" width="58" height="256" rx="3" fill="#F3A11C"/>
+  <rect x="261" y="555" width="58" height="256" rx="3" fill="#EFDFBD"/>
+  <rect x="326" y="555" width="58" height="256" rx="3" fill="#618FB8"/>
+  <rect x="391" y="555" width="60" height="256" rx="3" fill="#4EA298"/>
+
+  <!-- Right TV, rounded on the outer right only -->
+  <path
+    fill="#4D5F73"
+    d="M498 155
+       H812
+       C850.7 155 882 186.3 882 225
+       V797
+       C882 835.7 850.7 867 812 867
+       H498
+       Z"
+  />
+  <!-- Screen -->
+  <rect x="528" y="250" width="300" height="420" rx="28" fill="#1B1E26"/>
+
+  <!-- Dials with short thick slots (TL → BR) -->
+  <circle cx="558" cy="756" r="40" fill="#F3A92F"/>
+  <rect
+    x="-18" y="-5" width="36" height="10" rx="5"
+    fill="#5C3408"
+    transform="translate(558 756) rotate(45)"
+  />
+  <circle cx="654" cy="756" r="40" fill="#F3A92F"/>
+  <rect
+    x="-18" y="-5" width="36" height="10" rx="5"
+    fill="#5C3408"
+    transform="translate(654 756) rotate(45)"
+  />
+
+  <!-- Speaker grille — 5 bars -->
+  <rect x="724" y="710" width="110" height="12" rx="4" fill="#489D94"/>
+  <rect x="724" y="726" width="110" height="12" rx="4" fill="#489D94"/>
+  <rect x="724" y="748" width="110" height="12" rx="4" fill="#489D94"/>
+  <rect x="724" y="770" width="110" height="12" rx="4" fill="#489D94"/>
+  <rect x="724" y="792" width="110" height="12" rx="4" fill="#489D94"/>
+
+  <!-- Film reel -->
+  <circle cx="516" cy="494" r="155" fill="#F5ECD8"/>
+  <circle cx="516" cy="404" r="41" fill="#101317"/>
+  <circle cx="601.6" cy="466.2" r="41" fill="#101317"/>
+  <circle cx="568.9" cy="566.8" r="41" fill="#101317"/>
+  <circle cx="463.1" cy="566.8" r="41" fill="#101317"/>
+  <circle cx="430.4" cy="466.2" r="41" fill="#101317"/>
+  <circle cx="516" cy="494" r="17" fill="#101317"/>
 </svg>
