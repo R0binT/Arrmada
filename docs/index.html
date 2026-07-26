@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Arrmada — Radarr &amp; Sonarr on your phone</title>
+    <meta
+      name="description"
+      content="Your Radarr &amp; Sonarr libraries, on your phone — home LAN only. Android-first Expo app."
+    />
+    <meta property="og:title" content="Arrmada" />
+    <meta
+      property="og:description"
+      content="Your Radarr &amp; Sonarr libraries, on your phone — home LAN only."
+    />
+    <meta property="og:image" content="assets/arrmada-logo.png" />
+    <link rel="icon" href="assets/arrmada-logo.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Sora:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="atmosphere" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <a class="brand-mark" href="#top" aria-label="Arrmada home">
+        <img src="assets/arrmada-logo.svg" width="36" height="36" alt="" />
+        <span>Arrmada</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#screenshots">Screenshots</a>
+        <a href="#getting-started">Get started</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <img
+            class="hero-logo"
+            src="assets/arrmada-logo.svg"
+            width="112"
+            height="112"
+            alt="Arrmada"
+          />
+          <h1 id="hero-title">Arrmada</h1>
+          <p class="tagline">
+            Your Radarr &amp; Sonarr libraries, on your phone — home LAN only.
+          </p>
+          <p class="support">
+            Android-first Expo app for a non-technical home user. Browse Movies
+            and Series, add titles, follow releases, and control Downloads —
+            talking <em>directly</em> to one Radarr and one Sonarr on your
+            Wi‑Fi.
+          </p>
+          <div class="cta-row">
+            <a
+              class="btn btn-primary"
+              id="release-cta"
+              href="https://github.com/R0binT/Arrmada/releases/latest"
+            >
+              Get latest release
+            </a>
+            <a
+              class="btn btn-secondary"
+              href="https://github.com/R0binT/Arrmada"
+            >
+              Fork on GitHub
+            </a>
+          </div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="phone-frame">
+            <img
+              src="screenshots/01-home.png"
+              alt=""
+              width="280"
+              height="560"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="section features" aria-labelledby="features-title">
+        <h2 id="features-title">What you get</h2>
+        <p class="section-lead">
+          Day-to-day library control without the Radarr/Sonarr admin UI.
+        </p>
+        <ul class="feature-grid">
+          <li>
+            <h3>Home</h3>
+            <p>Downloads in progress, recent activity, health, Upcoming peek.</p>
+          </li>
+          <li>
+            <h3>Movies &amp; Series</h3>
+            <p>Poster grids with search and filters — monitored to downloaded.</p>
+          </li>
+          <li>
+            <h3>MediaQuick</h3>
+            <p>Glanceable bottom sheet from a poster; one tap for full detail.</p>
+          </li>
+          <li>
+            <h3>Upcoming</h3>
+            <p>Date-sorted list or calendar — same data, two layouts.</p>
+          </li>
+          <li>
+            <h3>Downloads</h3>
+            <p>Pause, resume, and cancel active or queued downloads.</p>
+          </li>
+          <li>
+            <h3>Notifications</h3>
+            <p>Local alerts when a download starts, lands, or fails.</p>
+          </li>
+          <li>
+            <h3>Lock</h3>
+            <p>Optional PIN or biometrics — off by default.</p>
+          </li>
+          <li>
+            <h3>Settings</h3>
+            <p>Services (address + key) and Preferences (language, size, Lock).</p>
+          </li>
+        </ul>
+      </section>
+
+      <section id="screenshots" class="section screenshots" aria-labelledby="shots-title">
+        <h2 id="shots-title">Inside the app</h2>
+        <p class="section-lead">
+          English UI on Android against live Radarr and Sonarr.
+        </p>
+        <div class="shot-row">
+          <figure>
+            <img src="screenshots/01-home.png" alt="Home — cinematic overview" width="220" height="440" loading="lazy" />
+            <figcaption>Home</figcaption>
+          </figure>
+          <figure>
+            <img src="screenshots/02-movies.png" alt="Movies library" width="220" height="440" loading="lazy" />
+            <figcaption>Movies</figcaption>
+          </figure>
+          <figure>
+            <img src="screenshots/03-upcoming.png" alt="Upcoming releases" width="220" height="440" loading="lazy" />
+            <figcaption>Upcoming</figcaption>
+          </figure>
+          <figure>
+            <img src="screenshots/04-settings.png" alt="Settings hub" width="220" height="440" loading="lazy" />
+            <figcaption>Settings</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="getting-started" class="section getting-started" aria-labelledby="start-title">
+        <h2 id="start-title">Getting started</h2>
+        <p class="section-lead">
+          Phone and servers on the same home LAN. One Radarr, one Sonarr.
+        </p>
+        <ol class="steps">
+          <li>
+            <strong>Requirements</strong>
+            Node.js 20+, Android with Expo Go (or a dev build), Wi‑Fi to your
+            *arr hosts.
+          </li>
+          <li>
+            <strong>Run</strong>
+            <pre><code>npm install
+npm start</code></pre>
+            Scan the QR code with Expo Go, or press <kbd>a</kbd> for the emulator.
+          </li>
+          <li>
+            <strong>Connect</strong>
+            On first launch, enter each service’s LAN URL and read/write API key.
+            Tap <em>Test connection</em>, then <em>Continue</em>. Keys stay in
+            Secure Store on the device.
+          </li>
+        </ol>
+        <p class="docs-link">
+          <a href="https://github.com/R0binT/Arrmada#readme">Full docs on GitHub →</a>
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p class="out-of-scope">
+        Not a Radarr/Sonarr UI clone. Phone and servers must be on the same home
+        LAN.
+      </p>
+      <p>
+        <a href="https://github.com/R0binT/Arrmada">github.com/R0binT/Arrmada</a>
+        · MIT © R0binT
+      </p>
+    </footer>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>
