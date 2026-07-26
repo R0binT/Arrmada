@@ -7,14 +7,13 @@ import type {
     PrimaryDestination,
 } from "@/features/media-quick/types";
 import { t } from "@/i18n";
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type MediaQuickPanelProps = {
   readonly viewModel: MediaQuickViewModel;
   readonly onOpenPrimary: (destination: PrimaryDestination) => void;
 };
-
-const TITLE_LINE_HEIGHT = 28;
 
 const STATUS_PILL: Record<
   MediaQuickStatusTone,
@@ -42,22 +41,45 @@ export const MediaQuickPanel = ({
   viewModel,
   onOpenPrimary,
 }: MediaQuickPanelProps) => {
+  const { space, fontSize, minTouchTarget } = useUiSize();
   const hasProgress =
     viewModel.progress !== undefined && viewModel.progress > 0;
   const hasStatus = viewModel.statusLine.length > 0;
   const statusColors = STATUS_PILL[viewModel.statusTone];
 
   return (
-    <View style={styles.container}>
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        gap: space.md,
+        maxHeight: "100%",
+        paddingBottom: space.sm,
+        paddingHorizontal: space.lg,
+        paddingTop: space.xs,
+      }}
+    >
       <ScrollView
         bounces={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{
+          gap: space.md,
+          paddingBottom: space.xs,
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>{viewModel.title}</Text>
+          <View style={[styles.titleRow, { gap: space.sm }]}>
+            <Text
+              style={[
+                styles.title,
+                {
+                  fontSize: fontSize(22),
+                  lineHeight: fontSize(28),
+                },
+              ]}
+            >
+              {viewModel.title}
+            </Text>
             {hasStatus ? (
               <View
                 style={[
@@ -66,7 +88,13 @@ export const MediaQuickPanel = ({
                 ]}
               >
                 <Text
-                  style={[styles.statusPillText, { color: statusColors.color }]}
+                  style={[
+                    styles.statusPillText,
+                    {
+                      color: statusColors.color,
+                      fontSize: fontSize(12),
+                    },
+                  ]}
                 >
                   {viewModel.statusLine}
                 </Text>
@@ -74,26 +102,40 @@ export const MediaQuickPanel = ({
             ) : null}
           </View>
           {viewModel.subtitle ? (
-            <Text style={styles.subtitle}>{viewModel.subtitle}</Text>
+            <Text style={[styles.subtitle, { fontSize: fontSize(14) }]}>
+              {viewModel.subtitle}
+            </Text>
           ) : null}
         </View>
 
         {viewModel.chips.length > 0 ? (
-          <View style={styles.chipWrap}>
+          <View style={[styles.chipWrap, { gap: space.xs }]}>
             {viewModel.chips.map((chip) => (
               <View key={chip} style={styles.chip}>
-                <Text style={styles.chipText}>{chip}</Text>
+                <Text style={[styles.chipText, { fontSize: fontSize(12) }]}>
+                  {chip}
+                </Text>
               </View>
             ))}
           </View>
         ) : null}
 
         {viewModel.detailLine ? (
-          <Text style={styles.detail}>{viewModel.detailLine}</Text>
+          <Text
+            style={[
+              styles.detail,
+              {
+                fontSize: fontSize(13),
+                lineHeight: fontSize(18),
+              },
+            ]}
+          >
+            {viewModel.detailLine}
+          </Text>
         ) : null}
 
         {hasProgress && viewModel.progress !== undefined ? (
-          <View style={styles.progressWrap}>
+          <View style={{ marginTop: -space.xs }}>
             <ProgressBar progress={viewModel.progress} height={4} />
           </View>
         ) : null}
@@ -105,48 +147,35 @@ export const MediaQuickPanel = ({
         onPress={() => onOpenPrimary(viewModel.destination)}
         style={({ pressed }) => [
           styles.cta,
+          { minHeight: minTouchTarget },
           pressed ? styles.ctaPressed : null,
         ]}
       >
-        <Text style={styles.ctaText}>{t(viewModel.destination.ctaKey)}</Text>
+        <Text style={[styles.ctaText, { fontSize: fontSize(16) }]}>
+          {t(viewModel.destination.ctaKey)}
+        </Text>
       </Pressable>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    gap: space.md,
-    maxHeight: "100%",
-    paddingBottom: space.sm,
-    paddingHorizontal: space.lg,
-    paddingTop: space.xs,
-  },
-  scrollContent: {
-    gap: space.md,
-    paddingBottom: space.xs,
-  },
   header: {
     gap: 2,
   },
   titleRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: space.sm,
   },
   title: {
     color: colors.text,
     flex: 1,
     fontFamily: fonts.display,
-    fontSize: 22,
-    lineHeight: TITLE_LINE_HEIGHT,
     minWidth: 0,
   },
   subtitle: {
     color: colors.secondary,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   statusPill: {
     borderRadius: 8,
@@ -156,12 +185,10 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     fontFamily: fonts.uiMedium,
-    fontSize: 12,
   },
   chipWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: space.xs,
   },
   chip: {
     backgroundColor: "rgba(244, 240, 232, 0.08)",
@@ -172,23 +199,16 @@ const styles = StyleSheet.create({
   chipText: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 12,
   },
   detail: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  progressWrap: {
-    marginTop: -space.xs,
   },
   cta: {
     alignItems: "center",
     backgroundColor: colors.accent,
     borderRadius: radii.md,
     justifyContent: "center",
-    minHeight: minTouchTarget,
   },
   ctaPressed: {
     opacity: 0.85,
@@ -196,6 +216,5 @@ const styles = StyleSheet.create({
   ctaText: {
     color: colors.bg,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
 });

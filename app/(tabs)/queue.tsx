@@ -2,7 +2,6 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 
-import { openSettingsServices } from "@/features/settings/open-settings";
 import type { QueueItem } from "@/arr-client";
 import {
     EmptyState,
@@ -16,11 +15,14 @@ import {
     useQueue,
     useQueueMutations,
 } from "@/features/queue/use-queue";
-import { colors, fonts, space } from "@/lib/theme";
+import { openSettingsServices } from "@/features/settings/open-settings";
 import { useI18n } from "@/i18n";
+import { colors, fonts } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 export default function QueueScreen() {
   const { t } = useI18n();
+  const { fontSize, space: scaledSpace } = useUiSize();
   const [isFocused, setIsFocused] = useState(false);
 
   useFocusEffect(
@@ -78,9 +80,16 @@ export default function QueueScreen() {
   if (queueQuery.isError) {
     return (
       <Screen>
-        <View style={styles.header}>
-          <Text style={styles.title}>{t("queue.title")}</Text>
-          <Text style={styles.subtitle}>
+        <View style={[styles.header, { marginBottom: scaledSpace.md }]}>
+          <Text style={[styles.title, { fontSize: fontSize(32) }]}>
+            {t("queue.title")}
+          </Text>
+          <Text
+            style={[
+              styles.subtitle,
+              { fontSize: fontSize(15), marginTop: scaledSpace.xs },
+            ]}
+          >
             {t("queue.activeCount", { count: 0 })}
           </Text>
         </View>
@@ -119,15 +128,22 @@ export default function QueueScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t("queue.title")}</Text>
-        <Text style={styles.subtitle}>
+      <View style={[styles.header, { marginBottom: scaledSpace.md }]}>
+        <Text style={[styles.title, { fontSize: fontSize(32) }]}>
+          {t("queue.title")}
+        </Text>
+        <Text
+          style={[
+            styles.subtitle,
+            { fontSize: fontSize(15), marginTop: scaledSpace.xs },
+          ]}
+        >
           {t("queue.activeCount", { count: activeCount })}
         </Text>
       </View>
 
       {queueQuery.radarrError ? (
-        <View style={styles.bannerWrap}>
+        <View style={[styles.bannerWrap, { marginBottom: scaledSpace.md }]}>
           <ErrorBanner
             message={t("queue.moviesError", {
               message: getQueueErrorMessage(queueQuery.radarrError),
@@ -138,7 +154,7 @@ export default function QueueScreen() {
         </View>
       ) : null}
       {queueQuery.sonarrError ? (
-        <View style={styles.bannerWrap}>
+        <View style={[styles.bannerWrap, { marginBottom: scaledSpace.md }]}>
           <ErrorBanner
             message={t("queue.seriesError", {
               message: getQueueErrorMessage(queueQuery.sonarrError),
@@ -160,7 +176,10 @@ export default function QueueScreen() {
         />
       ) : (
         <FlatList
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[
+            styles.list,
+            { gap: scaledSpace.sm, paddingBottom: scaledSpace.xl },
+          ]}
           data={queueQuery.items}
           keyExtractor={(item) => `${item.service}-${item.id}`}
           renderItem={({ item }) => (
@@ -176,8 +195,20 @@ export default function QueueScreen() {
       )}
 
       {toast ? (
-        <View accessibilityLiveRegion="polite" style={styles.toast}>
-          <Text style={styles.toastText}>{toast}</Text>
+        <View
+          accessibilityLiveRegion="polite"
+          style={[
+            styles.toast,
+            {
+              bottom: scaledSpace.lg,
+              paddingHorizontal: scaledSpace.lg,
+              paddingVertical: scaledSpace.md,
+            },
+          ]}
+        >
+          <Text style={[styles.toastText, { fontSize: fontSize(14) }]}>
+            {toast}
+          </Text>
         </View>
       ) : null}
     </Screen>
@@ -185,42 +216,28 @@ export default function QueueScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: space.md,
-  },
+  header: {},
   title: {
     color: colors.text,
     fontFamily: fonts.display,
-    fontSize: 32,
   },
   subtitle: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 15,
-    marginTop: space.xs,
   },
-  bannerWrap: {
-    marginBottom: space.md,
-  },
+  bannerWrap: {},
   listContainer: {
     flex: 1,
   },
-  list: {
-    gap: space.sm,
-    paddingBottom: space.xl,
-  },
+  list: {},
   toast: {
     alignSelf: "center",
     backgroundColor: colors.surface,
     borderRadius: 12,
-    bottom: space.lg,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
     position: "absolute",
   },
   toastText: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
 });

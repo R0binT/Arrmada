@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ProgressBar } from "@/components/ProgressBar";
 import { useI18n } from "@/i18n";
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 export type HeroBannerKind = "download" | "movie" | "series";
 
@@ -25,7 +26,9 @@ export const HeroBanner = ({
   onPress,
 }: HeroBannerProps) => {
   const { t } = useI18n();
+  const { space, fontSize, minTouchTarget, scale } = useUiSize();
   const hasProgress = progress !== undefined && progress > 0;
+  const bannerMinHeight = Math.round(140 * scale);
   const ctaLabel =
     kind === "download"
       ? t("home.ctaQueue")
@@ -40,6 +43,7 @@ export const HeroBanner = ({
       onPress={onPress}
       style={({ pressed }) => [
         styles.container,
+        { minHeight: bannerMinHeight },
         pressed ? styles.pressed : null,
       ]}
     >
@@ -55,16 +59,36 @@ export const HeroBanner = ({
         <View style={[StyleSheet.absoluteFill, styles.placeholder]} />
       )}
       <View style={styles.overlay} />
-      <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+      <View
+        style={{
+          flex: 1,
+          gap: space.xs,
+          justifyContent: "flex-end",
+          minHeight: bannerMinHeight,
+          padding: space.md,
+        }}
+      >
+        <Text style={[styles.title, { fontSize: fontSize(22) }]}>{title}</Text>
+        <Text style={[styles.subtitle, { fontSize: fontSize(13) }]}>
+          {subtitle}
+        </Text>
         {hasProgress ? (
-          <View style={styles.progressBlock}>
+          <View style={{ marginTop: space.xs, maxWidth: 180 }}>
             <ProgressBar progress={progress} height={3} />
           </View>
         ) : null}
-        <View style={styles.ctaRow}>
-          <Text style={styles.ctaText}>{ctaLabel}</Text>
+        <View
+          style={{
+            alignItems: "center",
+            flexDirection: "row",
+            gap: space.sm,
+            marginTop: space.xs,
+            minHeight: minTouchTarget,
+          }}
+        >
+          <Text style={[styles.ctaText, { fontSize: fontSize(13) }]}>
+            {ctaLabel}
+          </Text>
         </View>
       </View>
     </Pressable>
@@ -74,7 +98,6 @@ export const HeroBanner = ({
 const styles = StyleSheet.create({
   container: {
     borderRadius: radii.md,
-    minHeight: 140,
     overflow: "hidden",
   },
   pressed: {
@@ -87,40 +110,19 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(11, 11, 15, 0.55)",
   },
-  content: {
-    flex: 1,
-    justifyContent: "flex-end",
-    minHeight: 140,
-    padding: space.md,
-    gap: space.xs,
-  },
   title: {
     color: colors.text,
     fontFamily: fonts.display,
-    fontSize: 22,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   subtitle: {
     color: colors.text,
     fontFamily: fonts.ui,
-    fontSize: 13,
     opacity: 0.9,
-  },
-  progressBlock: {
-    marginTop: space.xs,
-    maxWidth: 180,
-  },
-  ctaRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: space.sm,
-    marginTop: space.xs,
-    minHeight: minTouchTarget,
   },
   ctaText: {
     color: colors.accent,
     fontFamily: fonts.uiMedium,
-    fontSize: 13,
   },
 });

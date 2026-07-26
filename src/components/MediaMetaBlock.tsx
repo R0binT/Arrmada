@@ -6,7 +6,8 @@ import {
   formatSizeBytes,
 } from "@/features/media-quick/format-media-meta";
 import { t } from "@/i18n";
-import { colors, fonts, space } from "@/lib/theme";
+import { colors, fonts } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type MediaMetaBlockProps = {
   readonly genres: readonly string[];
@@ -25,6 +26,7 @@ export const MediaMetaBlock = ({
   fileQuality,
   sizeOnDisk,
 }: MediaMetaBlockProps) => {
+  const { space, fontSize } = useUiSize();
   const lines: string[] = [];
   if (genres.length > 0) {
     lines.push(genres.join(" · "));
@@ -49,9 +51,9 @@ export const MediaMetaBlock = ({
     return null;
   }
   return (
-    <View style={styles.container}>
+    <View style={{ gap: space.xs, marginBottom: space.md }}>
       {lines.map((line) => (
-        <Text key={line} style={styles.line}>
+        <Text key={line} style={[styles.line, { fontSize: fontSize(14) }]}>
           {line}
         </Text>
       ))}
@@ -60,13 +62,8 @@ export const MediaMetaBlock = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    gap: space.xs,
-    marginBottom: space.md,
-  },
   line: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 14,
   },
 });

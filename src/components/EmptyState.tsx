@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, fonts, minTouchTarget, space } from "@/lib/theme";
+import { colors, fonts } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type EmptyStateProps = {
   readonly title: string;
@@ -15,24 +16,65 @@ export const EmptyState = ({
   actionLabel,
   onAction,
 }: EmptyStateProps) => {
+  const { space, fontSize, minTouchTarget } = useUiSize();
+
   return (
-    <View style={styles.container}>
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text style={styles.icon}>⬇</Text>
+    <View
+      style={{
+        alignItems: "center",
+        flex: 1,
+        gap: space.md,
+        justifyContent: "center",
+        paddingHorizontal: space.xl,
+        paddingVertical: space.xl,
+      }}
+    >
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <Text
+          style={[
+            styles.icon,
+            { fontSize: fontSize(48), marginBottom: space.sm },
+          ]}
+        >
+          ⬇
+        </Text>
       </View>
-      <Text accessibilityRole="header" style={styles.title}>
+      <Text
+        accessibilityRole="header"
+        style={[styles.title, { fontSize: fontSize(20) }]}
+      >
         {title}
       </Text>
-      <Text style={styles.message}>{message}</Text>
+      <Text
+        style={[
+          styles.message,
+          { fontSize: fontSize(15), lineHeight: fontSize(22) },
+        ]}
+      >
+        {message}
+      </Text>
       {actionLabel && onAction ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={actionLabel}
           hitSlop={8}
           onPress={onAction}
-          style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
+          style={({ pressed }) => [
+            {
+              justifyContent: "center",
+              marginTop: space.sm,
+              minHeight: minTouchTarget,
+              paddingHorizontal: space.md,
+            },
+            pressed ? styles.pressed : null,
+          ]}
         >
-          <Text style={styles.actionText}>{actionLabel}</Text>
+          <Text style={[styles.actionText, { fontSize: fontSize(16) }]}>
+            {actionLabel}
+          </Text>
         </Pressable>
       ) : null}
     </View>
@@ -40,42 +82,22 @@ export const EmptyState = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    flex: 1,
-    gap: space.md,
-    justifyContent: "center",
-    paddingHorizontal: space.xl,
-    paddingVertical: space.xl,
-  },
   icon: {
     color: colors.secondary,
-    fontSize: 48,
-    marginBottom: space.sm,
   },
   title: {
     color: colors.text,
     fontFamily: fonts.uiBold,
-    fontSize: 20,
     textAlign: "center",
   },
   message: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 15,
-    lineHeight: 22,
     textAlign: "center",
-  },
-  action: {
-    marginTop: space.sm,
-    minHeight: minTouchTarget,
-    justifyContent: "center",
-    paddingHorizontal: space.md,
   },
   actionText: {
     color: colors.accent,
     fontFamily: fonts.uiMedium,
-    fontSize: 16,
   },
   pressed: {
     opacity: 0.8,

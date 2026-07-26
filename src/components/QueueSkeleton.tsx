@@ -2,37 +2,61 @@ import { StyleSheet, View } from "react-native";
 
 import { SkeletonBlock } from "@/components/SkeletonBlock";
 import { t } from "@/i18n";
-import { radii, space } from "@/lib/theme";
+import { radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type QueueSkeletonProps = {
   readonly rows?: number;
 };
 
 export const QueueSkeleton = ({ rows = 3 }: QueueSkeletonProps) => {
+  const { space, scale, minTouchTarget } = useUiSize();
   const items = Array.from({ length: rows }, (_, index) => index);
+  const posterW = Math.round(60 * scale);
+  const posterH = Math.round(88 * scale);
+  const action = minTouchTarget;
 
   return (
     <View
       accessibilityLabel={t("a11y.loadingQueue")}
       accessibilityRole="progressbar"
-      style={styles.list}
+      style={{ gap: space.md }}
     >
       {items.map((index) => (
-        <View key={index} style={styles.card}>
-          <View style={styles.topRow}>
-            <SkeletonBlock borderRadius={radii.md} height={88} width={60} />
-            <View style={styles.meta}>
-              <SkeletonBlock height={18} width="80%" />
-              <SkeletonBlock height={24} width={72} />
+        <View key={index} style={{ gap: space.md }}>
+          <View style={[styles.topRow, { gap: space.md }]}>
+            <SkeletonBlock
+              borderRadius={radii.md}
+              height={posterH}
+              width={posterW}
+            />
+            <View style={[styles.meta, { gap: space.sm }]}>
+              <SkeletonBlock height={Math.round(18 * scale)} width="80%" />
+              <SkeletonBlock
+                height={Math.round(24 * scale)}
+                width={Math.round(72 * scale)}
+              />
             </View>
           </View>
-          <View style={styles.actions}>
-            <SkeletonBlock borderRadius={radii.md} height={44} width={44} />
-            <SkeletonBlock borderRadius={radii.md} height={44} width={44} />
-            <SkeletonBlock borderRadius={radii.md} height={44} width={44} />
+          <View style={[styles.actions, { gap: space.sm }]}>
+            <SkeletonBlock
+              borderRadius={radii.md}
+              height={action}
+              width={action}
+            />
+            <SkeletonBlock
+              borderRadius={radii.md}
+              height={action}
+              width={action}
+            />
+            <SkeletonBlock
+              borderRadius={radii.md}
+              height={action}
+              width={action}
+            />
           </View>
           <SkeletonBlock height={6} width="100%" />
-          <SkeletonBlock height={14} width="55%" />
+          <SkeletonBlock height={Math.round(14 * scale)} width="55%" />
         </View>
       ))}
     </View>
@@ -40,23 +64,14 @@ export const QueueSkeleton = ({ rows = 3 }: QueueSkeletonProps) => {
 };
 
 const styles = StyleSheet.create({
-  list: {
-    gap: space.md,
-  },
-  card: {
-    gap: space.md,
-  },
   topRow: {
     flexDirection: "row",
-    gap: space.md,
   },
   meta: {
     flex: 1,
-    gap: space.sm,
     justifyContent: "center",
   },
   actions: {
     flexDirection: "row",
-    gap: space.sm,
   },
 });

@@ -53,7 +53,8 @@ import {
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { availabilityLabel, t } from "@/i18n";
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 const seasonHeading = (seasonNumber: number): string =>
   seasonNumber === 0
@@ -90,6 +91,9 @@ const episodesNeedingDownload = (
     );
 
 export default function SeriesDetailScreen() {
+  const { fontSize, space: scaledSpace, minTouchTarget, scale } = useUiSize();
+  const posterWidth = Math.round(120 * scale);
+  const posterHeight = Math.round(180 * scale);
   const { id: idParam } = useLocalSearchParams<{ id: string }>();
   const seriesId = Number(idParam);
   const { sonarr } = useArrClients();
@@ -299,7 +303,7 @@ export default function SeriesDetailScreen() {
   if (seriesQuery.isLoading) {
     return (
       <Screen>
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
           <IconButton
             accessibilityLabel={t("action.back")}
             icon="←"
@@ -316,7 +320,7 @@ export default function SeriesDetailScreen() {
   if (seriesQuery.isError || !seriesQuery.data) {
     return (
       <Screen>
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
           <IconButton
             accessibilityLabel={t("action.back")}
             icon="←"
@@ -348,7 +352,7 @@ export default function SeriesDetailScreen() {
 
   return (
     <Screen scroll>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
         <IconButton
           accessibilityLabel={t("action.back")}
           icon="←"
@@ -356,30 +360,50 @@ export default function SeriesDetailScreen() {
         />
       </View>
 
-      <View style={styles.hero}>
+      <View
+        style={[
+          styles.hero,
+          { gap: scaledSpace.md, marginBottom: scaledSpace.lg },
+        ]}
+      >
         {series.posterUrl ? (
           <Image
             accessibilityIgnoresInvertColors
             contentFit="cover"
             source={{ uri: series.posterUrl }}
-            style={styles.poster}
+            style={[
+              styles.poster,
+              { height: posterHeight, width: posterWidth },
+            ]}
             transition={200}
           />
         ) : (
-          <View style={[styles.poster, styles.posterPlaceholder]}>
-            <Text style={styles.posterInitial}>
+          <View
+            style={[
+              styles.poster,
+              styles.posterPlaceholder,
+              { height: posterHeight, width: posterWidth },
+            ]}
+          >
+            <Text style={[styles.posterInitial, { fontSize: fontSize(40) }]}>
               {series.title.slice(0, 1).toUpperCase()}
             </Text>
           </View>
         )}
-        <View style={styles.heroCopy}>
-          <Text style={styles.seriesTitle}>{series.title}</Text>
-          <Text style={styles.seriesMeta}>
+        <View style={[styles.heroCopy, { gap: scaledSpace.sm }]}>
+          <Text style={[styles.seriesTitle, { fontSize: fontSize(28) }]}>
+            {series.title}
+          </Text>
+          <Text style={[styles.seriesMeta, { fontSize: fontSize(15) }]}>
             {series.year} · {statusLabel}
           </Text>
-          <Text style={styles.episodeSummary}>{episodeSummary}</Text>
+          <Text style={[styles.episodeSummary, { fontSize: fontSize(14) }]}>
+            {episodeSummary}
+          </Text>
           {profileLabel ? (
-            <Text style={styles.profileLabel}>{profileLabel}</Text>
+            <Text style={[styles.profileLabel, { fontSize: fontSize(14) }]}>
+              {profileLabel}
+            </Text>
           ) : null}
         </View>
       </View>
@@ -392,11 +416,29 @@ export default function SeriesDetailScreen() {
       />
 
       {series.overview.trim().length > 0 ? (
-        <Text style={styles.overview}>{series.overview}</Text>
+        <Text
+          style={[
+            styles.overview,
+            {
+              fontSize: fontSize(15),
+              lineHeight: fontSize(22),
+              marginBottom: scaledSpace.lg,
+            },
+          ]}
+        >
+          {series.overview}
+        </Text>
       ) : null}
 
-      <View style={styles.suiviRow}>
-        <Text style={styles.suiviLabel}>{t("detail.suivi")}</Text>
+      <View
+        style={[
+          styles.suiviRow,
+          { marginBottom: scaledSpace.lg, minHeight: minTouchTarget },
+        ]}
+      >
+        <Text style={[styles.suiviLabel, { fontSize: fontSize(16) }]}>
+          {t("detail.suivi")}
+        </Text>
         <Switch
           accessibilityLabel={
             series.monitored
@@ -411,7 +453,12 @@ export default function SeriesDetailScreen() {
         />
       </View>
 
-      <View style={styles.actions}>
+      <View
+        style={[
+          styles.actions,
+          { gap: scaledSpace.md, marginBottom: scaledSpace.xl },
+        ]}
+      >
         {showSeriesDownload ? (
           <Pressable
             accessibilityLabel={t("detail.downloadSeriesA11y")}
@@ -420,11 +467,15 @@ export default function SeriesDetailScreen() {
             onPress={() => void handleDownloadSeries()}
             style={({ pressed }) => [
               styles.searchButton,
+              {
+                minHeight: minTouchTarget,
+                paddingHorizontal: scaledSpace.lg,
+              },
               pressed ? styles.pressed : null,
               actionsBusy ? styles.disabled : null,
             ]}
           >
-            <Text style={styles.searchButtonText}>
+            <Text style={[styles.searchButtonText, { fontSize: fontSize(16) }]}>
               {downloadBusy ? t("action.searching") : t("action.download")}
             </Text>
           </Pressable>
@@ -436,11 +487,15 @@ export default function SeriesDetailScreen() {
           onPress={handleRetirer}
           style={({ pressed }) => [
             styles.dangerButton,
+            {
+              minHeight: minTouchTarget,
+              paddingHorizontal: scaledSpace.lg,
+            },
             pressed ? styles.pressed : null,
             actionsBusy ? styles.disabled : null,
           ]}
         >
-          <Text style={styles.dangerButtonText}>
+          <Text style={[styles.dangerButtonText, { fontSize: fontSize(16) }]}>
             {deleteMutation.isPending
               ? t("action.removing")
               : t("action.remove")}
@@ -448,8 +503,15 @@ export default function SeriesDetailScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.seasonsSection}>
-        <Text style={styles.seasonsTitle}>{t("detail.seasons")}</Text>
+      <View
+        style={[
+          styles.seasonsSection,
+          { gap: scaledSpace.md, marginBottom: scaledSpace.xl },
+        ]}
+      >
+        <Text style={[styles.seasonsTitle, { fontSize: fontSize(22) }]}>
+          {t("detail.seasons")}
+        </Text>
         {seasonsQuery.isLoading ? (
           <ActivityIndicator color={colors.accent} />
         ) : seasonsQuery.isError ? (
@@ -459,7 +521,9 @@ export default function SeriesDetailScreen() {
             onSettings={handleOpenSettings}
           />
         ) : (seasonsQuery.data?.length ?? 0) === 0 ? (
-          <Text style={styles.emptySeasons}>{t("detail.noEpisodesYet")}</Text>
+          <Text style={[styles.emptySeasons, { fontSize: fontSize(15) }]}>
+            {t("detail.noEpisodesYet")}
+          </Text>
         ) : (
           seasonsQuery.data?.map((season: Season) => {
             const isExpanded = expandedSeasons.has(season.seasonNumber);
@@ -468,7 +532,12 @@ export default function SeriesDetailScreen() {
             const seasonBusy = downloadBusy;
             return (
               <View key={season.seasonNumber} style={styles.seasonBlock}>
-                <View style={styles.seasonHeaderRow}>
+                <View
+                  style={[
+                    styles.seasonHeaderRow,
+                    { gap: scaledSpace.sm, paddingRight: scaledSpace.sm },
+                  ]}
+                >
                   <Pressable
                     accessibilityLabel={t("detail.seeDetailsA11y", {
                       title: heading,
@@ -479,11 +548,23 @@ export default function SeriesDetailScreen() {
                     }
                     style={({ pressed }) => [
                       styles.seasonHeader,
+                      {
+                        gap: scaledSpace.md,
+                        minHeight: minTouchTarget,
+                        paddingHorizontal: scaledSpace.md,
+                        paddingVertical: scaledSpace.sm,
+                      },
                       pressed ? styles.pressed : null,
                     ]}
                   >
-                    <Text style={styles.seasonHeaderTitle}>{heading}</Text>
-                    <Text style={styles.seasonHeaderMeta}>
+                    <Text
+                      style={[styles.seasonHeaderTitle, { fontSize: fontSize(16) }]}
+                    >
+                      {heading}
+                    </Text>
+                    <Text
+                      style={[styles.seasonHeaderMeta, { fontSize: fontSize(13) }]}
+                    >
                       {season.episodes.length === 1
                         ? t("detail.episodeCount", {
                             count: season.episodes.length,
@@ -504,10 +585,11 @@ export default function SeriesDetailScreen() {
                     onPress={() => handleToggleSeason(season.seasonNumber)}
                     style={({ pressed }) => [
                       styles.seasonExpand,
+                      { minHeight: minTouchTarget, minWidth: minTouchTarget },
                       pressed ? styles.pressed : null,
                     ]}
                   >
-                    <Text style={styles.seasonHeaderMeta}>
+                    <Text style={[styles.seasonHeaderMeta, { fontSize: fontSize(13) }]}>
                       {isExpanded ? "▼" : "▶"}
                     </Text>
                   </Pressable>
@@ -523,11 +605,17 @@ export default function SeriesDetailScreen() {
                       }
                       style={({ pressed }) => [
                         styles.inlineDownload,
+                        {
+                          minHeight: minTouchTarget,
+                          paddingHorizontal: scaledSpace.sm,
+                        },
                         pressed ? styles.pressed : null,
                         actionsBusy ? styles.disabled : null,
                       ]}
                     >
-                      <Text style={styles.inlineDownloadText}>
+                      <Text
+                        style={[styles.inlineDownloadText, { fontSize: fontSize(13) }]}
+                      >
                         {seasonBusy ? "…" : t("action.download")}
                       </Text>
                     </Pressable>
@@ -540,7 +628,17 @@ export default function SeriesDetailScreen() {
                         episode.availability,
                       );
                       return (
-                        <View key={episode.id} style={styles.episodeRow}>
+                        <View
+                          key={episode.id}
+                          style={[
+                            styles.episodeRow,
+                            {
+                              gap: scaledSpace.sm,
+                              paddingHorizontal: scaledSpace.md,
+                              paddingVertical: scaledSpace.sm,
+                            },
+                          ]}
+                        >
                           <Pressable
                             accessibilityLabel={t("detail.detailsNamedA11y", {
                               title: episodeHeading(episode),
@@ -553,13 +651,21 @@ export default function SeriesDetailScreen() {
                             }
                             style={({ pressed }) => [
                               styles.episodeCopy,
+                              { gap: scaledSpace.xs },
                               pressed ? styles.pressed : null,
                             ]}
                           >
-                            <Text style={styles.episodeTitle}>
+                            <Text
+                              style={[styles.episodeTitle, { fontSize: fontSize(14) }]}
+                            >
                               {episodeHeading(episode)}
                             </Text>
-                            <Text style={styles.episodeAvailability}>
+                            <Text
+                              style={[
+                                styles.episodeAvailability,
+                                { fontSize: fontSize(13) },
+                              ]}
+                            >
                               {availabilityLabel(episode.availability)}
                             </Text>
                           </Pressable>
@@ -578,11 +684,20 @@ export default function SeriesDetailScreen() {
                               }
                               style={({ pressed }) => [
                                 styles.inlineDownload,
+                                {
+                                  minHeight: minTouchTarget,
+                                  paddingHorizontal: scaledSpace.sm,
+                                },
                                 pressed ? styles.pressed : null,
                                 actionsBusy ? styles.disabled : null,
                               ]}
                             >
-                              <Text style={styles.inlineDownloadText}>
+                              <Text
+                                style={[
+                                  styles.inlineDownloadText,
+                                  { fontSize: fontSize(13) },
+                                ]}
+                              >
                                 {episodeBusy ? "…" : t("action.download")}
                               </Text>
                             </Pressable>
@@ -598,8 +713,21 @@ export default function SeriesDetailScreen() {
       </View>
 
       {toast ? (
-        <View accessibilityLiveRegion="polite" style={styles.toast}>
-          <Text style={styles.toastText}>{toast}</Text>
+        <View
+          accessibilityLiveRegion="polite"
+          style={[
+            styles.toast,
+            {
+              bottom: scaledSpace.lg,
+              marginTop: scaledSpace.lg,
+              paddingHorizontal: scaledSpace.lg,
+              paddingVertical: scaledSpace.md,
+            },
+          ]}
+        >
+          <Text style={[styles.toastText, { fontSize: fontSize(14) }]}>
+            {toast}
+          </Text>
         </View>
       ) : null}
 
@@ -617,9 +745,7 @@ export default function SeriesDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  topBar: {
-    marginBottom: space.md,
-  },
+  topBar: {},
   loading: {
     alignItems: "center",
     flex: 1,
@@ -627,13 +753,9 @@ const styles = StyleSheet.create({
   },
   hero: {
     flexDirection: "row",
-    gap: space.md,
-    marginBottom: space.lg,
   },
   poster: {
     borderRadius: radii.md,
-    height: 180,
-    width: 120,
   },
   posterPlaceholder: {
     alignItems: "center",
@@ -643,74 +765,55 @@ const styles = StyleSheet.create({
   posterInitial: {
     color: colors.secondary,
     fontFamily: fonts.display,
-    fontSize: 40,
   },
   heroCopy: {
     flex: 1,
-    gap: space.sm,
     justifyContent: "center",
   },
   seriesTitle: {
     color: colors.text,
     fontFamily: fonts.display,
-    fontSize: 28,
   },
   seriesMeta: {
     color: colors.secondary,
     fontFamily: fonts.uiMedium,
-    fontSize: 15,
   },
   episodeSummary: {
     color: colors.text,
     fontFamily: fonts.ui,
-    fontSize: 14,
   },
   profileLabel: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   statusSummary: {
     color: colors.text,
     fontFamily: fonts.ui,
-    fontSize: 14,
     textTransform: "capitalize",
   },
   overview: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: space.lg,
   },
   suiviRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: space.lg,
-    minHeight: minTouchTarget,
   },
   suiviLabel: {
     color: colors.text,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
-  actions: {
-    gap: space.md,
-    marginBottom: space.xl,
-  },
+  actions: {},
   searchButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
     borderRadius: radii.md,
-    minHeight: minTouchTarget,
     justifyContent: "center",
-    paddingHorizontal: space.lg,
   },
   searchButtonText: {
     color: colors.bg,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
   dangerButton: {
     alignItems: "center",
@@ -719,27 +822,19 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     borderWidth: 1,
     justifyContent: "center",
-    minHeight: minTouchTarget,
-    paddingHorizontal: space.lg,
   },
   dangerButtonText: {
     color: colors.accent,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
-  seasonsSection: {
-    gap: space.md,
-    marginBottom: space.xl,
-  },
+  seasonsSection: {},
   seasonsTitle: {
     color: colors.text,
     fontFamily: fonts.display,
-    fontSize: 22,
   },
   emptySeasons: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 15,
   },
   seasonBlock: {
     backgroundColor: colors.surface,
@@ -749,86 +844,62 @@ const styles = StyleSheet.create({
   seasonHeaderRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: space.sm,
-    paddingRight: space.sm,
   },
   seasonHeader: {
     alignItems: "center",
     flex: 1,
     flexDirection: "row",
-    gap: space.md,
     justifyContent: "space-between",
-    minHeight: minTouchTarget,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
   },
   seasonExpand: {
     alignItems: "center",
     justifyContent: "center",
-    minHeight: minTouchTarget,
-    minWidth: minTouchTarget,
   },
   seasonHeaderTitle: {
     color: colors.text,
     flex: 1,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
   seasonHeaderMeta: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 13,
   },
   episodeRow: {
     alignItems: "center",
     borderTopColor: colors.bg,
     borderTopWidth: 1,
     flexDirection: "row",
-    gap: space.sm,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
   },
   episodeCopy: {
     flex: 1,
-    gap: space.xs,
   },
   episodeTitle: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   episodeAvailability: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 13,
   },
   inlineDownload: {
     alignItems: "center",
     backgroundColor: colors.bg,
     borderRadius: radii.md,
     justifyContent: "center",
-    minHeight: minTouchTarget,
-    paddingHorizontal: space.sm,
   },
   inlineDownloadText: {
     color: colors.accent,
     fontFamily: fonts.uiBold,
-    fontSize: 13,
   },
   toast: {
     alignSelf: "center",
     backgroundColor: colors.surface,
     borderRadius: radii.md,
-    bottom: space.lg,
-    marginTop: space.lg,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
     position: "absolute",
   },
   toastText: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   pressed: {
     opacity: 0.85,

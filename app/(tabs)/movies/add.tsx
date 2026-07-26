@@ -35,10 +35,14 @@ import {
 } from "@/features/releases/smart-grab";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { useI18n } from "@/i18n";
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 export default function AddMovieScreen() {
   const { t } = useI18n();
+  const { fontSize, space: scaledSpace, minTouchTarget, scale } = useUiSize();
+  const posterWidth = Math.round(48 * scale);
+  const posterHeight = Math.round(72 * scale);
   const [term, setTerm] = useState("");
   const [selected, setSelected] = useState<MovieCandidate | undefined>();
   const [feedback, setFeedback] = useState<string | undefined>();
@@ -152,14 +156,16 @@ export default function AddMovieScreen() {
 
   const listHeader = (
     <>
-      <View style={styles.header}>
+      <View style={[styles.header, { marginBottom: scaledSpace.md }]}>
         <IconButton
           accessibilityLabel={t("action.back")}
           icon="←"
           onPress={handleBack}
         />
-        <Text style={styles.title}>{t("add.movieTitle")}</Text>
-        <View style={styles.headerSpacer} />
+        <Text style={[styles.title, { fontSize: fontSize(24) }]}>
+          {t("add.movieTitle")}
+        </Text>
+        <View style={[styles.headerSpacer, { width: minTouchTarget }]} />
       </View>
 
       <TextInput
@@ -169,7 +175,15 @@ export default function AddMovieScreen() {
         onChangeText={setTerm}
         placeholder={t("add.searchPlaceholder")}
         placeholderTextColor={colors.secondary}
-        style={styles.searchInput}
+        style={[
+          styles.searchInput,
+          {
+            fontSize: fontSize(15),
+            marginBottom: scaledSpace.md,
+            minHeight: minTouchTarget,
+            paddingHorizontal: scaledSpace.md,
+          },
+        ]}
         value={term}
       />
 
@@ -190,7 +204,7 @@ export default function AddMovieScreen() {
       ) : null}
 
       {lookupQuery.isFetching ? (
-        <View style={styles.loading}>
+        <View style={[styles.loading, { marginBottom: scaledSpace.sm }]}>
           <ActivityIndicator color={colors.accent} />
         </View>
       ) : null}
@@ -209,7 +223,7 @@ export default function AddMovieScreen() {
   return (
     <Screen>
       <FlatList
-        contentContainerStyle={styles.results}
+        contentContainerStyle={[styles.results, { gap: scaledSpace.sm, paddingBottom: scaledSpace.md }]}
         data={lookupQuery.data ?? []}
         extraData={selected?.tmdbId}
         keyExtractor={(item) => String(item.tmdbId)}
@@ -229,6 +243,11 @@ export default function AddMovieScreen() {
               }
               style={({ pressed }) => [
                 styles.resultRow,
+                {
+                  gap: scaledSpace.md,
+                  minHeight: minTouchTarget,
+                  padding: scaledSpace.sm,
+                },
                 isSelected ? styles.resultRowSelected : null,
                 pressed ? styles.pressed : null,
               ]}
@@ -238,20 +257,31 @@ export default function AddMovieScreen() {
                   accessibilityIgnoresInvertColors
                   contentFit="cover"
                   source={{ uri: item.posterUrl }}
-                  style={styles.resultPoster}
+                  style={[
+                    styles.resultPoster,
+                    { height: posterHeight, width: posterWidth },
+                  ]}
                 />
               ) : (
                 <View
-                  style={[styles.resultPoster, styles.resultPosterPlaceholder]}
+                  style={[
+                    styles.resultPoster,
+                    styles.resultPosterPlaceholder,
+                    { height: posterHeight, width: posterWidth },
+                  ]}
                 >
-                  <Text style={styles.resultInitial}>
+                  <Text style={[styles.resultInitial, { fontSize: fontSize(20) }]}>
                     {item.title.slice(0, 1).toUpperCase()}
                   </Text>
                 </View>
               )}
-              <View style={styles.resultCopy}>
-                <Text style={styles.resultTitle}>{item.title}</Text>
-                <Text style={styles.resultYear}>{item.year}</Text>
+              <View style={[styles.resultCopy, { gap: scaledSpace.xs }]}>
+                <Text style={[styles.resultTitle, { fontSize: fontSize(16) }]}>
+                  {item.title}
+                </Text>
+                <Text style={[styles.resultYear, { fontSize: fontSize(14) }]}>
+                  {item.year}
+                </Text>
               </View>
             </Pressable>
           );
@@ -261,9 +291,22 @@ export default function AddMovieScreen() {
       />
 
       {selected ? (
-        <View style={styles.confirmCard}>
-          <Text style={styles.confirmTitle}>{selected.title}</Text>
-          <Text style={styles.confirmHint}>{t("add.defaultsHint")}</Text>
+        <View
+          style={[
+            styles.confirmCard,
+            {
+              gap: scaledSpace.sm,
+              marginTop: scaledSpace.md,
+              padding: scaledSpace.md,
+            },
+          ]}
+        >
+          <Text style={[styles.confirmTitle, { fontSize: fontSize(16) }]}>
+            {selected.title}
+          </Text>
+          <Text style={[styles.confirmHint, { fontSize: fontSize(13) }]}>
+            {t("add.defaultsHint")}
+          </Text>
           <Pressable
             accessibilityLabel={t("action.addNamedA11y", {
               title: selected.title,
@@ -273,11 +316,12 @@ export default function AddMovieScreen() {
             onPress={() => void handleAdd()}
             style={({ pressed }) => [
               styles.addButton,
+              { marginTop: scaledSpace.sm, minHeight: minTouchTarget },
               pressed ? styles.pressed : null,
               !canAdd ? styles.disabled : null,
             ]}
           >
-            <Text style={styles.addButtonText}>
+            <Text style={[styles.addButtonText, { fontSize: fontSize(16) }]}>
               {addMutation.isPending ? t("action.adding") : t("action.add")}
             </Text>
           </Pressable>
@@ -285,8 +329,20 @@ export default function AddMovieScreen() {
       ) : null}
 
       {feedback ? (
-        <View accessibilityLiveRegion="polite" style={styles.toast}>
-          <Text style={styles.toastText}>{feedback}</Text>
+        <View
+          accessibilityLiveRegion="polite"
+          style={[
+            styles.toast,
+            {
+              bottom: scaledSpace.lg,
+              paddingHorizontal: scaledSpace.lg,
+              paddingVertical: scaledSpace.md,
+            },
+          ]}
+        >
+          <Text style={[styles.toastText, { fontSize: fontSize(14) }]}>
+            {feedback}
+          </Text>
         </View>
       ) : null}
 
@@ -311,18 +367,14 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     flexDirection: "row",
-    marginBottom: space.md,
   },
   title: {
     color: colors.text,
     flex: 1,
     fontFamily: fonts.display,
-    fontSize: 24,
     textAlign: "center",
   },
-  headerSpacer: {
-    width: minTouchTarget,
-  },
+  headerSpacer: {},
   searchInput: {
     backgroundColor: colors.surface,
     borderColor: "rgba(244, 240, 232, 0.08)",
@@ -330,19 +382,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.text,
     fontFamily: fonts.ui,
-    fontSize: 15,
-    marginBottom: space.md,
-    minHeight: minTouchTarget,
-    paddingHorizontal: space.md,
   },
   loading: {
     alignItems: "center",
-    marginBottom: space.sm,
   },
-  results: {
-    gap: space.sm,
-    paddingBottom: space.md,
-  },
+  results: {},
   resultRow: {
     alignItems: "center",
     backgroundColor: colors.surface,
@@ -350,17 +394,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
-    gap: space.md,
-    minHeight: minTouchTarget,
-    padding: space.sm,
   },
   resultRowSelected: {
     borderColor: colors.accent,
   },
   resultPoster: {
     borderRadius: radii.md,
-    height: 72,
-    width: 48,
   },
   resultPosterPlaceholder: {
     alignItems: "center",
@@ -370,67 +409,51 @@ const styles = StyleSheet.create({
   resultInitial: {
     color: colors.secondary,
     fontFamily: fonts.display,
-    fontSize: 20,
   },
   resultCopy: {
     flex: 1,
-    gap: space.xs,
   },
   resultTitle: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 16,
   },
   resultYear: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 14,
   },
   confirmCard: {
     backgroundColor: colors.surface,
     borderColor: "rgba(244, 240, 232, 0.08)",
     borderRadius: radii.md,
     borderWidth: 1,
-    gap: space.sm,
-    marginTop: space.md,
-    padding: space.md,
   },
   confirmTitle: {
     color: colors.text,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
   confirmHint: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 13,
   },
   addButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
     borderRadius: radii.md,
-    marginTop: space.sm,
-    minHeight: minTouchTarget,
     justifyContent: "center",
   },
   addButtonText: {
     color: colors.bg,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
   toast: {
     alignSelf: "center",
     backgroundColor: colors.surface,
     borderRadius: radii.md,
-    bottom: space.lg,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
     position: "absolute",
   },
   toastText: {
     color: colors.text,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   pressed: {
     opacity: 0.85,

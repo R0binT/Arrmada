@@ -16,6 +16,7 @@ import {
     scaledMinTouchTarget,
     scaleFontSize,
     scaleSpace,
+    scaleStyleValues,
     type ScaledSpace,
     type UiSizeId,
 } from "@/lib/ui-size";
@@ -27,6 +28,7 @@ type UiSizeContextValue = {
   readonly space: ScaledSpace;
   readonly minTouchTarget: number;
   readonly fontSize: (base: number) => number;
+  readonly scaleStyle: <T extends Record<string, unknown>>(style: T) => T;
   readonly setSize: (size: UiSizeId) => Promise<void>;
 };
 
@@ -69,6 +71,8 @@ export const UiSizeProvider = ({ children }: UiSizeProviderProps) => {
       space: scaleSpace(scale),
       minTouchTarget: scaledMinTouchTarget(scale),
       fontSize: (base: number) => scaleFontSize(base, scale),
+      scaleStyle: <T extends Record<string, unknown>>(style: T): T =>
+        scaleStyleValues(style, scale),
       setSize,
     }),
     [size, scale, isReady, setSize],
