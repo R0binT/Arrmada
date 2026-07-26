@@ -1,15 +1,12 @@
-# Cost-optimized CI: one job, npm cache, cancel superseded runs,
-# skip when only docs/markdown change. PRs only (no push/merge on master).
+# Cost-optimized CI: one job, npm cache, cancel superseded runs.
+# Always run on PRs — master requires the "typecheck + test" check, so
+# paths-ignore would leave docs-only PRs blocked forever with no status.
+# PRs only (no push/merge on master).
 name: CI
 
 on:
   pull_request:
     branches: [master]
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-      - ".github/PULL_REQUEST_TEMPLATE.md"
-      - "LICENSE"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
