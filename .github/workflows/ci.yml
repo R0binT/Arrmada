@@ -1,7 +1,10 @@
-# Cost-optimized CI: one job, npm cache, cancel superseded runs.
-# Always run on PRs — master requires the "typecheck + test" check, so
-# paths-ignore would leave docs-only PRs blocked forever with no status.
-# PRs only (no push/merge on master).
+# Path-aware PR CI: code jobs run only when app or workflow files change.
+# Docs-only PRs skip lint/typecheck/test/expo-doctor but still publish ci-gate
+# (required on master). Do not use paths-ignore on this workflow — a missing
+# required check blocks merge forever.
+#
+# After changing the gate job name, update branch protection:
+# required status check must be "ci-gate" (not "typecheck + test").
 name: CI
 
 on:
@@ -14,10 +17,70 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
-  check:
-    name: typecheck + test
+  changes:
+    name: detect paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+      ci: ${{ steps.filter.outputs.ci }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Filter paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            app:
+              - 'app/**'
+              - 'src/**'
+              - 'assets/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'tsconfig.json'
+              - 'jest.config.js'
+              - 'jest.setup.js'
+              - 'eslint.config.js'
+              - 'app.json'
+              - '.nvmrc'
+            ci:
+              - '.github/workflows/**'
+
+  lint:
+    name: lint
+    needs: changes
+    if: needs.changes.outputs.app == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+  typecheck:
+    name: typecheck
+    needs: changes
+    if: needs.changes.outputs.app == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -38,5 +101,78 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+  test:
+    name: test
+    needs: changes
+    if: needs.changes.outputs.app == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
       - name: Test
         run: npm run test:ci
+
+  expo-doctor:
+    name: expo-doctor
+    needs: changes
+    if: needs.changes.outputs.app == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Expo doctor
+        run: npm run expo:doctor
+
+  ci-gate:
+    name: ci-gate
+    if: always()
+    needs: [changes, lint, typecheck, test, expo-doctor]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Aggregate results
+        run: |
+          set -euo pipefail
+          changes="${{ needs.changes.result }}"
+          lint="${{ needs.lint.result }}"
+          typecheck="${{ needs.typecheck.result }}"
+          test="${{ needs.test.result }}"
+          expo="${{ needs.expo-doctor.result }}"
+          echo "changes=$changes lint=$lint typecheck=$typecheck test=$test expo-doctor=$expo"
+          if [ "$changes" != "success" ]; then
+            echo "Path detection failed"
+            exit 1
+          fi
+          for result in "$lint" "$typecheck" "$test" "$expo"; do
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+              echo "A required code job did not succeed: $result"
+              exit 1
+            fi
+          done
+          echo "CI gate passed"

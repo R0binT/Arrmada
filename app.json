@@ -7,11 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "arrmada",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B0B0F"
-    },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -21,7 +16,6 @@
     "android": {
       "package": "com.arrmada.mobile",
       "versionCode": 2,
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#0B0B0F",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -40,6 +34,14 @@
       "expo-secure-store",
       "expo-font",
       "expo-local-authentication",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0B0B0F"
+        }
+      ],
       [
         "expo-notifications",
         {
