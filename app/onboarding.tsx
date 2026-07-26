@@ -14,7 +14,8 @@ import {
     type ArrConfig,
 } from "@/lib/secure-config";
 import { t } from "@/i18n";
-import { colors, fonts, minTouchTarget, radii, space } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 const emptyFromEnv = (): ArrConfig => {
   const fromEnv = readEnvArrConfig();
@@ -37,6 +38,7 @@ const buildConfig = (values: ArrConfig): ArrConfig | undefined => {
 };
 
 export default function OnboardingScreen() {
+  const { fontSize, space: scaledSpace, minTouchTarget, scale } = useUiSize();
   const { testAll } = useConnectionTest();
   const { refreshConfig } = useArrClients();
   const [values, setValues] = useState<ArrConfig>(emptyFromEnv);
@@ -103,12 +105,23 @@ export default function OnboardingScreen() {
 
   return (
     <Screen scroll>
-      <View style={styles.header}>
-        <AppLogo size={72} />
-        <Text style={styles.subtitle}>{t("onboarding.subtitle")}</Text>
+      <View
+        style={[
+          styles.header,
+          {
+            gap: scaledSpace.sm,
+            marginBottom: scaledSpace.lg,
+            marginTop: scaledSpace.lg,
+          },
+        ]}
+      >
+        <AppLogo size={Math.round(72 * scale)} />
+        <Text style={[styles.subtitle, { fontSize: fontSize(16) }]}>
+          {t("onboarding.subtitle")}
+        </Text>
       </View>
 
-      <View style={styles.cards}>
+      <View style={[styles.cards, { gap: scaledSpace.md }]}>
         <ServiceConnectionCard
           apiKey={values.radarrApiKey}
           health={health.radarr}
@@ -133,7 +146,7 @@ export default function OnboardingScreen() {
         <ErrorBanner message={bannerMessage} onRetry={handleTestConnection} />
       ) : null}
 
-      <View style={styles.actions}>
+      <View style={[styles.actions, { gap: scaledSpace.md, marginTop: scaledSpace.lg }]}>
         <Pressable
           accessibilityLabel={t("onboarding.testConnection")}
           accessibilityRole="button"
@@ -141,11 +154,16 @@ export default function OnboardingScreen() {
           onPress={handleTestConnection}
           style={({ pressed }) => [
             styles.primaryButton,
+            {
+              minHeight: minTouchTarget,
+              paddingHorizontal: scaledSpace.lg,
+              paddingVertical: scaledSpace.md,
+            },
             pressed ? styles.pressed : null,
             isTesting ? styles.disabled : null,
           ]}
         >
-          <Text style={styles.primaryButtonText}>
+          <Text style={[styles.primaryButtonText, { fontSize: fontSize(16) }]}>
             {isTesting ? t("action.testing") : t("onboarding.testConnection")}
           </Text>
         </Pressable>
@@ -157,11 +175,16 @@ export default function OnboardingScreen() {
           onPress={handleContinue}
           style={({ pressed }) => [
             styles.secondaryButton,
+            {
+              minHeight: minTouchTarget,
+              paddingHorizontal: scaledSpace.lg,
+              paddingVertical: scaledSpace.md,
+            },
             pressed ? styles.pressed : null,
             !bothOnline || isSaving ? styles.disabled : null,
           ]}
         >
-          <Text style={styles.secondaryButtonText}>
+          <Text style={[styles.secondaryButtonText, { fontSize: fontSize(16) }]}>
             {isSaving ? t("action.saving") : t("onboarding.continue")}
           </Text>
         </Pressable>
@@ -173,50 +196,33 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   header: {
     alignItems: "center",
-    gap: space.sm,
-    marginBottom: space.lg,
-    marginTop: space.lg,
   },
   subtitle: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 16,
   },
-  cards: {
-    gap: space.md,
-  },
-  actions: {
-    gap: space.md,
-    marginTop: space.lg,
-  },
+  cards: {},
+  actions: {},
   primaryButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
     borderRadius: radii.md,
-    minHeight: minTouchTarget,
     justifyContent: "center",
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
   },
   primaryButtonText: {
     color: colors.bg,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
   secondaryButton: {
     alignItems: "center",
     borderColor: colors.accent,
     borderRadius: radii.md,
     borderWidth: 1,
-    minHeight: minTouchTarget,
     justifyContent: "center",
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
   },
   secondaryButtonText: {
     color: colors.accent,
     fontFamily: fonts.uiBold,
-    fontSize: 16,
   },
   pressed: {
     opacity: 0.75,

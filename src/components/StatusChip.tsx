@@ -1,7 +1,8 @@
 import type { QueueStatus } from "@/arr-client";
 import { queueStatusLabel } from "@/features/media-quick/queue-status-label";
 import { t } from "@/i18n";
-import { colors, fonts, radii, space } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 import { StyleSheet, Text, View } from "react-native";
 
 type StatusChipProps = {
@@ -53,18 +54,39 @@ const STATUS_STYLE: Record<QueueStatus, StatusStyle> = {
 };
 
 export const StatusChip = ({ status }: StatusChipProps) => {
+  const { space, fontSize } = useUiSize();
   const style = STATUS_STYLE[status];
   const label = queueStatusLabel(status);
 
   return (
     <View
       accessibilityLabel={t("queue.statusA11y", { label })}
-      style={[styles.chip, { backgroundColor: style.backgroundColor }]}
+      style={[
+        styles.chip,
+        {
+          backgroundColor: style.backgroundColor,
+          gap: space.xs,
+          paddingHorizontal: space.sm,
+          paddingVertical: space.xs,
+        },
+      ]}
     >
-      <Text style={[styles.icon, { color: style.textColor }]}>
+      <Text
+        style={[
+          styles.icon,
+          { color: style.textColor, fontSize: fontSize(11) },
+        ]}
+      >
         {style.icon}
       </Text>
-      <Text style={[styles.label, { color: style.textColor }]}>{label}</Text>
+      <Text
+        style={[
+          styles.label,
+          { color: style.textColor, fontSize: fontSize(12) },
+        ]}
+      >
+        {label}
+      </Text>
     </View>
   );
 };
@@ -75,16 +97,11 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderRadius: radii.md,
     flexDirection: "row",
-    gap: space.xs,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
   },
   icon: {
     fontFamily: fonts.uiMedium,
-    fontSize: 11,
   },
   label: {
     fontFamily: fonts.uiMedium,
-    fontSize: 12,
   },
 });

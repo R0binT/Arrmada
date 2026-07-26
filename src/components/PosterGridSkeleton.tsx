@@ -2,7 +2,7 @@ import { StyleSheet, View } from "react-native";
 
 import { SkeletonBlock } from "@/components/SkeletonBlock";
 import { t } from "@/i18n";
-import { space } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type PosterGridSkeletonProps = {
   readonly cardWidth?: number;
@@ -17,21 +17,23 @@ export const PosterGridSkeleton = ({
   cardWidth = DEFAULT_CARD_WIDTH,
   rows = 3,
 }: PosterGridSkeletonProps) => {
+  const { space, scale } = useUiSize();
   const posterHeight = cardWidth / CARD_ASPECT;
+  const titleHeight = Math.round(TITLE_HEIGHT * scale);
   const items = Array.from({ length: rows * 3 }, (_, index) => index);
 
   return (
     <View
       accessibilityLabel={t("a11y.loadingLibrary")}
       accessibilityRole="progressbar"
-      style={styles.grid}
+      style={[styles.grid, { gap: space.sm }]}
     >
       {items.map((index) => (
-        <View key={index} style={styles.cell}>
+        <View key={index} style={[styles.cell, { gap: space.sm }]}>
           <SkeletonBlock height={posterHeight} width={cardWidth} />
           <SkeletonBlock
-            height={TITLE_HEIGHT}
-            style={styles.title}
+            height={titleHeight}
+            style={{ marginTop: space.xs }}
             width={cardWidth}
           />
         </View>
@@ -44,15 +46,10 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: space.sm,
     justifyContent: "center",
   },
   cell: {
     alignItems: "center",
-    gap: space.sm,
     width: "31%",
-  },
-  title: {
-    marginTop: space.xs,
   },
 });

@@ -10,13 +10,8 @@ import {
 import type { ArrService, ServiceHealth } from "@/arr-client";
 import { ServiceHealthDot } from "@/components/ServiceHealthDot";
 import { useVerrou } from "@/features/verrou/VerrouProvider";
-import {
-  colors,
-  fonts,
-  minTouchTarget,
-  radii,
-  space,
-} from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 import { t } from "@/i18n";
 
 type ServiceConnectionCardProps = {
@@ -47,6 +42,7 @@ export const ServiceConnectionCard = ({
   isTesting = false,
   showReadyBadge = false,
 }: ServiceConnectionCardProps) => {
+  const { fontSize, space: scaledSpace, minTouchTarget } = useUiSize();
   const { isEnabled: isVerrouEnabled, isUnlocked, requireUnlock } = useVerrou();
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
   const serviceLabel = SERVICE_LABELS[service];
@@ -81,9 +77,21 @@ export const ServiceConnectionCard = ({
     }
     if (showReadyBadge && isReady) {
       return (
-        <View accessibilityLabel={t("connection.readyA11y", { service: serviceLabel })} style={styles.readyBadge}>
-          <Text style={styles.readyIcon}>✓</Text>
-          <Text style={styles.readyText}>{t("connection.ready")}</Text>
+        <View
+          accessibilityLabel={t("connection.readyA11y", { service: serviceLabel })}
+          style={[
+            styles.readyBadge,
+            {
+              gap: scaledSpace.xs,
+              paddingHorizontal: scaledSpace.sm,
+              paddingVertical: scaledSpace.xs,
+            },
+          ]}
+        >
+          <Text style={[styles.readyIcon, { fontSize: fontSize(12) }]}>✓</Text>
+          <Text style={[styles.readyText, { fontSize: fontSize(12) }]}>
+            {t("connection.ready")}
+          </Text>
         </View>
       );
     }
@@ -93,15 +101,29 @@ export const ServiceConnectionCard = ({
     return null;
   };
 
+  const inputStyle = [
+    styles.input,
+    {
+      fontSize: fontSize(15),
+      minHeight: minTouchTarget,
+      paddingHorizontal: scaledSpace.md,
+      paddingVertical: scaledSpace.sm,
+    },
+  ];
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { gap: scaledSpace.md, padding: scaledSpace.md }]}>
       <View style={styles.header}>
-        <Text style={styles.serviceTitle}>{serviceLabel}</Text>
+        <Text style={[styles.serviceTitle, { fontSize: fontSize(22) }]}>
+          {serviceLabel}
+        </Text>
         {renderStatus()}
       </View>
 
-      <View style={styles.field}>
-        <Text style={styles.label}>{t("connection.address")}</Text>
+      <View style={[styles.field, { gap: scaledSpace.xs }]}>
+        <Text style={[styles.label, { fontSize: fontSize(12) }]}>
+          {t("connection.address")}
+        </Text>
         <TextInput
           accessibilityLabel={t("connection.addressA11y", { service: serviceLabel })}
           autoCapitalize="none"
@@ -110,14 +132,16 @@ export const ServiceConnectionCard = ({
           onChangeText={onUrlChange}
           placeholder="http://192.168.1.10:7878"
           placeholderTextColor={colors.secondary}
-          style={styles.input}
+          style={inputStyle}
           value={url}
         />
       </View>
 
-      <View style={styles.field}>
-        <Text style={styles.label}>{t("connection.accessKey")}</Text>
-        <View style={styles.apiKeyRow}>
+      <View style={[styles.field, { gap: scaledSpace.xs }]}>
+        <Text style={[styles.label, { fontSize: fontSize(12) }]}>
+          {t("connection.accessKey")}
+        </Text>
+        <View style={[styles.apiKeyRow, { gap: scaledSpace.sm }]}>
           <TextInput
             accessibilityLabel={t("connection.keyA11y", { service: serviceLabel })}
             autoCapitalize="none"
@@ -127,7 +151,7 @@ export const ServiceConnectionCard = ({
             placeholder="••••••••••••••••"
             placeholderTextColor={colors.secondary}
             secureTextEntry={!apiKeyVisible}
-            style={[styles.input, styles.apiKeyInput]}
+            style={[inputStyle, styles.apiKeyInput]}
             value={apiKey}
           />
           <Pressable
@@ -139,9 +163,14 @@ export const ServiceConnectionCard = ({
             accessibilityRole="button"
             hitSlop={8}
             onPress={() => void handleRevealPress()}
-            style={styles.visibilityButton}
+            style={[
+              styles.visibilityButton,
+              { minHeight: minTouchTarget, minWidth: minTouchTarget },
+            ]}
           >
-            <Text style={styles.visibilityIcon}>{apiKeyVisible ? "◉" : "◎"}</Text>
+            <Text style={[styles.visibilityIcon, { fontSize: fontSize(18) }]}>
+              {apiKeyVisible ? "◉" : "◎"}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -154,18 +183,26 @@ export const ServiceConnectionCard = ({
           onPress={onTest}
           style={({ pressed }) => [
             styles.testButton,
+            {
+              minHeight: minTouchTarget,
+              paddingHorizontal: scaledSpace.lg,
+              paddingVertical: scaledSpace.sm,
+            },
             pressed ? styles.pressed : null,
             isTesting ? styles.disabled : null,
           ]}
         >
-          <Text style={styles.testButtonText}>
+          <Text style={[styles.testButtonText, { fontSize: fontSize(14) }]}>
             {isTesting ? t("connection.testServiceBusy") : t("onboarding.testConnection")}
           </Text>
         </Pressable>
       ) : null}
 
       {health && !health.online && health.message ? (
-        <Text accessibilityRole="alert" style={styles.errorText}>
+        <Text
+          accessibilityRole="alert"
+          style={[styles.errorText, { fontSize: fontSize(13) }]}
+        >
           {health.message}
         </Text>
       ) : null}
@@ -179,8 +216,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(244, 240, 232, 0.08)",
     borderRadius: radii.md,
     borderWidth: 1,
-    gap: space.md,
-    padding: space.md,
   },
   header: {
     alignItems: "center",
@@ -190,34 +225,25 @@ const styles = StyleSheet.create({
   serviceTitle: {
     color: colors.text,
     fontFamily: fonts.display,
-    fontSize: 22,
   },
   readyBadge: {
     alignItems: "center",
     backgroundColor: "rgba(111, 191, 122, 0.15)",
     borderRadius: radii.md,
     flexDirection: "row",
-    gap: space.xs,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
   },
   readyIcon: {
     color: colors.success,
     fontFamily: fonts.uiMedium,
-    fontSize: 12,
   },
   readyText: {
     color: colors.success,
     fontFamily: fonts.uiMedium,
-    fontSize: 12,
   },
-  field: {
-    gap: space.xs,
-  },
+  field: {},
   label: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 12,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
@@ -228,15 +254,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.text,
     fontFamily: fonts.ui,
-    fontSize: 15,
-    minHeight: minTouchTarget,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
   },
   apiKeyRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: space.sm,
   },
   apiKeyInput: {
     flex: 1,
@@ -244,31 +265,23 @@ const styles = StyleSheet.create({
   visibilityButton: {
     alignItems: "center",
     justifyContent: "center",
-    minHeight: minTouchTarget,
-    minWidth: minTouchTarget,
   },
   visibilityIcon: {
     color: colors.secondary,
-    fontSize: 18,
   },
   testButton: {
     alignSelf: "flex-end",
     borderColor: colors.accent,
     borderRadius: radii.md,
     borderWidth: 1,
-    minHeight: minTouchTarget,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.sm,
   },
   testButtonText: {
     color: colors.accent,
     fontFamily: fonts.uiMedium,
-    fontSize: 14,
   },
   errorText: {
     color: colors.danger,
     fontFamily: fonts.ui,
-    fontSize: 13,
   },
   pressed: {
     opacity: 0.75,

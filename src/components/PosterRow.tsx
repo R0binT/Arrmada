@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useI18n } from "@/i18n";
-import { colors, fonts, minTouchTarget, space } from "@/lib/theme";
+import { colors, fonts } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type PosterRowProps = {
   readonly title: string;
@@ -12,35 +13,65 @@ type PosterRowProps = {
 
 export const PosterRow = ({ title, children, onSeeAll }: PosterRowProps) => {
   const { t } = useI18n();
+  const { space, fontSize, minTouchTarget } = useUiSize();
   const headerContent = (
     <>
-      <Text accessibilityRole="header" style={styles.title}>
+      <Text
+        accessibilityRole="header"
+        style={[styles.title, { fontSize: fontSize(12) }]}
+      >
         {title}
       </Text>
-      <Text style={styles.chevron}>›</Text>
+      <Text
+        style={[
+          styles.chevron,
+          { fontSize: fontSize(18), paddingLeft: space.sm },
+        ]}
+      >
+        ›
+      </Text>
     </>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={{ gap: space.sm }}>
       {onSeeAll ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("home.seeAllA11y", { title })}
           onPress={onSeeAll}
           style={({ pressed }) => [
-            styles.header,
+            {
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              minHeight: minTouchTarget,
+              paddingHorizontal: space.md,
+            },
             pressed ? styles.headerPressed : null,
           ]}
         >
           {headerContent}
         </Pressable>
       ) : (
-        <View style={styles.header}>{headerContent}</View>
+        <View
+          style={{
+            alignItems: "center",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            minHeight: minTouchTarget,
+            paddingHorizontal: space.md,
+          }}
+        >
+          {headerContent}
+        </View>
       )}
       <ScrollView
         horizontal
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{
+          gap: space.md,
+          paddingHorizontal: space.md,
+        }}
         showsHorizontalScrollIndicator={false}
       >
         {children}
@@ -50,16 +81,6 @@ export const PosterRow = ({ title, children, onSeeAll }: PosterRowProps) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    gap: space.sm,
-  },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    minHeight: minTouchTarget,
-    paddingHorizontal: space.md,
-  },
   headerPressed: {
     opacity: 0.7,
   },
@@ -67,18 +88,11 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     flex: 1,
     fontFamily: fonts.uiMedium,
-    fontSize: 12,
     letterSpacing: 1.2,
     textTransform: "uppercase",
   },
   chevron: {
     color: colors.secondary,
     fontFamily: fonts.ui,
-    fontSize: 18,
-    paddingLeft: space.sm,
-  },
-  scrollContent: {
-    gap: space.md,
-    paddingHorizontal: space.md,
   },
 });

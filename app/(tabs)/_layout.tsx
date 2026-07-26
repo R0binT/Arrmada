@@ -5,16 +5,18 @@ import { Platform, StyleSheet, type ColorValue } from "react-native";
 
 import { useI18n } from "@/i18n";
 import { colors, fonts } from "@/lib/theme";
+import { useUiSize } from "@/lib/UiSizeProvider";
 
 type SymbolName = ComponentProps<typeof SymbolView>["name"];
 
 type TabIconProps = {
   readonly color: ColorValue;
   readonly name: SymbolName;
+  readonly size: number;
 };
 
-const TabIcon = ({ color, name }: TabIconProps) => (
-  <SymbolView name={name} size={24} tintColor={color} />
+const TabIcon = ({ color, name, size }: TabIconProps) => (
+  <SymbolView name={name} size={size} tintColor={color} />
 );
 
 const navigateToTabRoot = (href: "/(tabs)/movies" | "/(tabs)/series") => {
@@ -23,6 +25,8 @@ const navigateToTabRoot = (href: "/(tabs)/movies" | "/(tabs)/series") => {
 
 export default function TabLayout() {
   const { t } = useI18n();
+  const { fontSize, scale } = useUiSize();
+  const iconSize = Math.round(24 * scale);
 
   return (
     <Tabs
@@ -31,7 +35,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.secondary,
         tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarLabelStyle: [styles.tabBarLabel, { fontSize: fontSize(11) }],
       }}
     >
       <Tabs.Screen
@@ -46,6 +50,7 @@ export default function TabLayout() {
                 android: "home",
                 web: "home",
               }}
+              size={iconSize}
             />
           ),
         }}
@@ -68,6 +73,7 @@ export default function TabLayout() {
                 android: "movie",
                 web: "movie",
               }}
+              size={iconSize}
             />
           ),
         }}
@@ -90,6 +96,7 @@ export default function TabLayout() {
                 android: "live_tv",
                 web: "live_tv",
               }}
+              size={iconSize}
             />
           ),
         }}
@@ -106,6 +113,7 @@ export default function TabLayout() {
                 android: "calendar_month",
                 web: "calendar_month",
               }}
+              size={iconSize}
             />
           ),
         }}
@@ -122,6 +130,7 @@ export default function TabLayout() {
                 android: "download",
                 web: "download",
               }}
+              size={iconSize}
             />
           ),
         }}
@@ -144,6 +153,7 @@ export default function TabLayout() {
                 android: "settings",
                 web: "settings",
               }}
+              size={iconSize}
             />
           ),
         }}
@@ -162,6 +172,5 @@ const styles = StyleSheet.create({
   },
   tabBarLabel: {
     fontFamily: fonts.uiMedium,
-    fontSize: 11,
   },
 });
