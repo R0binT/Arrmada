@@ -82,6 +82,18 @@ export const createSonarrClient = (baseUrl: string, apiKey: string) => {
         .map((item) => mapSeriesCandidate(item, baseUrl))
         .filter((item): item is SeriesCandidate => item !== null);
     },
+    lookupCandidateByTvdbId: async (
+      tvdbId: number,
+    ): Promise<SeriesCandidate | null> => {
+      const raw = await http.getJson<unknown[]>(
+        `/api/v3/series/lookup?term=${encodeURIComponent(`tvdb:${tvdbId}`)}`,
+      );
+      const match = raw.find((item) => {
+        const obj = asRecord(item);
+        return obj !== null && Number(obj.tvdbId) === tvdbId;
+      });
+      return match ? mapSeriesCandidate(match, baseUrl) : null;
+    },
     getAddDefaults: async (): Promise<ArrAddDefaults> => {
       const [profilesRaw, foldersRaw] = await Promise.all([
         http.getJson<unknown[]>("/api/v3/qualityprofile"),
