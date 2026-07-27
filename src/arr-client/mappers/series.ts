@@ -63,11 +63,18 @@ export const mapSeriesCandidate = (
   const obj = asRecord(raw);
   if (!obj || typeof obj.tvdbId !== "number") return null;
 
+  const statistics = asRecord(obj.statistics);
+  const id = typeof obj.id === "number" ? obj.id : 0;
   return {
     tvdbId: obj.tvdbId,
     title: String(obj.title ?? ""),
     year: Number(obj.year ?? 0),
     posterUrl: getPosterUrl(obj.images, baseUrl),
+    inLibrary: id > 0,
+    episodeFileCount: Number(
+      statistics?.episodeFileCount ?? obj.episodeFileCount ?? 0,
+    ),
+    episodeCount: Number(statistics?.episodeCount ?? obj.episodeCount ?? 0),
   };
 };
 
