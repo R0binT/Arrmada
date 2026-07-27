@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -66,6 +66,15 @@ export default function AddSeriesScreen() {
     const timer = setTimeout(() => setFeedback(undefined), 3000);
     return () => clearTimeout(timer);
   }, [feedback]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (term.trim().length === 0) {
+        return;
+      }
+      void lookupQuery.refetch();
+    }, [lookupQuery.refetch, term]),
+  );
 
   const qualityProfileId = defaultsQuery.data?.defaultQualityProfileId;
   const rootFolderPath = defaultsQuery.data?.defaultRootFolderPath;
@@ -347,16 +356,18 @@ export default function AddSeriesScreen() {
                 canAdd,
                 onAdd: () => void handleAdd(),
                 onSeeFiche: () => {
-                  if (selected.libraryId !== undefined) {
+                  const candidate = selected;
+                  setSelected(undefined);
+                  if (candidate.libraryId !== undefined) {
                     router.push({
                       pathname: "/(tabs)/series/[id]",
-                      params: { id: String(selected.libraryId) },
+                      params: { id: String(candidate.libraryId) },
                     });
                     return;
                   }
                   router.push({
                     pathname: "/(tabs)/series/preview",
-                    params: { tvdbId: String(selected.tvdbId) },
+                    params: { tvdbId: String(candidate.tvdbId) },
                   });
                 },
               }
