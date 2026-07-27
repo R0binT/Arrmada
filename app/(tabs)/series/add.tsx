@@ -2,50 +2,56 @@ import { Image } from "expo-image";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  View,
 } from "react-native";
 
 import { canOfferDownload } from "@/arr-client";
 import {
-    AudioChoiceSheet,
-    EmptyState,
-    ErrorBanner,
-    IconButton,
-    LookupStatusBadge,
-    MediaQuickSheet,
-    Screen,
+  AudioChoiceSheet,
+  EmptyState,
+  ErrorBanner,
+  IconButton,
+  LookupStatusBadge,
+  MediaQuickSheet,
+  Screen,
 } from "@/components";
 import { getSeriesLookupLibraryStatus } from "@/features/library/lookup-library-status";
 import { buildSeriesAddSelection } from "@/features/media-quick/build-add-candidate-selection";
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
-    finishPendingAudioChoice,
-    smartGrabReleaseBatches,
-    type PendingAudioChoice,
+  finishPendingAudioChoice,
+  smartGrabReleaseBatches,
+  type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
 import {
-    getErrorMessage,
-    useAddSeries,
-    useGrabSeriesRelease,
-    useSeriesDefaults,
-    useSeriesLookup,
-    type SeriesCandidate,
+  getErrorMessage,
+  useAddSeries,
+  useGrabSeriesRelease,
+  useSeriesDefaults,
+  useSeriesLookup,
+  type SeriesCandidate,
 } from "@/features/series/use-series";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { useI18n } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import {
+  pressScaleStyle,
+  Surface,
+  Text,
+  TextField,
+  useReduceMotion,
+} from "@/ui";
 
 export default function AddSeriesScreen() {
   const { t } = useI18n();
-  const { fontSize, space: scaledSpace, minTouchTarget, scale } = useUiSize();
+  const { space: scaledSpace, minTouchTarget, scale } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const posterWidth = Math.round(48 * scale);
   const posterHeight = Math.round(72 * scale);
   const [term, setTerm] = useState("");
@@ -196,28 +202,18 @@ export default function AddSeriesScreen() {
           icon="←"
           onPress={handleBack}
         />
-        <Text style={[styles.title, { fontSize: fontSize(24) }]}>
+        <Text role="title" style={styles.headerTitle}>
           {t("add.seriesTitle")}
         </Text>
-        <View style={[styles.headerSpacer, { width: minTouchTarget }]} />
+        <View style={{ width: minTouchTarget }} />
       </View>
 
-      <TextInput
+      <TextField
         accessibilityLabel={t("library.addSeriesA11y")}
         autoCapitalize="none"
-        autoCorrect={false}
         onChangeText={setTerm}
         placeholder={t("add.searchPlaceholder")}
-        placeholderTextColor={colors.secondary}
-        style={[
-          styles.searchInput,
-          {
-            fontSize: fontSize(15),
-            marginBottom: scaledSpace.md,
-            minHeight: minTouchTarget,
-            paddingHorizontal: scaledSpace.md,
-          },
-        ]}
+        style={{ marginBottom: scaledSpace.md }}
         value={term}
       />
 
@@ -257,7 +253,10 @@ export default function AddSeriesScreen() {
   return (
     <Screen>
       <FlatList
-        contentContainerStyle={[styles.results, { gap: scaledSpace.sm, paddingBottom: scaledSpace.md }]}
+        contentContainerStyle={[
+          styles.results,
+          { gap: scaledSpace.sm, paddingBottom: scaledSpace.md },
+        ]}
         data={lookupQuery.data ?? []}
         extraData={selected?.tvdbId}
         keyExtractor={(item) => String(item.tvdbId)}
@@ -286,55 +285,71 @@ export default function AddSeriesScreen() {
               accessibilityState={{ selected: isSelected }}
               onPress={() => setSelected(item)}
               style={({ pressed }) => [
-                styles.resultRow,
-                {
-                  gap: scaledSpace.md,
-                  minHeight: minTouchTarget,
-                  padding: scaledSpace.sm,
-                },
-                isSelected ? styles.resultRowSelected : null,
-                pressed ? styles.pressed : null,
+                pressScaleStyle(pressed, reduceMotion),
+                styles.rowPressable,
               ]}
             >
-              {item.posterUrl ? (
-                <Image
-                  accessibilityIgnoresInvertColors
-                  contentFit="cover"
-                  source={{ uri: item.posterUrl }}
-                  style={[
-                    styles.resultPoster,
-                    { height: posterHeight, width: posterWidth },
-                  ]}
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.resultPoster,
-                    styles.resultPosterPlaceholder,
-                    { height: posterHeight, width: posterWidth },
-                  ]}
-                >
-                  <Text style={[styles.resultInitial, { fontSize: fontSize(20) }]}>
-                    {item.title.slice(0, 1).toUpperCase()}
-                  </Text>
+              <Surface
+                radius="md"
+                style={[
+                  styles.resultRow,
+                  {
+                    gap: scaledSpace.md,
+                    minHeight: minTouchTarget,
+                    padding: scaledSpace.sm,
+                  },
+                  isSelected ? styles.resultRowSelected : null,
+                ]}
+                tone="raised"
+              >
+                {item.posterUrl ? (
+                  <Image
+                    accessibilityIgnoresInvertColors
+                    contentFit="cover"
+                    source={{ uri: item.posterUrl }}
+                    style={[
+                      styles.resultPoster,
+                      { height: posterHeight, width: posterWidth },
+                    ]}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.resultPoster,
+                      styles.resultPosterPlaceholder,
+                      { height: posterHeight, width: posterWidth },
+                    ]}
+                  >
+                    <Text role="headline" tone="faint">
+                      {item.title.slice(0, 1).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View style={[styles.resultCopy, { gap: scaledSpace.xs }]}>
+                  <View style={styles.titleRow}>
+                    <Text
+                      numberOfLines={2}
+                      role="headline"
+                      style={styles.resultTitle}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text role="caption" tone="muted">
+                      {item.year}
+                    </Text>
+                  </View>
+                  <View style={[styles.statusRow, { gap: scaledSpace.xs }]}>
+                    {status.badge !== "none" ? (
+                      <LookupStatusBadge badge={status.badge} />
+                    ) : null}
+                    {progressLabel ? (
+                      <Text role="caption" tone="muted">
+                        {progressLabel}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-              )}
-              <View style={[styles.resultCopy, { gap: scaledSpace.xs }]}>
-                <Text style={[styles.resultTitle, { fontSize: fontSize(16) }]}>
-                  {item.title}
-                </Text>
-                <Text style={[styles.resultYear, { fontSize: fontSize(14) }]}>
-                  {item.year}
-                </Text>
-                {status.badge !== "none" ? (
-                  <LookupStatusBadge badge={status.badge} />
-                ) : null}
-                {progressLabel ? (
-                  <Text style={[styles.resultYear, { fontSize: fontSize(12) }]}>
-                    {progressLabel}
-                  </Text>
-                ) : null}
-              </View>
+              </Surface>
             </Pressable>
           );
         }}
@@ -376,8 +391,8 @@ export default function AddSeriesScreen() {
       />
 
       {feedback ? (
-        <View
-          accessibilityLiveRegion="polite"
+        <Surface
+          radius="md"
           style={[
             styles.toast,
             {
@@ -386,11 +401,12 @@ export default function AddSeriesScreen() {
               paddingVertical: scaledSpace.md,
             },
           ]}
+          tone="elevated"
         >
-          <Text style={[styles.toastText, { fontSize: fontSize(14) }]}>
-            {feedback}
-          </Text>
-        </View>
+          <View accessibilityLiveRegion="polite">
+            <Text role="label">{feedback}</Text>
+          </View>
+        </Surface>
       ) : null}
 
       <AudioChoiceSheet
@@ -414,31 +430,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
   },
-  title: {
-    color: colors.text,
+  headerTitle: {
     flex: 1,
-    fontFamily: fonts.display,
     textAlign: "center",
-  },
-  headerSpacer: {},
-  searchInput: {
-    backgroundColor: colors.surface,
-    borderColor: "rgba(244, 240, 232, 0.08)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    color: colors.text,
-    fontFamily: fonts.ui,
   },
   loading: {
     alignItems: "center",
   },
   results: {},
+  rowPressable: {
+    alignSelf: "stretch",
+  },
   resultRow: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: "rgba(244, 240, 232, 0.08)",
-    borderRadius: radii.md,
-    borderWidth: 1,
     flexDirection: "row",
   },
   resultRowSelected: {
@@ -452,32 +456,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     justifyContent: "center",
   },
-  resultInitial: {
-    color: colors.secondary,
-    fontFamily: fonts.display,
-  },
   resultCopy: {
     flex: 1,
   },
-  resultTitle: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
+  titleRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "space-between",
   },
-  resultYear: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
+  resultTitle: {
+    flex: 1,
+  },
+  statusRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   toast: {
     alignSelf: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
     position: "absolute",
-  },
-  toastText: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
-  },
-  pressed: {
-    opacity: 0.85,
   },
 });
