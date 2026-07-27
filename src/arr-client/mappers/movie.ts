@@ -102,11 +102,14 @@ export const mapMovieCandidate = (
   const obj = asRecord(raw);
   if (!obj || typeof obj.tmdbId !== "number") return null;
 
+  const id = typeof obj.id === "number" ? obj.id : 0;
   return {
     tmdbId: obj.tmdbId,
     title: String(obj.title ?? ""),
     year: Number(obj.year ?? 0),
     posterUrl: getPosterUrl(obj.images, baseUrl),
+    inLibrary: id > 0,
+    hasFile: Boolean(obj.hasFile),
   };
 };
 

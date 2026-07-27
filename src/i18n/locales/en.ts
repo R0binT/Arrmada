@@ -137,6 +137,10 @@ export const enMessages: Record<MessageKey, string> = {
   "add.tryAnotherTitle": "Try another title or check the spelling.",
   "add.movieAdded": "{{title}} added",
   "add.seriesAdded": "{{title}} added",
+  "add.inLibrary": "In library",
+  "add.alreadyDownloaded": "Already downloaded",
+  "add.episodeProgress": "{{have}}/{{total}} episodes",
+  "add.alreadyInLibraryHint": "Already in the library.",
 
   "detail.suivi": "Monitored",
   "detail.enableSuivi": "Turn monitoring on",

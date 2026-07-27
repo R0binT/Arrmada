@@ -69,6 +69,8 @@ export type MovieCandidate = {
   readonly title: string;
   readonly year: number;
   readonly posterUrl: string | undefined;
+  readonly inLibrary: boolean;
+  readonly hasFile: boolean;
 };
 
 export type SeriesCandidate = {
@@ -76,6 +78,9 @@ export type SeriesCandidate = {
   readonly title: string;
   readonly year: number;
   readonly posterUrl: string | undefined;
+  readonly inLibrary: boolean;
+  readonly episodeFileCount: number;
+  readonly episodeCount: number;
 };
 
 export type QualityProfileOption = {

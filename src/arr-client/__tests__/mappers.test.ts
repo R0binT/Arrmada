@@ -3,6 +3,7 @@ import { mapMovieCandidate, mapRadarrMovie } from "../mappers/movie";
 import { computeProgress, mapQueueItem } from "../mappers/queue";
 import {
     groupEpisodesIntoSeasons,
+    mapSeriesCandidate,
     mapSonarrEpisode,
     mapSonarrSeries,
 } from "../mappers/series";
@@ -87,6 +88,90 @@ describe("mappers", () => {
       title: "Night Harbor",
       year: 2024,
       posterUrl: "https://cdn/p.jpg",
+      inLibrary: false,
+      hasFile: false,
+    });
+  });
+
+  it("maps movie candidate in library with file from lookup id and hasFile", () => {
+    const actual = mapMovieCandidate(
+      {
+        id: 42,
+        tmdbId: 99,
+        title: "Night Harbor",
+        year: 2024,
+        hasFile: true,
+        images: [],
+      },
+      "http://192.168.1.10:7878",
+    );
+    expect(actual).toEqual({
+      tmdbId: 99,
+      title: "Night Harbor",
+      year: 2024,
+      posterUrl: undefined,
+      inLibrary: true,
+      hasFile: true,
+    });
+  });
+
+  it("maps movie candidate id 0 as not in library", () => {
+    const actual = mapMovieCandidate(
+      {
+        id: 0,
+        tmdbId: 7,
+        title: "New Title",
+        year: 2025,
+        hasFile: false,
+        images: [],
+      },
+      "http://192.168.1.10:7878",
+    );
+    expect(actual?.inLibrary).toBe(false);
+    expect(actual?.hasFile).toBe(false);
+  });
+
+  it("maps series candidate in library with episode statistics", () => {
+    const actual = mapSeriesCandidate(
+      {
+        id: 9,
+        tvdbId: 321,
+        title: "Harbor Show",
+        year: 2022,
+        images: [],
+        statistics: { episodeFileCount: 12, episodeCount: 24 },
+      },
+      "http://192.168.1.10:8989",
+    );
+    expect(actual).toEqual({
+      tvdbId: 321,
+      title: "Harbor Show",
+      year: 2022,
+      posterUrl: undefined,
+      inLibrary: true,
+      episodeFileCount: 12,
+      episodeCount: 24,
+    });
+  });
+
+  it("maps series candidate without id as not in library with zero counts", () => {
+    const actual = mapSeriesCandidate(
+      {
+        tvdbId: 1,
+        title: "Fresh Show",
+        year: 2026,
+        images: [],
+      },
+      "http://192.168.1.10:8989",
+    );
+    expect(actual).toEqual({
+      tvdbId: 1,
+      title: "Fresh Show",
+      year: 2026,
+      posterUrl: undefined,
+      inLibrary: false,
+      episodeFileCount: 0,
+      episodeCount: 0,
     });
   });
 

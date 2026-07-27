@@ -19,6 +19,7 @@ import {
     IconButton,
     Screen,
 } from "@/components";
+import { getMovieLookupLibraryStatus } from "@/features/library/lookup-library-status";
 import {
     getErrorMessage,
     useAddMovie,
@@ -68,6 +69,7 @@ export default function AddMovieScreen() {
   const canAdd = useMemo(
     () =>
       Boolean(selected) &&
+      !selected?.inLibrary &&
       qualityProfileId !== undefined &&
       rootFolderPath !== undefined &&
       !addMutation.isPending &&
@@ -108,7 +110,14 @@ export default function AddMovieScreen() {
   );
 
   const handleAdd = useCallback(async () => {
-    if (!selected || qualityProfileId === undefined || !rootFolderPath) return;
+    if (
+      !selected ||
+      selected.inLibrary ||
+      qualityProfileId === undefined ||
+      !rootFolderPath
+    ) {
+      return;
+    }
 
     try {
       const created = await addMutation.mutateAsync({
@@ -231,9 +240,20 @@ export default function AddMovieScreen() {
         ListHeaderComponent={listHeader}
         renderItem={({ item }) => {
           const isSelected = selected?.tmdbId === item.tmdbId;
+          const status = getMovieLookupLibraryStatus(item);
+          const badgeLabel =
+            status.badge === "alreadyDownloaded"
+              ? t("add.alreadyDownloaded")
+              : status.badge === "inLibrary"
+                ? t("add.inLibrary")
+                : undefined;
+          const badgeColor =
+            status.badge === "alreadyDownloaded"
+              ? colors.success
+              : colors.secondary;
           return (
             <Pressable
-              accessibilityLabel={`${item.title} (${item.year})`}
+              accessibilityLabel={`${item.title} (${item.year})${badgeLabel ? `, ${badgeLabel}` : ""}`}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
               onPress={() =>
@@ -282,6 +302,16 @@ export default function AddMovieScreen() {
                 <Text style={[styles.resultYear, { fontSize: fontSize(14) }]}>
                   {item.year}
                 </Text>
+                {badgeLabel ? (
+                  <Text
+                    style={[
+                      styles.resultBadge,
+                      { color: badgeColor, fontSize: fontSize(12) },
+                    ]}
+                  >
+                    {badgeLabel}
+                  </Text>
+                ) : null}
               </View>
             </Pressable>
           );
@@ -305,7 +335,9 @@ export default function AddMovieScreen() {
             {selected.title}
           </Text>
           <Text style={[styles.confirmHint, { fontSize: fontSize(13) }]}>
-            {t("add.defaultsHint")}
+            {selected.inLibrary
+              ? t("add.alreadyInLibraryHint")
+              : t("add.defaultsHint")}
           </Text>
           <Pressable
             accessibilityLabel={t("action.addNamedA11y", {
@@ -420,6 +452,9 @@ const styles = StyleSheet.create({
   resultYear: {
     color: colors.secondary,
     fontFamily: fonts.ui,
+  },
+  resultBadge: {
+    fontFamily: fonts.uiMedium,
   },
   confirmCard: {
     backgroundColor: colors.surface,

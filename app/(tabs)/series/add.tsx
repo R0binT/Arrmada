@@ -19,6 +19,7 @@ import {
     IconButton,
     Screen,
 } from "@/components";
+import { getSeriesLookupLibraryStatus } from "@/features/library/lookup-library-status";
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
     finishPendingAudioChoice,
@@ -69,6 +70,7 @@ export default function AddSeriesScreen() {
   const canAdd = useMemo(
     () =>
       Boolean(selected) &&
+      !selected?.inLibrary &&
       qualityProfileId !== undefined &&
       rootFolderPath !== undefined &&
       !addMutation.isPending &&
@@ -109,7 +111,14 @@ export default function AddSeriesScreen() {
   );
 
   const handleAdd = useCallback(async () => {
-    if (!selected || qualityProfileId === undefined || !rootFolderPath) return;
+    if (
+      !selected ||
+      selected.inLibrary ||
+      qualityProfileId === undefined ||
+      !rootFolderPath
+    ) {
+      return;
+    }
 
     try {
       const created = await addMutation.mutateAsync({
@@ -242,9 +251,27 @@ export default function AddSeriesScreen() {
         ListHeaderComponent={listHeader}
         renderItem={({ item }) => {
           const isSelected = selected?.tvdbId === item.tvdbId;
+          const status = getSeriesLookupLibraryStatus(item);
+          const badgeLabel =
+            status.badge === "alreadyDownloaded"
+              ? t("add.alreadyDownloaded")
+              : status.badge === "inLibrary"
+                ? t("add.inLibrary")
+                : undefined;
+          const badgeColor =
+            status.badge === "alreadyDownloaded"
+              ? colors.success
+              : colors.secondary;
+          const progressLabel = status.episodeProgress
+            ? t("add.episodeProgress", {
+                have: status.episodeProgress.have,
+                total: status.episodeProgress.total,
+              })
+            : undefined;
+          const statusParts = [badgeLabel, progressLabel].filter(Boolean);
           return (
             <Pressable
-              accessibilityLabel={`${item.title} (${item.year})`}
+              accessibilityLabel={`${item.title} (${item.year})${statusParts.length > 0 ? `, ${statusParts.join(", ")}` : ""}`}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
               onPress={() =>
@@ -293,6 +320,21 @@ export default function AddSeriesScreen() {
                 <Text style={[styles.resultYear, { fontSize: fontSize(14) }]}>
                   {item.year}
                 </Text>
+                {badgeLabel ? (
+                  <Text
+                    style={[
+                      styles.resultBadge,
+                      { color: badgeColor, fontSize: fontSize(12) },
+                    ]}
+                  >
+                    {badgeLabel}
+                  </Text>
+                ) : null}
+                {progressLabel ? (
+                  <Text style={[styles.resultYear, { fontSize: fontSize(12) }]}>
+                    {progressLabel}
+                  </Text>
+                ) : null}
               </View>
             </Pressable>
           );
@@ -316,7 +358,9 @@ export default function AddSeriesScreen() {
             {selected.title}
           </Text>
           <Text style={[styles.confirmHint, { fontSize: fontSize(13) }]}>
-            {t("add.defaultsHint")}
+            {selected.inLibrary
+              ? t("add.alreadyInLibraryHint")
+              : t("add.defaultsHint")}
           </Text>
           <Pressable
             accessibilityLabel={t("action.addNamedA11y", {
@@ -431,6 +475,9 @@ const styles = StyleSheet.create({
   resultYear: {
     color: colors.secondary,
     fontFamily: fonts.ui,
+  },
+  resultBadge: {
+    fontFamily: fonts.uiMedium,
   },
   confirmCard: {
     backgroundColor: colors.surface,
