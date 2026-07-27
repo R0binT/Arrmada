@@ -153,6 +153,7 @@ export const frMessages = {
   "add.alreadyDownloaded": "Déjà téléchargé",
   "add.episodeProgress": "{{have}}/{{total}} épisodes",
   "add.alreadyInLibraryHint": "Déjà dans la bibliothèque.",
+  "add.seeFiche": "Voir la fiche",
 
   // Detail
   "detail.suivi": "Suivi",

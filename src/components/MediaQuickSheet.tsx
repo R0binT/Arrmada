@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MediaQuickPanel } from "@/components/MediaQuickPanel";
 import { buildMediaQuickViewModel } from "@/features/media-quick/build-media-quick-view-model";
 import type {
+    MediaQuickAddActions,
     MediaQuickSelection,
     PrimaryDestination,
 } from "@/features/media-quick/types";
@@ -23,6 +24,7 @@ type MediaQuickSheetProps = {
   readonly selection: MediaQuickSelection | undefined;
   readonly onDismiss: () => void;
   readonly onOpenPrimary: (destination: PrimaryDestination) => void;
+  readonly addActions?: MediaQuickAddActions;
 };
 
 const DISMISS_THRESHOLD = 80;
@@ -33,6 +35,7 @@ export const MediaQuickSheet = ({
   selection,
   onDismiss,
   onOpenPrimary,
+  addActions,
 }: MediaQuickSheetProps) => {
   const visible = selection !== undefined;
   const insets = useSafeAreaInsets();
@@ -159,6 +162,7 @@ export const MediaQuickSheet = ({
             />
           </View>
           <MediaQuickPanel
+            addActions={addActions}
             onOpenPrimary={onOpenPrimary}
             viewModel={viewModel}
           />

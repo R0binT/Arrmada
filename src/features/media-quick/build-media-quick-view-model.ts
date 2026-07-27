@@ -288,13 +288,18 @@ export const buildMediaQuickViewModel = (
   const subtitle = resolveSubtitle(selection);
   const { chips, detailParts } = buildMeta(selection);
   const filteredChips = chips.filter((chip) => chip !== subtitle);
+  const statusLine =
+    selection.glanceStatusLine ?? buildStatusLine(selection);
+  const statusTone =
+    selection.glanceStatusTone ?? buildStatusTone(selection);
+
   return {
     title: resolveTitle(selection),
     subtitle,
     chips: filteredChips,
     detailLine: joinDetail(detailParts),
-    statusLine: buildStatusLine(selection),
-    statusTone: buildStatusTone(selection),
+    statusLine,
+    statusTone,
     progress: selection.kind === "download" ? selection.progress : undefined,
     destination: resolvePrimaryDestination(selection),
   };
