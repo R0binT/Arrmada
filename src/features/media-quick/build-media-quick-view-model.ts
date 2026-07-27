@@ -1,20 +1,22 @@
 import { availabilityLabel, t } from "@/i18n";
+import type { ChipTone } from "@/ui/variant-styles";
 
 import {
-    formatAddedDate,
-    formatAirDate,
-    formatEpisodeCode,
-    formatEpisodeProgress,
-    formatEtaShort,
-    formatRuntimeMinutes,
-    formatSizeBytes,
+  formatAddedDate,
+  formatAirDate,
+  formatEpisodeCode,
+  formatEpisodeProgress,
+  formatEtaShort,
+  formatRuntimeMinutes,
+  formatSizeBytes,
 } from "./format-media-meta";
 import { queueStatusLabel } from "./queue-status-label";
 import type {
-    MediaQuickSelection,
-    MediaQuickStatusTone,
-    MediaQuickViewModel,
-    PrimaryDestination,
+  MediaQuickChip,
+  MediaQuickSelection,
+  MediaQuickStatusTone,
+  MediaQuickViewModel,
+  PrimaryDestination,
 } from "./types";
 
 export const resolvePrimaryDestination = (
@@ -81,9 +83,9 @@ const buildStatusTone = (
     case "dispo":
       return "success";
     case "aTelecharger":
-      return "accent";
+      return "info";
     case "aVenir":
-      return "muted";
+      return "warning";
     case undefined:
       return "muted";
     default: {
@@ -93,30 +95,48 @@ const buildStatusTone = (
   }
 };
 
-const pushUnique = (lines: string[], value: string | undefined): void => {
+const pushChip = (
+  chips: MediaQuickChip[],
+  value: string | undefined,
+  tone: ChipTone = "neutral",
+): void => {
   if (!value) return;
   const trimmed = value.trim();
   if (trimmed.length === 0) return;
-  if (lines.includes(trimmed)) return;
-  lines.push(trimmed);
+  if (chips.some((chip) => chip.label === trimmed)) return;
+  chips.push({ label: trimmed, tone });
 };
 
 const pushGenreChips = (
-  chips: string[],
+  chips: MediaQuickChip[],
   genres: readonly string[] | undefined,
 ): void => {
   for (const genre of genres?.slice(0, 3) ?? []) {
-    pushUnique(chips, genre);
+    pushChip(chips, genre, "accent");
   }
 };
 
 const pushRuntimeChip = (
-  chips: string[],
+  chips: MediaQuickChip[],
   runtimeMinutes: number | undefined,
 ): void => {
   if (runtimeMinutes !== undefined && runtimeMinutes > 0) {
-    pushUnique(chips, formatRuntimeMinutes(runtimeMinutes));
+    pushChip(chips, formatRuntimeMinutes(runtimeMinutes), "neutral");
   }
+};
+
+const pushEpisodeProgressChip = (
+  chips: MediaQuickChip[],
+  episodeFileCount: number | undefined,
+  episodeCount: number | undefined,
+): void => {
+  const label = formatEpisodeProgress(episodeFileCount, episodeCount);
+  if (!label) return;
+  const isComplete =
+    episodeCount !== undefined &&
+    episodeCount > 0 &&
+    episodeFileCount === episodeCount;
+  pushChip(chips, label, isComplete ? "success" : "accent");
 };
 
 const joinDetail = (parts: readonly string[]): string | undefined => {
@@ -127,16 +147,16 @@ const joinDetail = (parts: readonly string[]): string | undefined => {
 };
 
 type MetaBuckets = {
-  readonly chips: string[];
+  readonly chips: MediaQuickChip[];
   readonly detailParts: string[];
 };
 
 const buildMovieMeta = (selection: MediaQuickSelection): MetaBuckets => {
-  const chips: string[] = [];
+  const chips: MediaQuickChip[] = [];
   const detailParts: string[] = [];
   pushGenreChips(chips, selection.genres);
   pushRuntimeChip(chips, selection.runtimeMinutes);
-  pushUnique(chips, selection.networkOrStudio);
+  pushChip(chips, selection.networkOrStudio, "neutral");
   const added = formatAddedDate(selection.added);
   if (added) detailParts.push(t("mediaQuick.addedOn", { date: added }));
   if (selection.availability === "dispo") {
@@ -153,14 +173,15 @@ const buildMovieMeta = (selection: MediaQuickSelection): MetaBuckets => {
 };
 
 const buildSeriesMeta = (selection: MediaQuickSelection): MetaBuckets => {
-  const chips: string[] = [];
+  const chips: MediaQuickChip[] = [];
   const detailParts: string[] = [];
-  pushUnique(
+  pushEpisodeProgressChip(
     chips,
-    formatEpisodeProgress(selection.episodeFileCount, selection.episodeCount),
+    selection.episodeFileCount,
+    selection.episodeCount,
   );
   pushGenreChips(chips, selection.genres);
-  pushUnique(chips, selection.networkOrStudio);
+  pushChip(chips, selection.networkOrStudio, "neutral");
   pushRuntimeChip(chips, selection.runtimeMinutes);
   const added = formatAddedDate(selection.added);
   if (added) detailParts.push(t("mediaQuick.addedOn", { date: added }));
@@ -168,23 +189,24 @@ const buildSeriesMeta = (selection: MediaQuickSelection): MetaBuckets => {
 };
 
 const buildSeasonMeta = (selection: MediaQuickSelection): MetaBuckets => {
-  const chips: string[] = [];
+  const chips: MediaQuickChip[] = [];
   const detailParts: string[] = [];
-  pushUnique(
+  pushEpisodeProgressChip(
     chips,
-    formatEpisodeProgress(selection.episodeFileCount, selection.episodeCount),
+    selection.episodeFileCount,
+    selection.episodeCount,
   );
   if (selection.year !== undefined && selection.year > 0) {
-    pushUnique(chips, String(selection.year));
+    pushChip(chips, String(selection.year), "info");
   }
   pushGenreChips(chips, selection.genres);
-  pushUnique(chips, selection.networkOrStudio);
+  pushChip(chips, selection.networkOrStudio, "neutral");
   pushRuntimeChip(chips, selection.runtimeMinutes);
   return { chips, detailParts };
 };
 
 const buildEpisodeMeta = (selection: MediaQuickSelection): MetaBuckets => {
-  const chips: string[] = [];
+  const chips: MediaQuickChip[] = [];
   const detailParts: string[] = [];
   const code = formatEpisodeCode(
     selection.seasonNumber,
@@ -192,39 +214,40 @@ const buildEpisodeMeta = (selection: MediaQuickSelection): MetaBuckets => {
   );
   const air = formatAirDate(selection.airDate);
   if (code && air) {
-    pushUnique(chips, `${code} · ${air}`);
+    pushChip(chips, `${code} · ${air}`, "info");
   } else {
-    pushUnique(chips, code);
+    pushChip(chips, code, "info");
     if (air) detailParts.push(`Diffusion ${air}`);
   }
   pushGenreChips(chips, selection.genres);
-  pushUnique(chips, selection.networkOrStudio);
+  pushChip(chips, selection.networkOrStudio, "neutral");
   pushRuntimeChip(chips, selection.runtimeMinutes);
   return { chips, detailParts };
 };
 
 const buildDownloadMeta = (selection: MediaQuickSelection): MetaBuckets => {
-  const chips: string[] = [];
+  const chips: MediaQuickChip[] = [];
   const detailParts: string[] = [];
-  if (selection.service === "radarr") pushUnique(chips, "Radarr");
-  if (selection.service === "sonarr") pushUnique(chips, "Sonarr");
-  pushUnique(chips, selection.subtitle);
+  if (selection.service === "radarr") pushChip(chips, "Radarr", "accent");
+  if (selection.service === "sonarr") pushChip(chips, "Sonarr", "accent");
+  pushChip(chips, selection.subtitle, "info");
   const code = formatEpisodeCode(
     selection.seasonNumber,
     selection.episodeNumber,
   );
-  pushUnique(chips, code);
+  pushChip(chips, code, "info");
   if (selection.size !== undefined && selection.size > 0) {
     const downloaded = Math.max(0, selection.size - (selection.sizeLeft ?? 0));
-    pushUnique(
+    pushChip(
       chips,
       `${formatSizeBytes(downloaded)} / ${formatSizeBytes(selection.size)}`,
+      "warning",
     );
   } else if (selection.sizeLeft !== undefined && selection.sizeLeft > 0) {
-    pushUnique(chips, `Reste ${formatSizeBytes(selection.sizeLeft)}`);
+    pushChip(chips, `Reste ${formatSizeBytes(selection.sizeLeft)}`, "warning");
   }
   const eta = formatEtaShort(selection.etaSeconds);
-  if (eta) pushUnique(chips, `ETA ${eta}`);
+  if (eta) pushChip(chips, `ETA ${eta}`, "accent");
   return { chips, detailParts };
 };
 
@@ -287,7 +310,7 @@ export const buildMediaQuickViewModel = (
 ): MediaQuickViewModel => {
   const subtitle = resolveSubtitle(selection);
   const { chips, detailParts } = buildMeta(selection);
-  const filteredChips = chips.filter((chip) => chip !== subtitle);
+  const filteredChips = chips.filter((chip) => chip.label !== subtitle);
   const statusLine =
     selection.glanceStatusLine ?? buildStatusLine(selection);
   const statusTone =
@@ -296,6 +319,7 @@ export const buildMediaQuickViewModel = (
   return {
     title: resolveTitle(selection),
     subtitle,
+    posterUrl: selection.posterUrl,
     chips: filteredChips,
     detailLine: joinDetail(detailParts),
     statusLine,

@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { View } from "react-native";
 
 import type { ArrService, ServiceHealth } from "@/arr-client";
 import { ErrorBanner, Screen } from "@/components";
@@ -12,13 +12,13 @@ import { useArrClients } from "@/hooks/use-arr-clients";
 import { useI18n } from "@/i18n";
 import { queryClient } from "@/lib/query-client";
 import {
-    isConfigComplete,
-    loadArrConfig,
-    saveArrConfig,
-    type ArrConfig,
+  isConfigComplete,
+  loadArrConfig,
+  saveArrConfig,
+  type ArrConfig,
 } from "@/lib/secure-config";
-import { colors, fonts, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { Button, Text } from "@/ui";
 
 const EMPTY_CONFIG: ArrConfig = {
   radarrUrl: "",
@@ -39,7 +39,7 @@ const buildConfig = (values: ArrConfig): ArrConfig | undefined => {
 
 export default function SettingsServicesScreen() {
   const { t } = useI18n();
-  const { space, fontSize, minTouchTarget } = useUiSize();
+  const { space } = useUiSize();
   const { testAll } = useConnectionTest();
   const { refreshConfig } = useArrClients();
   const [values, setValues] = useState<ArrConfig>(EMPTY_CONFIG);
@@ -133,13 +133,7 @@ export default function SettingsServicesScreen() {
             justifyContent: "center",
           }}
         >
-          <Text
-            style={{
-              color: colors.secondary,
-              fontFamily: fonts.ui,
-              fontSize: fontSize(14),
-            }}
-          >
+          <Text role="body" tone="muted">
             {t("settings.loading")}
           </Text>
         </View>
@@ -150,14 +144,7 @@ export default function SettingsServicesScreen() {
   return (
     <Screen scroll>
       <SettingsBackRow onPress={() => router.back()} />
-      <Text
-        style={{
-          color: colors.text,
-          fontFamily: fonts.display,
-          fontSize: fontSize(28),
-          marginBottom: space.lg,
-        }}
-      >
+      <Text role="title" style={{ marginBottom: space.lg }}>
         {t("settings.servicesTitle")}
       </Text>
 
@@ -193,36 +180,16 @@ export default function SettingsServicesScreen() {
         </View>
       ) : null}
 
-      <Pressable
+      <Button
         accessibilityLabel={t("settings.saveA11y")}
-        accessibilityRole="button"
         disabled={isSaving}
+        loading={isSaving}
         onPress={() => void handleSave()}
-        style={({ pressed }) => [
-          {
-            alignItems: "center",
-            borderColor: colors.accent,
-            borderRadius: radii.md,
-            borderWidth: 1,
-            justifyContent: "center",
-            marginTop: space.lg,
-            minHeight: minTouchTarget,
-            opacity: isSaving ? 0.45 : pressed ? 0.75 : 1,
-            paddingHorizontal: space.lg,
-            paddingVertical: space.md,
-          },
-        ]}
+        style={{ marginTop: space.lg }}
+        variant="secondary"
       >
-        <Text
-          style={{
-            color: colors.accent,
-            fontFamily: fonts.uiBold,
-            fontSize: fontSize(16),
-          }}
-        >
-          {isSaving ? t("action.saving") : t("action.save")}
-        </Text>
-      </Pressable>
+        {isSaving ? t("action.saving") : t("action.save")}
+      </Button>
     </Screen>
   );
 }

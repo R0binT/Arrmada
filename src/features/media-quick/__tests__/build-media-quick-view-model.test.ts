@@ -1,7 +1,11 @@
 import {
-    buildMediaQuickViewModel,
-    resolvePrimaryDestination,
+  buildMediaQuickViewModel,
+  resolvePrimaryDestination,
 } from "../build-media-quick-view-model";
+
+const chipLabels = (
+  chips: readonly { readonly label: string }[],
+): string[] => chips.map((chip) => chip.label);
 
 it("download with movieId opens film fiche", () => {
   const selection = {
@@ -27,8 +31,11 @@ it("download with movieId opens film fiche", () => {
   const vm = buildMediaQuickViewModel(selection);
   expect(vm.statusLine).toMatch(/en cours/i);
   expect(vm.subtitle).toBeUndefined();
-  expect(vm.chips.some((chip) => /Radarr/i.test(chip))).toBe(true);
-  expect(vm.chips.some((chip) => /ETA/i.test(chip))).toBe(true);
+  expect(chipLabels(vm.chips).some((chip) => /Radarr/i.test(chip))).toBe(true);
+  expect(vm.chips.some((chip) => chip.label === "Radarr" && chip.tone === "accent")).toBe(
+    true,
+  );
+  expect(chipLabels(vm.chips).some((chip) => /ETA/i.test(chip))).toBe(true);
 });
 
 it("queue-only download opens Téléchargements", () => {
@@ -67,7 +74,7 @@ it("dispo film shows glanceable chips and detail", () => {
   expect(vm.statusLine).toBe("Téléchargé");
   expect(vm.statusTone).toBe("success");
   expect(vm.subtitle).toBe("2024");
-  expect(vm.chips).toEqual(
+  expect(chipLabels(vm.chips)).toEqual(
     expect.arrayContaining(["Thriller", "Drama", "1 h 58 min", "A24"]),
   );
   expect(vm.detailLine).toMatch(/Bluray-1080p/);
@@ -94,9 +101,20 @@ it("episode shows series, code and air date", () => {
   expect(vm.title).toBe("Pilot");
   expect(vm.subtitle).toBe("Night Harbor");
   expect(vm.statusLine).toBe("À venir");
-  expect(vm.statusTone).toBe("muted");
-  expect(vm.chips[0]).toMatch(/S01E01/);
-  expect(vm.chips).toEqual(expect.arrayContaining(["Crime", "HBO", "45 min"]));
+  expect(vm.statusTone).toBe("warning");
+  expect(chipLabels(vm.chips)[0]).toMatch(/S01E01/);
+  expect(chipLabels(vm.chips)).toEqual(
+    expect.arrayContaining(["Crime", "HBO", "45 min"]),
+  );
+  expect(
+    vm.chips.some((chip) => chip.label === "Crime" && chip.tone === "accent"),
+  ).toBe(true);
+  expect(
+    vm.chips.some((chip) => chip.label === "45 min" && chip.tone === "neutral"),
+  ).toBe(true);
+  expect(
+    vm.chips.some((chip) => chip.label === "HBO" && chip.tone === "neutral"),
+  ).toBe(true);
 });
 
 it("season shows series and episode progress", () => {
@@ -117,10 +135,12 @@ it("season shows series and episode progress", () => {
   });
   expect(vm.title).toBe("Saison 1");
   expect(vm.subtitle).toBe("Night Harbor");
-  expect(vm.chips).toContain("4/10 épisodes");
-  expect(vm.chips).toEqual(expect.arrayContaining(["Crime", "HBO"]));
+  expect(chipLabels(vm.chips)).toContain("4/10 épisodes");
+  expect(chipLabels(vm.chips)).toEqual(
+    expect.arrayContaining(["Crime", "HBO"]),
+  );
   expect(vm.statusLine).toBe("À télécharger");
-  expect(vm.statusTone).toBe("accent");
+  expect(vm.statusTone).toBe("info");
 });
 
 it("series shows episode progress and network", () => {
@@ -138,7 +158,7 @@ it("series shows episode progress and network", () => {
     genres: ["Crime"],
   });
   expect(vm.subtitle).toBe("2022");
-  expect(vm.chips).toEqual(
+  expect(chipLabels(vm.chips)).toEqual(
     expect.arrayContaining(["20/20 épisodes", "Crime", "HBO"]),
   );
 });

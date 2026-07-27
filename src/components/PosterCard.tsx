@@ -1,11 +1,12 @@
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { type Availability } from "@/arr-client";
 import { ProgressBar } from "@/components/ProgressBar";
 import { availabilityLabel } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { pressScaleStyle, Text, useReduceMotion } from "@/ui";
 
 type PosterCardProps = {
   readonly title: string;
@@ -23,8 +24,8 @@ type PosterCardProps = {
 
 const CORNER_COLOR: Record<Availability, string> = {
   dispo: colors.success,
-  aTelecharger: colors.accent,
-  aVenir: "rgba(154, 149, 140, 0.85)",
+  aTelecharger: colors.info,
+  aVenir: colors.warning,
 };
 
 export const PosterCard = ({
@@ -39,7 +40,8 @@ export const PosterCard = ({
   width = 112,
   aspectRatio = 2 / 3,
 }: PosterCardProps) => {
-  const { space, fontSize, minTouchTarget, scale } = useUiSize();
+  const { space, minTouchTarget, scale } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const height = width / aspectRatio;
   const hasProgress = progress !== undefined && progress > 0;
   const statusHint = availability ? `, ${availabilityLabel(availability)}` : "";
@@ -58,7 +60,7 @@ export const PosterCard = ({
       onPress={onPress}
       style={({ pressed }) => [
         { minHeight: minTouchTarget, width },
-        pressed ? styles.pressed : null,
+        pressScaleStyle(pressed, reduceMotion),
       ]}
     >
       <View
@@ -78,7 +80,7 @@ export const PosterCard = ({
           />
         ) : (
           <View style={styles.placeholder}>
-            <Text style={[styles.placeholderText, { fontSize: fontSize(28) }]}>
+            <Text role="display" tone="muted">
               {title.slice(0, 1).toUpperCase()}
             </Text>
           </View>
@@ -112,15 +114,7 @@ export const PosterCard = ({
               },
             ]}
           >
-            <Text
-              style={[
-                styles.cornerBadgeText,
-                {
-                  fontSize: fontSize(10),
-                  lineHeight: fontSize(12),
-                },
-              ]}
-            >
+            <Text role="caption" numberOfLines={1}>
               {badge}
             </Text>
           </View>
@@ -137,17 +131,12 @@ export const PosterCard = ({
               },
             ]}
           >
-            <Text style={[styles.progressLabel, { fontSize: fontSize(11) }]}>
-              {Math.round(progress * 100)}%
-            </Text>
+            <Text role="caption">{Math.round(progress * 100)}%</Text>
             <ProgressBar progress={progress} height={3} />
           </View>
         ) : null}
       </View>
-      <Text
-        numberOfLines={2}
-        style={[styles.title, { fontSize: fontSize(13), marginTop: space.sm }]}
-      >
+      <Text numberOfLines={2} role="label" style={{ marginTop: space.sm }}>
         {title}
       </Text>
     </Pressable>
@@ -155,63 +144,45 @@ export const PosterCard = ({
 };
 
 const styles = StyleSheet.create({
-  pressed: {
-    opacity: 0.85,
-  },
   posterWrap: {
-    borderRadius: radii.md,
-    overflow: "hidden",
     backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: "transparent",
+    borderColor: colors.borderSubtle,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    overflow: "hidden",
   },
   selected: {
-    borderColor: colors.accent,
+    borderColor: colors.accentGlow,
+    borderWidth: 2,
   },
   poster: {
-    width: "100%",
     height: "100%",
+    width: "100%",
   },
   placeholder: {
-    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
     backgroundColor: colors.surface,
-  },
-  placeholderText: {
-    color: colors.secondary,
-    fontFamily: fonts.display,
+    flex: 1,
+    justifyContent: "center",
   },
   statusCorner: {
+    borderRightColor: "transparent",
+    height: 0,
+    left: 0,
     position: "absolute",
     top: 0,
-    left: 0,
     width: 0,
-    height: 0,
-    borderRightColor: "transparent",
   },
   cornerBadge: {
+    backgroundColor: colors.overlay,
+    borderRadius: radii.sm,
     position: "absolute",
-    borderRadius: 4,
-    backgroundColor: "rgba(11, 11, 15, 0.78)",
-  },
-  cornerBadgeText: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
   },
   progressOverlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
+    backgroundColor: colors.overlay,
     bottom: 0,
-    backgroundColor: "rgba(11, 11, 15, 0.72)",
-  },
-  progressLabel: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
-  },
-  title: {
-    color: colors.text,
-    fontFamily: fonts.ui,
+    left: 0,
+    position: "absolute",
+    right: 0,
   },
 });

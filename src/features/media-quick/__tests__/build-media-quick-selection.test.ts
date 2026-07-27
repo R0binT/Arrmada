@@ -1,12 +1,16 @@
 import type { Episode, Movie, Series, UpcomingItem } from "@/arr-client";
 
 import {
-    seasonAvailability,
-    selectionFromMovie,
-    selectionFromSeries,
-    selectionFromUpcoming,
+  seasonAvailability,
+  selectionFromMovie,
+  selectionFromSeries,
+  selectionFromUpcoming,
 } from "../build-media-quick-selection";
 import { buildMediaQuickViewModel } from "../build-media-quick-view-model";
+
+const chipLabels = (
+  chips: readonly { readonly label: string }[],
+): string[] => chips.map((chip) => chip.label);
 
 const movie = (overrides: Partial<Movie> = {}): Movie => ({
   id: 1,
@@ -49,7 +53,7 @@ describe("build-media-quick-selection", () => {
   it("builds the same movie selection for home and library", () => {
     const selection = selectionFromMovie(movie());
     const vm = buildMediaQuickViewModel(selection);
-    expect(vm.chips).toEqual(
+    expect(chipLabels(vm.chips)).toEqual(
       expect.arrayContaining(["Thriller", "Drama", "1 h 58 min", "A24"]),
     );
     expect(vm.detailLine).toMatch(/Bluray-1080p/);
@@ -58,7 +62,7 @@ describe("build-media-quick-selection", () => {
   it("builds the same series selection for home and library", () => {
     const selection = selectionFromSeries(series());
     const vm = buildMediaQuickViewModel(selection);
-    expect(vm.chips).toEqual(
+    expect(chipLabels(vm.chips)).toEqual(
       expect.arrayContaining(["20/20 épisodes", "Crime", "HBO", "45 min"]),
     );
   });
@@ -75,7 +79,7 @@ describe("build-media-quick-selection", () => {
     const selection = selectionFromUpcoming(upcoming, { movies: [movie()] });
     const vm = buildMediaQuickViewModel(selection);
     expect(vm.statusLine).toBe("À venir");
-    expect(vm.chips).toEqual(
+    expect(chipLabels(vm.chips)).toEqual(
       expect.arrayContaining(["Thriller", "Drama", "A24"]),
     );
     expect(vm.detailLine).toMatch(/Sortie/i);
@@ -99,8 +103,8 @@ describe("build-media-quick-selection", () => {
     const vm = buildMediaQuickViewModel(selection);
     expect(vm.title).toBe("Pilot");
     expect(vm.subtitle).toBe("Night Harbor");
-    expect(vm.chips[0]).toMatch(/S01E01/);
-    expect(vm.chips).toEqual(
+    expect(chipLabels(vm.chips)[0]).toMatch(/S01E01/);
+    expect(chipLabels(vm.chips)).toEqual(
       expect.arrayContaining(["Crime", "HBO", "45 min"]),
     );
   });

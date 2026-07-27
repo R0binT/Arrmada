@@ -1,60 +1,66 @@
-import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-    ActivityIndicator,
-    Pressable,
-    StyleSheet,
-    Switch,
-    Text,
-    View,
-} from "react-native";
+import { Pressable, StyleSheet, Switch, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import type { Episode, Season } from "@/arr-client";
 import {
-    canOfferDownload,
-    classifySeries,
-    seasonNeedsDownload,
+  canOfferDownload,
+  classifySeries,
+  seasonNeedsDownload,
 } from "@/arr-client";
 import {
-    AudioChoiceSheet,
-    ErrorBanner,
-    IconButton,
-    MediaMetaBlock,
-    MediaQuickSheet,
-    Screen,
+  AudioChoiceSheet,
+  DetailImmersiveHeader,
+  DetailLoadingSkeleton,
+  ErrorBanner,
+  IconButton,
+  MediaMetaBlock,
+  MediaQuickSheet,
+  Screen,
 } from "@/components";
 import {
-    confirmRetirer,
-    deleteFilesForRetirerAction,
-    type RetirerAction,
+  confirmRetirer,
+  deleteFilesForRetirerAction,
+  type RetirerAction,
 } from "@/features/library/retirer-action";
 import {
-    selectionFromEpisode,
-    selectionFromSeason,
+  selectionFromEpisode,
+  selectionFromSeason,
 } from "@/features/media-quick/build-media-quick-selection";
 import { useMediaQuickController } from "@/features/media-quick/use-media-quick-controller";
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
-    finishPendingAudioChoice,
-    smartGrabReleaseBatches,
-    smartGrabReleases,
-    type PendingAudioChoice,
+  finishPendingAudioChoice,
+  smartGrabReleaseBatches,
+  smartGrabReleases,
+  type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
 import {
-    getErrorMessage,
-    useDeleteSeries,
-    useGrabSeriesRelease,
-    useSeries,
-    useSeriesDefaults,
-    useSeriesSeasons,
-    useUpdateSeriesMonitored,
+  getErrorMessage,
+  useDeleteSeries,
+  useGrabSeriesRelease,
+  useSeries,
+  useSeriesDefaults,
+  useSeriesSeasons,
+  useUpdateSeriesMonitored,
 } from "@/features/series/use-series";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useArrClients } from "@/hooks/use-arr-clients";
+import { availabilityChipTone } from "@/features/library/availability-chip-tone";
 import { availabilityLabel, t } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import {
+  Button,
+  Chip,
+  createFadeSlideUp,
+  pressScaleStyle,
+  Skeleton,
+  Surface,
+  Text,
+  useReduceMotion,
+} from "@/ui";
 
 const seasonHeading = (seasonNumber: number): string =>
   seasonNumber === 0
@@ -91,9 +97,8 @@ const episodesNeedingDownload = (
     );
 
 export default function SeriesDetailScreen() {
-  const { fontSize, space: scaledSpace, minTouchTarget, scale } = useUiSize();
-  const posterWidth = Math.round(120 * scale);
-  const posterHeight = Math.round(180 * scale);
+  const { space: scaledSpace } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const { id: idParam } = useLocalSearchParams<{ id: string }>();
   const seriesId = Number(idParam);
   const { sonarr } = useArrClients();
@@ -303,16 +308,10 @@ export default function SeriesDetailScreen() {
   if (seriesQuery.isLoading) {
     return (
       <Screen>
-        <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
-          <IconButton
-            accessibilityLabel={t("action.back")}
-            icon="←"
-            onPress={handleBack}
-          />
-        </View>
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.accent} size="large" />
-        </View>
+        <DetailLoadingSkeleton
+          backLabel={t("action.back")}
+          onBack={handleBack}
+        />
       </Screen>
     );
   }
@@ -320,7 +319,7 @@ export default function SeriesDetailScreen() {
   if (seriesQuery.isError || !seriesQuery.data) {
     return (
       <Screen>
-        <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
+        <View style={{ marginBottom: scaledSpace.md }}>
           <IconButton
             accessibilityLabel={t("action.back")}
             icon="←"
@@ -352,168 +351,80 @@ export default function SeriesDetailScreen() {
 
   return (
     <Screen scroll>
-      <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
-        <IconButton
-          accessibilityLabel={t("action.back")}
-          icon="←"
-          onPress={handleBack}
-        />
-      </View>
-
-      <View
-        style={[
-          styles.hero,
-          { gap: scaledSpace.md, marginBottom: scaledSpace.lg },
-        ]}
-      >
-        {series.posterUrl ? (
-          <Image
-            accessibilityIgnoresInvertColors
-            contentFit="cover"
-            source={{ uri: series.posterUrl }}
-            style={[
-              styles.poster,
-              { height: posterHeight, width: posterWidth },
-            ]}
-            transition={200}
-          />
-        ) : (
-          <View
-            style={[
-              styles.poster,
-              styles.posterPlaceholder,
-              { height: posterHeight, width: posterWidth },
-            ]}
-          >
-            <Text style={[styles.posterInitial, { fontSize: fontSize(40) }]}>
-              {series.title.slice(0, 1).toUpperCase()}
-            </Text>
+      <DetailImmersiveHeader
+        actions={
+          showSeriesDownload ? (
+            <Button
+              accessibilityLabel={t("detail.downloadSeriesA11y")}
+              disabled={actionsBusy}
+              loading={downloadBusy}
+              onPress={() => void handleDownloadSeries()}
+              style={styles.fullWidthButton}
+            >
+              {downloadBusy ? t("action.searching") : t("action.download")}
+            </Button>
+          ) : null
+        }
+        backLabel={t("action.back")}
+        meta={
+          <View style={[styles.metaRow, { gap: scaledSpace.sm }]}>
+            {series.year ? (
+              <Text role="label" tone="muted">
+                {series.year}
+              </Text>
+            ) : null}
+            <Chip tone={availabilityChipTone(seriesAvailability)}>
+              {statusLabel}
+            </Chip>
           </View>
-        )}
-        <View style={[styles.heroCopy, { gap: scaledSpace.sm }]}>
-          <Text style={[styles.seriesTitle, { fontSize: fontSize(28) }]}>
-            {series.title}
-          </Text>
-          <Text style={[styles.seriesMeta, { fontSize: fontSize(15) }]}>
-            {series.year} · {statusLabel}
-          </Text>
-          <Text style={[styles.episodeSummary, { fontSize: fontSize(14) }]}>
-            {episodeSummary}
-          </Text>
-          {profileLabel ? (
-            <Text style={[styles.profileLabel, { fontSize: fontSize(14) }]}>
-              {profileLabel}
+        }
+        onBack={handleBack}
+        posterUrl={series.posterUrl}
+        subtitle={
+          <View style={{ gap: scaledSpace.xs }}>
+            <Text role="label" tone="muted">
+              {episodeSummary}
             </Text>
-          ) : null}
-        </View>
-      </View>
-
-      <MediaMetaBlock
-        added={series.added}
-        genres={series.genres}
-        networkOrStudio={series.network}
-        runtimeMinutes={series.runtimeMinutes}
+            {profileLabel ? (
+              <Text role="caption" tone="faint">
+                {profileLabel}
+              </Text>
+            ) : null}
+          </View>
+        }
+        title={series.title}
       />
 
-      {series.overview.trim().length > 0 ? (
-        <Text
-          style={[
-            styles.overview,
-            {
-              fontSize: fontSize(15),
-              lineHeight: fontSize(22),
-              marginBottom: scaledSpace.lg,
-            },
-          ]}
-        >
-          {series.overview}
-        </Text>
-      ) : null}
-
-      <View
-        style={[
-          styles.suiviRow,
-          { marginBottom: scaledSpace.lg, minHeight: minTouchTarget },
-        ]}
+      <Animated.View
+        entering={createFadeSlideUp(reduceMotion, 0)}
+        style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.md }}
       >
-        <Text style={[styles.suiviLabel, { fontSize: fontSize(16) }]}>
-          {t("detail.suivi")}
-        </Text>
-        <Switch
-          accessibilityLabel={
-            series.monitored
-              ? t("detail.disableSuivi")
-              : t("detail.enableSuivi")
-          }
-          accessibilityRole="switch"
-          disabled={monitoredMutation.isPending || deleteMutation.isPending}
-          onValueChange={(value) => void handleToggleSuivi(value)}
-          trackColor={{ false: colors.surface, true: colors.accent }}
-          value={series.monitored}
+        <MediaMetaBlock
+          added={series.added}
+          genres={series.genres}
+          networkOrStudio={series.network}
+          runtimeMinutes={series.runtimeMinutes}
         />
-      </View>
-
-      <View
-        style={[
-          styles.actions,
-          { gap: scaledSpace.md, marginBottom: scaledSpace.xl },
-        ]}
-      >
-        {showSeriesDownload ? (
-          <Pressable
-            accessibilityLabel={t("detail.downloadSeriesA11y")}
-            accessibilityRole="button"
-            disabled={actionsBusy}
-            onPress={() => void handleDownloadSeries()}
-            style={({ pressed }) => [
-              styles.searchButton,
-              {
-                minHeight: minTouchTarget,
-                paddingHorizontal: scaledSpace.lg,
-              },
-              pressed ? styles.pressed : null,
-              actionsBusy ? styles.disabled : null,
-            ]}
-          >
-            <Text style={[styles.searchButtonText, { fontSize: fontSize(16) }]}>
-              {downloadBusy ? t("action.searching") : t("action.download")}
-            </Text>
-          </Pressable>
-        ) : null}
-        <Pressable
-          accessibilityLabel={t("detail.removeSeriesA11y")}
-          accessibilityRole="button"
-          disabled={actionsBusy}
-          onPress={handleRetirer}
-          style={({ pressed }) => [
-            styles.dangerButton,
-            {
-              minHeight: minTouchTarget,
-              paddingHorizontal: scaledSpace.lg,
-            },
-            pressed ? styles.pressed : null,
-            actionsBusy ? styles.disabled : null,
-          ]}
-        >
-          <Text style={[styles.dangerButtonText, { fontSize: fontSize(16) }]}>
-            {deleteMutation.isPending
-              ? t("action.removing")
-              : t("action.remove")}
+        {series.overview.trim().length > 0 ? (
+          <Text role="body" tone="muted">
+            {series.overview}
           </Text>
-        </Pressable>
-      </View>
+        ) : null}
+      </Animated.View>
 
-      <View
+      <Animated.View
+        entering={createFadeSlideUp(reduceMotion, 1)}
         style={[
           styles.seasonsSection,
-          { gap: scaledSpace.md, marginBottom: scaledSpace.xl },
+          { gap: scaledSpace.sm, marginBottom: scaledSpace.xl },
         ]}
       >
-        <Text style={[styles.seasonsTitle, { fontSize: fontSize(22) }]}>
-          {t("detail.seasons")}
-        </Text>
+        <Text role="headline">{t("detail.seasons")}</Text>
         {seasonsQuery.isLoading ? (
-          <ActivityIndicator color={colors.accent} />
+          <View style={{ gap: scaledSpace.sm }}>
+            <Skeleton height={40} />
+            <Skeleton height={40} />
+          </View>
         ) : seasonsQuery.isError ? (
           <ErrorBanner
             message={getErrorMessage(seasonsQuery.error)}
@@ -521,7 +432,7 @@ export default function SeriesDetailScreen() {
             onSettings={handleOpenSettings}
           />
         ) : (seasonsQuery.data?.length ?? 0) === 0 ? (
-          <Text style={[styles.emptySeasons, { fontSize: fontSize(15) }]}>
+          <Text role="body" tone="muted">
             {t("detail.noEpisodesYet")}
           </Text>
         ) : (
@@ -531,40 +442,46 @@ export default function SeriesDetailScreen() {
             const showSeasonDownload = seasonNeedsDownload(season);
             const seasonBusy = downloadBusy;
             return (
-              <View key={season.seasonNumber} style={styles.seasonBlock}>
+              <Surface
+                key={season.seasonNumber}
+                radius="md"
+                style={{ overflow: "hidden" }}
+                tone="raised"
+              >
                 <View
                   style={[
                     styles.seasonHeaderRow,
-                    { gap: scaledSpace.sm, paddingRight: scaledSpace.sm },
+                    {
+                      gap: scaledSpace.xs,
+                      paddingLeft: scaledSpace.sm,
+                      paddingRight: scaledSpace.xs,
+                      paddingVertical: scaledSpace.xs,
+                    },
                   ]}
                 >
                   <Pressable
-                    accessibilityLabel={t("detail.seeDetailsA11y", {
-                      title: heading,
-                    })}
+                    accessibilityLabel={
+                      isExpanded
+                        ? t("detail.collapseA11y", { title: heading })
+                        : t("detail.expandA11y", { title: heading })
+                    }
                     accessibilityRole="button"
-                    onPress={() =>
+                    accessibilityState={{ expanded: isExpanded }}
+                    delayLongPress={350}
+                    onLongPress={() =>
                       quick.toggle(selectionFromSeason(series, season))
                     }
+                    onPress={() => handleToggleSeason(season.seasonNumber)}
                     style={({ pressed }) => [
                       styles.seasonHeader,
-                      {
-                        gap: scaledSpace.md,
-                        minHeight: minTouchTarget,
-                        paddingHorizontal: scaledSpace.md,
-                        paddingVertical: scaledSpace.sm,
-                      },
-                      pressed ? styles.pressed : null,
+                      { gap: scaledSpace.sm },
+                      pressScaleStyle(pressed, reduceMotion),
                     ]}
                   >
-                    <Text
-                      style={[styles.seasonHeaderTitle, { fontSize: fontSize(16) }]}
-                    >
+                    <Text role="label" style={{ flex: 1 }} numberOfLines={1}>
                       {heading}
                     </Text>
-                    <Text
-                      style={[styles.seasonHeaderMeta, { fontSize: fontSize(13) }]}
-                    >
+                    <Text role="caption" tone="muted">
                       {season.episodes.length === 1
                         ? t("detail.episodeCount", {
                             count: season.episodes.length,
@@ -574,52 +491,36 @@ export default function SeriesDetailScreen() {
                           })}
                     </Text>
                   </Pressable>
-                  <Pressable
-                    accessibilityLabel={
-                      isExpanded
-                        ? t("detail.collapseA11y", { title: heading })
-                        : t("detail.expandA11y", { title: heading })
-                    }
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: isExpanded }}
-                    onPress={() => handleToggleSeason(season.seasonNumber)}
-                    style={({ pressed }) => [
-                      styles.seasonExpand,
-                      { minHeight: minTouchTarget, minWidth: minTouchTarget },
-                      pressed ? styles.pressed : null,
-                    ]}
+                  <View
+                    style={[styles.seasonActions, { gap: scaledSpace["2xs"] }]}
                   >
-                    <Text style={[styles.seasonHeaderMeta, { fontSize: fontSize(13) }]}>
-                      {isExpanded ? "▼" : "▶"}
-                    </Text>
-                  </Pressable>
-                  {showSeasonDownload ? (
-                    <Pressable
-                      accessibilityLabel={t("detail.downloadNamedA11y", {
-                        title: heading,
-                      })}
-                      accessibilityRole="button"
-                      disabled={actionsBusy}
-                      onPress={() =>
-                        void handleDownloadSeason(season.seasonNumber)
-                      }
-                      style={({ pressed }) => [
-                        styles.inlineDownload,
-                        {
-                          minHeight: minTouchTarget,
-                          paddingHorizontal: scaledSpace.sm,
-                        },
-                        pressed ? styles.pressed : null,
-                        actionsBusy ? styles.disabled : null,
-                      ]}
-                    >
-                      <Text
-                        style={[styles.inlineDownloadText, { fontSize: fontSize(13) }]}
+                    {showSeasonDownload ? (
+                      <Button
+                        accessibilityLabel={t("detail.downloadNamedA11y", {
+                          title: heading,
+                        })}
+                        disabled={actionsBusy}
+                        loading={seasonBusy}
+                        onPress={() =>
+                          void handleDownloadSeason(season.seasonNumber)
+                        }
+                        size="compact"
+                        variant="primary"
                       >
                         {seasonBusy ? "…" : t("action.download")}
-                      </Text>
-                    </Pressable>
-                  ) : null}
+                      </Button>
+                    ) : null}
+                    <IconButton
+                      accessibilityLabel={
+                        isExpanded
+                          ? t("detail.collapseA11y", { title: heading })
+                          : t("detail.expandA11y", { title: heading })
+                      }
+                      icon={isExpanded ? "▼" : "▶"}
+                      onPress={() => handleToggleSeason(season.seasonNumber)}
+                      size="compact"
+                    />
+                  </View>
                 </View>
                 {isExpanded
                   ? season.episodes.map((episode) => {
@@ -633,9 +534,10 @@ export default function SeriesDetailScreen() {
                           style={[
                             styles.episodeRow,
                             {
+                              borderTopColor: colors.borderSubtle,
                               gap: scaledSpace.sm,
-                              paddingHorizontal: scaledSpace.md,
-                              paddingVertical: scaledSpace.sm,
+                              paddingHorizontal: scaledSpace.sm,
+                              paddingVertical: scaledSpace.xs,
                             },
                           ]}
                         >
@@ -651,70 +553,97 @@ export default function SeriesDetailScreen() {
                             }
                             style={({ pressed }) => [
                               styles.episodeCopy,
-                              { gap: scaledSpace.xs },
-                              pressed ? styles.pressed : null,
+                              { gap: scaledSpace.sm },
+                              pressScaleStyle(pressed, reduceMotion),
                             ]}
                           >
                             <Text
-                              style={[styles.episodeTitle, { fontSize: fontSize(14) }]}
+                              numberOfLines={1}
+                              role="caption"
+                              style={styles.episodeTitle}
                             >
                               {episodeHeading(episode)}
                             </Text>
-                            <Text
-                              style={[
-                                styles.episodeAvailability,
-                                { fontSize: fontSize(13) },
-                              ]}
+                            <Chip
+                              tone={availabilityChipTone(episode.availability)}
                             >
                               {availabilityLabel(episode.availability)}
-                            </Text>
+                            </Chip>
                           </Pressable>
                           {showEpisodeDownload ? (
-                            <Pressable
+                            <Button
                               accessibilityLabel={t(
                                 "detail.downloadNamedA11y",
                                 {
                                   title: episodeHeading(episode),
                                 },
                               )}
-                              accessibilityRole="button"
                               disabled={actionsBusy}
+                              loading={episodeBusy}
                               onPress={() =>
                                 void handleDownloadEpisode(episode.id)
                               }
-                              style={({ pressed }) => [
-                                styles.inlineDownload,
-                                {
-                                  minHeight: minTouchTarget,
-                                  paddingHorizontal: scaledSpace.sm,
-                                },
-                                pressed ? styles.pressed : null,
-                                actionsBusy ? styles.disabled : null,
-                              ]}
+                              size="compact"
+                              variant="primary"
                             >
-                              <Text
-                                style={[
-                                  styles.inlineDownloadText,
-                                  { fontSize: fontSize(13) },
-                                ]}
-                              >
-                                {episodeBusy ? "…" : t("action.download")}
-                              </Text>
-                            </Pressable>
+                              {episodeBusy ? "…" : t("action.download")}
+                            </Button>
                           ) : null}
                         </View>
                       );
                     })
                   : null}
-              </View>
+              </Surface>
             );
           })
         )}
-      </View>
+      </Animated.View>
+
+      <Animated.View
+        entering={createFadeSlideUp(reduceMotion, 2)}
+        style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.xl }}
+      >
+        <Surface
+          padded
+          radius="md"
+          style={{ padding: scaledSpace.sm }}
+          tone="raised"
+        >
+          <View style={styles.suiviRow}>
+            <Text role="label">{t("detail.suivi")}</Text>
+            <Switch
+              accessibilityLabel={
+                series.monitored
+                  ? t("detail.disableSuivi")
+                  : t("detail.enableSuivi")
+              }
+              accessibilityRole="switch"
+              disabled={monitoredMutation.isPending || deleteMutation.isPending}
+              onValueChange={(value) => void handleToggleSuivi(value)}
+              trackColor={{ false: colors.surface, true: colors.accent }}
+              value={series.monitored}
+            />
+          </View>
+        </Surface>
+
+        <Button
+          accessibilityLabel={t("detail.removeSeriesA11y")}
+          disabled={actionsBusy}
+          loading={deleteMutation.isPending}
+          onPress={handleRetirer}
+          size="compact"
+          style={styles.fullWidthButton}
+          variant="danger"
+        >
+          {deleteMutation.isPending
+            ? t("action.removing")
+            : t("action.remove")}
+        </Button>
+      </Animated.View>
 
       {toast ? (
-        <View
-          accessibilityLiveRegion="polite"
+        <Surface
+          radius="md"
           style={[
             styles.toast,
             {
@@ -724,11 +653,12 @@ export default function SeriesDetailScreen() {
               paddingVertical: scaledSpace.md,
             },
           ]}
+          tone="elevated"
         >
-          <Text style={[styles.toastText, { fontSize: fontSize(14) }]}>
-            {toast}
-          </Text>
-        </View>
+          <View accessibilityLiveRegion="polite">
+            <Text role="label">{toast}</Text>
+          </View>
+        </Surface>
       ) : null}
 
       <AudioChoiceSheet
@@ -745,102 +675,20 @@ export default function SeriesDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  topBar: {},
-  loading: {
+  metaRow: {
     alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-  },
-  hero: {
     flexDirection: "row",
-  },
-  poster: {
-    borderRadius: radii.md,
-  },
-  posterPlaceholder: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    justifyContent: "center",
-  },
-  posterInitial: {
-    color: colors.secondary,
-    fontFamily: fonts.display,
-  },
-  heroCopy: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  seriesTitle: {
-    color: colors.text,
-    fontFamily: fonts.display,
-  },
-  seriesMeta: {
-    color: colors.secondary,
-    fontFamily: fonts.uiMedium,
-  },
-  episodeSummary: {
-    color: colors.text,
-    fontFamily: fonts.ui,
-  },
-  profileLabel: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
-  },
-  statusSummary: {
-    color: colors.text,
-    fontFamily: fonts.ui,
-    textTransform: "capitalize",
-  },
-  overview: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
+    flexWrap: "wrap",
   },
   suiviRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  suiviLabel: {
-    color: colors.text,
-    fontFamily: fonts.uiBold,
-  },
-  actions: {},
-  searchButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  searchButtonText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
-  },
-  dangerButton: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.accent,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    justifyContent: "center",
-  },
-  dangerButtonText: {
-    color: colors.accent,
-    fontFamily: fonts.uiBold,
+  fullWidthButton: {
+    alignSelf: "stretch",
   },
   seasonsSection: {},
-  seasonsTitle: {
-    color: colors.text,
-    fontFamily: fonts.display,
-  },
-  emptySeasons: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  seasonBlock: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    overflow: "hidden",
-  },
   seasonHeaderRow: {
     alignItems: "center",
     flexDirection: "row",
@@ -850,61 +698,31 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
+    minWidth: 0,
   },
-  seasonExpand: {
+  seasonActions: {
     alignItems: "center",
-    justifyContent: "center",
-  },
-  seasonHeaderTitle: {
-    color: colors.text,
-    flex: 1,
-    fontFamily: fonts.uiBold,
-  },
-  seasonHeaderMeta: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
+    flexDirection: "row",
+    flexShrink: 0,
   },
   episodeRow: {
     alignItems: "center",
-    borderTopColor: colors.bg,
     borderTopWidth: 1,
     flexDirection: "row",
   },
   episodeCopy: {
+    alignItems: "center",
     flex: 1,
+    flexDirection: "row",
+    minWidth: 0,
   },
   episodeTitle: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
-  },
-  episodeAvailability: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  inlineDownload: {
-    alignItems: "center",
-    backgroundColor: colors.bg,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  inlineDownloadText: {
-    color: colors.accent,
-    fontFamily: fonts.uiBold,
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
   toast: {
     alignSelf: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
     position: "absolute",
-  },
-  toastText: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.5,
   },
 });

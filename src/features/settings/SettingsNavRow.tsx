@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { useI18n } from "@/i18n";
 import { useUiSize } from "@/lib/UiSizeProvider";
-import { colors, fonts, radii } from "@/lib/theme";
+import { pressScaleStyle, Surface, Text, useReduceMotion } from "@/ui";
 
 type SettingsNavRowProps = {
   readonly title: string;
@@ -17,7 +17,8 @@ export const SettingsNavRow = ({
   accessibilityLabel,
   onPress,
 }: SettingsNavRowProps) => {
-  const { space, fontSize, minTouchTarget } = useUiSize();
+  const { space, minTouchTarget } = useUiSize();
+  const reduceMotion = useReduceMotion();
 
   return (
     <Pressable
@@ -25,51 +26,33 @@ export const SettingsNavRow = ({
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
-        {
-          alignItems: "center",
-          backgroundColor: colors.surface,
-          borderColor: "rgba(244, 240, 232, 0.08)",
-          borderRadius: radii.md,
-          borderWidth: 1,
-          flexDirection: "row",
-          gap: space.md,
-          minHeight: minTouchTarget,
-          paddingHorizontal: space.md,
-          paddingVertical: space.md,
-        },
-        pressed ? styles.pressed : null,
+        styles.rowPressable,
+        pressScaleStyle(pressed, reduceMotion),
       ]}
     >
-      <View style={styles.copy}>
-        <Text
-          style={{
-            color: colors.text,
-            fontFamily: fonts.uiMedium,
-            fontSize: fontSize(16),
-          }}
-        >
-          {title}
-        </Text>
-        <Text
-          style={{
-            color: colors.secondary,
-            fontFamily: fonts.ui,
-            fontSize: fontSize(13),
-            marginTop: space.xs,
-          }}
-        >
-          {hint}
-        </Text>
-      </View>
-      <Text
-        style={{
-          color: colors.secondary,
-          fontFamily: fonts.ui,
-          fontSize: fontSize(20),
-        }}
+      <Surface
+        radius="md"
+        style={[
+          styles.row,
+          {
+            gap: space.md,
+            minHeight: minTouchTarget,
+            paddingHorizontal: space.md,
+            paddingVertical: space.md,
+          },
+        ]}
+        tone="raised"
       >
-        ›
-      </Text>
+        <View style={styles.copy}>
+          <Text role="headline">{title}</Text>
+          <Text role="caption" style={{ marginTop: space.xs }} tone="muted">
+            {hint}
+          </Text>
+        </View>
+        <Text role="body" tone="muted">
+          ›
+        </Text>
+      </Surface>
     </Pressable>
   );
 };
@@ -80,7 +63,8 @@ type SettingsBackRowProps = {
 
 export const SettingsBackRow = ({ onPress }: SettingsBackRowProps) => {
   const { t } = useI18n();
-  const { space, fontSize, minTouchTarget } = useUiSize();
+  const { space, minTouchTarget } = useUiSize();
+  const reduceMotion = useReduceMotion();
 
   return (
     <Pressable
@@ -95,16 +79,10 @@ export const SettingsBackRow = ({ onPress }: SettingsBackRowProps) => {
           minHeight: minTouchTarget,
           paddingVertical: space.xs,
         },
-        pressed ? styles.pressed : null,
+        pressScaleStyle(pressed, reduceMotion),
       ]}
     >
-      <Text
-        style={{
-          color: colors.accent,
-          fontFamily: fonts.uiMedium,
-          fontSize: fontSize(15),
-        }}
-      >
+      <Text role="label" tone="accent">
         ← {t("action.back")}
       </Text>
     </Pressable>
@@ -112,10 +90,14 @@ export const SettingsBackRow = ({ onPress }: SettingsBackRowProps) => {
 };
 
 const styles = StyleSheet.create({
+  rowPressable: {
+    alignSelf: "stretch",
+  },
+  row: {
+    alignItems: "center",
+    flexDirection: "row",
+  },
   copy: {
     flex: 1,
-  },
-  pressed: {
-    opacity: 0.75,
   },
 });

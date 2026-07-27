@@ -21,6 +21,7 @@ import {
     Screen,
 } from "@/components";
 import { getLibraryFilterChips } from "@/features/library/library-filter-chips";
+import { resolveLibraryFilterChipStyle } from "@/features/library/library-filter-chip-style";
 import { selectionFromMovie } from "@/features/media-quick/build-media-quick-selection";
 import { useMediaQuickController } from "@/features/media-quick/use-media-quick-controller";
 import {
@@ -67,7 +68,7 @@ export default function MoviesScreen() {
       paddingHorizontal: scaledSpace.md,
     },
   ];
-  const filterLabelStyle = [styles.filterLabel, { fontSize: fontSize(14) }];
+  const filterLabelStyle = { fontSize: fontSize(12), fontFamily: fonts.uiMedium };
 
   if (!moviesQuery.isLoading && moviesQuery.isError) {
     return (
@@ -117,34 +118,36 @@ export default function MoviesScreen() {
         horizontal
         contentContainerStyle={[
           styles.filters,
-          { gap: scaledSpace.sm, paddingRight: scaledSpace.md },
+          { gap: scaledSpace.xs, paddingRight: scaledSpace.md },
         ]}
         showsHorizontalScrollIndicator={false}
-        style={[styles.filtersBar, { marginBottom: scaledSpace.md }]}
+        style={[styles.filtersBar, { marginBottom: scaledSpace.sm }]}
       >
         {filterChips.map((item) => {
           const isActive = filter === item.key;
+          const chipStyle = resolveLibraryFilterChipStyle(item.key, isActive);
           return (
             <Pressable
               key={item.key}
               accessibilityLabel={t("filter.byA11y", { label: item.label })}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
               onPress={() => setFilter(item.key)}
               style={({ pressed }) => [
                 styles.filterChip,
                 {
-                  height: minTouchTarget,
-                  paddingHorizontal: scaledSpace.md,
+                  paddingHorizontal: scaledSpace.sm,
+                  paddingVertical: scaledSpace.xs,
                 },
-                isActive ? styles.filterChipActive : null,
+                chipStyle.container,
                 pressed ? styles.pressed : null,
               ]}
             >
               <Text
                 style={[
                   filterLabelStyle,
-                  isActive ? styles.filterLabelActive : null,
+                  { color: chipStyle.labelColor },
                 ]}
               >
                 {item.label}
@@ -221,7 +224,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     backgroundColor: colors.surface,
-    borderColor: "rgba(244, 240, 232, 0.08)",
+    borderColor: colors.borderSubtle,
     borderRadius: radii.md,
     borderWidth: 1,
     color: colors.text,
@@ -237,21 +240,9 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     alignItems: "center",
-    borderColor: "rgba(244, 240, 232, 0.12)",
-    borderRadius: radii.md,
+    borderRadius: radii.full,
     borderWidth: 1,
     justifyContent: "center",
-  },
-  filterChipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  filterLabel: {
-    color: colors.secondary,
-    fontFamily: fonts.uiMedium,
-  },
-  filterLabelActive: {
-    color: colors.bg,
   },
   grid: {
     paddingBottom: space.xl,

@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { View } from "react-native";
 
 import type { ServiceHealth } from "@/arr-client";
 import { AppLogo, ErrorBanner, Screen } from "@/components";
@@ -9,13 +9,13 @@ import { useConnectionTest } from "@/features/settings/use-connection-test";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { readEnvArrConfig } from "@/lib/env-arr-config";
 import {
-    isConfigComplete,
-    saveArrConfig,
-    type ArrConfig,
+  isConfigComplete,
+  saveArrConfig,
+  type ArrConfig,
 } from "@/lib/secure-config";
 import { t } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { Button, Text } from "@/ui";
 
 const emptyFromEnv = (): ArrConfig => {
   const fromEnv = readEnvArrConfig();
@@ -38,7 +38,7 @@ const buildConfig = (values: ArrConfig): ArrConfig | undefined => {
 };
 
 export default function OnboardingScreen() {
-  const { fontSize, space: scaledSpace, minTouchTarget, scale } = useUiSize();
+  const { space: scaledSpace, scale } = useUiSize();
   const { testAll } = useConnectionTest();
   const { refreshConfig } = useArrClients();
   const [values, setValues] = useState<ArrConfig>(emptyFromEnv);
@@ -106,22 +106,20 @@ export default function OnboardingScreen() {
   return (
     <Screen scroll>
       <View
-        style={[
-          styles.header,
-          {
-            gap: scaledSpace.sm,
-            marginBottom: scaledSpace.lg,
-            marginTop: scaledSpace.lg,
-          },
-        ]}
+        style={{
+          alignItems: "center",
+          gap: scaledSpace.sm,
+          marginBottom: scaledSpace.lg,
+          marginTop: scaledSpace.lg,
+        }}
       >
         <AppLogo size={Math.round(72 * scale)} />
-        <Text style={[styles.subtitle, { fontSize: fontSize(16) }]}>
+        <Text role="body" tone="muted">
           {t("onboarding.subtitle")}
         </Text>
       </View>
 
-      <View style={[styles.cards, { gap: scaledSpace.md }]}>
+      <View style={{ gap: scaledSpace.md }}>
         <ServiceConnectionCard
           apiKey={values.radarrApiKey}
           health={health.radarr}
@@ -146,88 +144,26 @@ export default function OnboardingScreen() {
         <ErrorBanner message={bannerMessage} onRetry={handleTestConnection} />
       ) : null}
 
-      <View style={[styles.actions, { gap: scaledSpace.md, marginTop: scaledSpace.lg }]}>
-        <Pressable
+      <View style={{ gap: scaledSpace.md, marginTop: scaledSpace.lg }}>
+        <Button
           accessibilityLabel={t("onboarding.testConnection")}
-          accessibilityRole="button"
-          disabled={isTesting}
+          loading={isTesting}
           onPress={handleTestConnection}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            {
-              minHeight: minTouchTarget,
-              paddingHorizontal: scaledSpace.lg,
-              paddingVertical: scaledSpace.md,
-            },
-            pressed ? styles.pressed : null,
-            isTesting ? styles.disabled : null,
-          ]}
+          variant="primary"
         >
-          <Text style={[styles.primaryButtonText, { fontSize: fontSize(16) }]}>
-            {isTesting ? t("action.testing") : t("onboarding.testConnection")}
-          </Text>
-        </Pressable>
+          {isTesting ? t("action.testing") : t("onboarding.testConnection")}
+        </Button>
 
-        <Pressable
+        <Button
           accessibilityLabel={t("onboarding.continueA11y")}
-          accessibilityRole="button"
           disabled={!bothOnline || isSaving}
+          loading={isSaving}
           onPress={handleContinue}
-          style={({ pressed }) => [
-            styles.secondaryButton,
-            {
-              minHeight: minTouchTarget,
-              paddingHorizontal: scaledSpace.lg,
-              paddingVertical: scaledSpace.md,
-            },
-            pressed ? styles.pressed : null,
-            !bothOnline || isSaving ? styles.disabled : null,
-          ]}
+          variant="secondary"
         >
-          <Text style={[styles.secondaryButtonText, { fontSize: fontSize(16) }]}>
-            {isSaving ? t("action.saving") : t("onboarding.continue")}
-          </Text>
-        </Pressable>
+          {isSaving ? t("action.saving") : t("onboarding.continue")}
+        </Button>
       </View>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    alignItems: "center",
-  },
-  subtitle: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  cards: {},
-  actions: {},
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  primaryButtonText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
-  },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: colors.accent,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    justifyContent: "center",
-  },
-  secondaryButtonText: {
-    color: colors.accent,
-    fontFamily: fonts.uiBold,
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-});

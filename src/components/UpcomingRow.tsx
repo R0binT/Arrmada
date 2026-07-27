@@ -1,11 +1,12 @@
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import type { UpcomingItem } from "@/arr-client";
 import { formatUpcomingDate } from "@/arr-client";
 import { localeToBcp47, useI18n } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { pressScaleStyle, Surface, Text, useReduceMotion } from "@/ui";
 
 type UpcomingRowProps = {
   readonly item: UpcomingItem;
@@ -14,7 +15,8 @@ type UpcomingRowProps = {
 
 export const UpcomingRow = ({ item, onPress }: UpcomingRowProps) => {
   const { t, locale } = useI18n();
-  const { space, fontSize, minTouchTarget, scale } = useUiSize();
+  const { space, minTouchTarget, scale } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const kindLabel =
     item.kind === "movie" ? t("upcoming.kindMovie") : t("upcoming.kindEpisode");
   const dateLabel = formatUpcomingDate(item.date, localeToBcp47(locale));
@@ -28,64 +30,64 @@ export const UpcomingRow = ({ item, onPress }: UpcomingRowProps) => {
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
-        styles.row,
-        {
-          gap: space.md,
-          minHeight: minTouchTarget,
-          padding: space.sm,
-        },
-        pressed ? styles.pressed : null,
+        pressScaleStyle(pressed, reduceMotion),
+        styles.rowPressable,
       ]}
     >
-      <View
+      <Surface
+        radius="md"
         style={[
-          styles.posterWrap,
-          { height: posterHeight, width: posterWidth },
+          styles.row,
+          {
+            gap: space.md,
+            minHeight: minTouchTarget,
+            padding: space.sm,
+          },
         ]}
+        tone="raised"
       >
-        {item.posterUrl ? (
-          <Image
-            accessibilityIgnoresInvertColors
-            contentFit="cover"
-            source={{ uri: item.posterUrl }}
-            style={styles.poster}
-          />
-        ) : (
-          <View style={styles.posterFallback} />
-        )}
-      </View>
-      <View style={styles.body}>
-        <Text
-          numberOfLines={1}
-          style={[styles.title, { fontSize: fontSize(16) }]}
+        <View
+          style={[
+            styles.posterWrap,
+            { height: posterHeight, width: posterWidth },
+          ]}
         >
-          {item.title}
-        </Text>
-        {item.subtitle ? (
-          <Text
-            numberOfLines={1}
-            style={[styles.subtitle, { fontSize: fontSize(14) }]}
-          >
-            {item.subtitle}
+          {item.posterUrl ? (
+            <Image
+              accessibilityIgnoresInvertColors
+              contentFit="cover"
+              source={{ uri: item.posterUrl }}
+              style={styles.poster}
+            />
+          ) : (
+            <View style={styles.posterFallback} />
+          )}
+        </View>
+        <View style={[styles.body, { gap: space["2xs"] }]}>
+          <Text numberOfLines={1} role="headline">
+            {item.title}
           </Text>
-        ) : null}
-        <Text style={[styles.meta, { fontSize: fontSize(13) }]}>
-          {kindLabel} · {dateLabel}
-        </Text>
-      </View>
+          {item.subtitle ? (
+            <Text numberOfLines={1} role="body" tone="muted">
+              {item.subtitle}
+            </Text>
+          ) : null}
+          <Text role="caption" tone="accent">
+            {kindLabel} · {dateLabel}
+          </Text>
+        </View>
+      </Surface>
     </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
+  rowPressable: {
+    alignSelf: "stretch",
+  },
   row: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
     flexDirection: "row",
-  },
-  pressed: {
-    opacity: 0.85,
   },
   posterWrap: {
     borderRadius: radii.md,
@@ -96,24 +98,10 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   posterFallback: {
-    backgroundColor: "rgba(244, 240, 232, 0.08)",
+    backgroundColor: colors.borderSubtle,
     flex: 1,
   },
   body: {
     flex: 1,
-    gap: 2,
-  },
-  title: {
-    color: colors.text,
-    fontFamily: fonts.uiBold,
-  },
-  subtitle: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  meta: {
-    color: colors.accent,
-    fontFamily: fonts.uiMedium,
-    marginTop: 2,
   },
 });

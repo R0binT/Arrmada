@@ -1,26 +1,19 @@
 import { router } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { Screen } from "@/components";
 import { SettingsNavRow } from "@/features/settings/SettingsNavRow";
 import { useI18n } from "@/i18n";
 import { useUiSize } from "@/lib/UiSizeProvider";
-import { colors, fonts } from "@/lib/theme";
+import { Text } from "@/ui";
 
 export default function SettingsHubScreen() {
   const { t } = useI18n();
-  const { space, fontSize } = useUiSize();
+  const { space } = useUiSize();
 
   return (
     <Screen scroll>
-      <Text
-        style={{
-          color: colors.text,
-          fontFamily: fonts.display,
-          fontSize: fontSize(32),
-          marginBottom: space.lg,
-        }}
-      >
+      <Text role="title" style={{ marginBottom: space.lg }}>
         {t("settings.title")}
       </Text>
 

@@ -1,18 +1,13 @@
-import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import { canOfferDownload } from "@/arr-client";
 import {
   AudioChoiceSheet,
+  DetailImmersiveHeader,
   EmptyState,
   ErrorBanner,
   IconButton,
@@ -34,8 +29,15 @@ import {
 } from "@/features/series/use-series";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { useI18n } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import {
+  Button,
+  createFadeIn,
+  Surface,
+  Text,
+  useReduceMotion,
+} from "@/ui";
 
 const parseTvdbId = (value: string | string[] | undefined): number => {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -44,9 +46,8 @@ const parseTvdbId = (value: string | string[] | undefined): number => {
 
 export default function SeriesPreviewScreen() {
   const { t } = useI18n();
-  const { fontSize, space: scaledSpace, minTouchTarget, scale } = useUiSize();
-  const posterWidth = Math.round(120 * scale);
-  const posterHeight = Math.round(180 * scale);
+  const { space: scaledSpace } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const { tvdbId: tvdbIdParam } = useLocalSearchParams<{ tvdbId: string }>();
   const tvdbId = parseTvdbId(tvdbIdParam);
   const { sonarr } = useArrClients();
@@ -238,130 +239,62 @@ export default function SeriesPreviewScreen() {
 
   return (
     <Screen scroll>
-      <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
-        <IconButton
-          accessibilityLabel={t("action.back")}
-          icon="←"
-          onPress={handleBack}
-        />
-        <Text
-          style={[
-            styles.screenTitle,
-            { fontSize: fontSize(18), marginHorizontal: scaledSpace.sm },
-          ]}
-        >
-          {t("add.previewSeriesTitle")}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <View
-        style={[
-          styles.hero,
-          { gap: scaledSpace.md, marginBottom: scaledSpace.lg },
-        ]}
-      >
-        {candidate.posterUrl ? (
-          <Image
-            accessibilityIgnoresInvertColors
-            contentFit="cover"
-            source={{ uri: candidate.posterUrl }}
-            style={[
-              styles.poster,
-              { height: posterHeight, width: posterWidth },
-            ]}
-            transition={200}
-          />
-        ) : (
-          <View
-            style={[
-              styles.poster,
-              styles.posterPlaceholder,
-              { height: posterHeight, width: posterWidth },
-            ]}
-          >
-            <Text style={[styles.posterInitial, { fontSize: fontSize(40) }]}>
-              {candidate.title.slice(0, 1).toUpperCase()}
-            </Text>
-          </View>
-        )}
-        <View style={[styles.heroCopy, { gap: scaledSpace.sm }]}>
-          <Text style={[styles.movieTitle, { fontSize: fontSize(28) }]}>
-            {candidate.title}
-          </Text>
-          <Text style={[styles.movieMeta, { fontSize: fontSize(15) }]}>
+      <DetailImmersiveHeader
+        actions={
+          isInLibrary ? (
+            <Button
+              accessibilityLabel={t("add.seeFiche")}
+              onPress={handleOpenLibrary}
+              style={styles.fullWidthButton}
+            >
+              {t("add.seeFiche")}
+            </Button>
+          ) : (
+            <Button
+              accessibilityLabel={t("action.addNamedA11y", {
+                title: candidate.title,
+              })}
+              disabled={!canAdd}
+              loading={addMutation.isPending}
+              onPress={() => void handleAdd()}
+              style={styles.fullWidthButton}
+            >
+              {addMutation.isPending ? t("action.adding") : t("action.add")}
+            </Button>
+          )
+        }
+        backLabel={t("action.back")}
+        meta={
+          <Text role="label" tone="muted">
             {candidate.year}
           </Text>
-        </View>
-      </View>
-
-      {candidate.overview.trim().length > 0 ? (
-        <Text
-          style={[
-            styles.overview,
-            {
-              fontSize: fontSize(15),
-              lineHeight: fontSize(22),
-              marginBottom: scaledSpace.lg,
-            },
-          ]}
-        >
-          {candidate.overview}
-        </Text>
-      ) : null}
-
-      <MediaMetaBlock
-        added={undefined}
-        genres={candidate.genres}
-        networkOrStudio={undefined}
-        runtimeMinutes={candidate.runtimeMinutes}
+        }
+        onBack={handleBack}
+        posterUrl={candidate.posterUrl}
+        title={candidate.title}
       />
 
-      {isInLibrary ? (
-        <View style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.lg }}>
-          <Text style={[styles.hint, { fontSize: fontSize(14) }]}>
+      <Animated.View
+        entering={createFadeIn(reduceMotion)}
+        style={{ gap: scaledSpace.md, marginBottom: scaledSpace.lg }}
+      >
+        <MediaMetaBlock
+          added={undefined}
+          genres={candidate.genres}
+          networkOrStudio={undefined}
+          runtimeMinutes={candidate.runtimeMinutes}
+        />
+        {candidate.overview.trim().length > 0 ? (
+          <Text role="body" tone="muted">
+            {candidate.overview}
+          </Text>
+        ) : null}
+        {isInLibrary ? (
+          <Text role="body" tone="muted">
             {t("add.alreadyInLibraryHint")}
           </Text>
-          <Pressable
-            accessibilityLabel={t("add.seeFiche")}
-            accessibilityRole="button"
-            onPress={handleOpenLibrary}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              {
-                minHeight: minTouchTarget,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            <Text style={[styles.primaryButtonText, { fontSize: fontSize(16) }]}>
-              {t("add.seeFiche")}
-            </Text>
-          </Pressable>
-        </View>
-      ) : (
-        <Pressable
-          accessibilityLabel={t("action.addNamedA11y", {
-            title: candidate.title,
-          })}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canAdd }}
-          disabled={!canAdd}
-          onPress={() => void handleAdd()}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            {
-              minHeight: minTouchTarget,
-              marginBottom: scaledSpace.lg,
-              opacity: !canAdd ? 0.5 : pressed ? 0.85 : 1,
-            },
-          ]}
-        >
-          <Text style={[styles.primaryButtonText, { fontSize: fontSize(16) }]}>
-            {addMutation.isPending ? t("action.adding") : t("action.add")}
-          </Text>
-        </Pressable>
-      )}
+        ) : null}
+      </Animated.View>
 
       <AudioChoiceSheet
         onChooseVf={() => void handleAudioChoice("vf")}
@@ -375,8 +308,8 @@ export default function SeriesPreviewScreen() {
       />
 
       {feedback ? (
-        <View
-          accessibilityLiveRegion="polite"
+        <Surface
+          radius="md"
           style={[
             styles.toast,
             {
@@ -385,11 +318,12 @@ export default function SeriesPreviewScreen() {
               paddingVertical: scaledSpace.sm,
             },
           ]}
+          tone="elevated"
         >
-          <Text style={[styles.toastText, { fontSize: fontSize(14) }]}>
-            {feedback}
-          </Text>
-        </View>
+          <View accessibilityLiveRegion="polite">
+            <Text role="label">{feedback}</Text>
+          </View>
+        </Surface>
       ) : null}
     </Screen>
   );
@@ -400,73 +334,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
   },
-  screenTitle: {
-    color: colors.text,
-    flex: 1,
-    fontFamily: fonts.display,
-    textAlign: "center",
-  },
-  headerSpacer: {
-    width: 44,
-  },
   loading: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
   },
-  hero: {
-    flexDirection: "row",
-  },
-  poster: {
-    borderRadius: radii.md,
-  },
-  posterPlaceholder: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    justifyContent: "center",
-  },
-  posterInitial: {
-    color: colors.secondary,
-    fontFamily: fonts.display,
-  },
-  heroCopy: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  movieTitle: {
-    color: colors.text,
-    fontFamily: fonts.display,
-  },
-  movieMeta: {
-    color: colors.secondary,
-    fontFamily: fonts.uiMedium,
-  },
-  overview: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  hint: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  primaryButtonText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
+  fullWidthButton: {
+    alignSelf: "stretch",
   },
   toast: {
     alignSelf: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
     position: "absolute",
-  },
-  toastText: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
   },
 });

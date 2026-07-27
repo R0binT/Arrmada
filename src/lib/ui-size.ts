@@ -31,19 +31,23 @@ export const scaledMinTouchTarget = (scale: number): number =>
   Math.max(minTouchTarget, Math.round(minTouchTarget * scale));
 
 export type ScaledSpace = {
+  readonly "2xs": number;
   readonly xs: number;
   readonly sm: number;
   readonly md: number;
   readonly lg: number;
   readonly xl: number;
+  readonly "2xl": number;
 };
 
 export const scaleSpace = (scale: number): ScaledSpace => ({
+  "2xs": scaleSpaceValue(space["2xs"], scale),
   xs: scaleSpaceValue(space.xs, scale),
   sm: scaleSpaceValue(space.sm, scale),
   md: scaleSpaceValue(space.md, scale),
   lg: scaleSpaceValue(space.lg, scale),
   xl: scaleSpaceValue(space.xl, scale),
+  "2xl": scaleSpaceValue(space["2xl"], scale),
 });
 
 export const loadUiSize = async (): Promise<UiSizeId> => {

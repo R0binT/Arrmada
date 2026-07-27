@@ -1,22 +1,19 @@
 import { useState } from "react";
-import {
-    Pressable,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View,
-} from "react-native";
+import { StyleSheet, Switch, View } from "react-native";
 
 import { useVerrou } from "@/features/verrou/VerrouProvider";
 import { t } from "@/i18n";
 import { isValidPin } from "@/lib/app-lock";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { Button } from "@/ui/Button";
+import { Surface } from "@/ui/Surface";
+import { Text } from "@/ui/Text";
+import { TextField } from "@/ui/TextField";
 
 export const VerrouSettingsCard = () => {
   const { isEnabled, enable, disable } = useVerrou();
-  const { space, fontSize, minTouchTarget } = useUiSize();
+  const { space } = useUiSize();
   const [draftPin, setDraftPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [mode, setMode] = useState<"idle" | "enable" | "disable">("idle");
@@ -78,27 +75,15 @@ export const VerrouSettingsCard = () => {
   };
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          gap: space.md,
-          marginTop: space.md,
-          padding: space.md,
-        },
-      ]}
+    <Surface
+      padded
+      radius="md"
+      style={[styles.card, { gap: space.md, marginTop: space.md }]}
     >
       <View style={[styles.header, { gap: space.md }]}>
         <View style={[styles.copy, { gap: space.xs }]}>
-          <Text style={[styles.title, { fontSize: fontSize(16) }]}>
-            {t("verrou.title")}
-          </Text>
-          <Text
-            style={[
-              styles.body,
-              { fontSize: fontSize(14), lineHeight: fontSize(20) },
-            ]}
-          >
+          <Text role="label">{t("verrou.title")}</Text>
+          <Text role="body" tone="muted">
             {t("verrou.description")}
           </Text>
         </View>
@@ -111,8 +96,8 @@ export const VerrouSettingsCard = () => {
       </View>
 
       {mode === "enable" ? (
-        <View style={[styles.form, { gap: space.sm }]}>
-          <TextInput
+        <View style={{ gap: space.sm }}>
+          <TextField
             accessibilityLabel={t("verrou.newPinA11y")}
             keyboardType="number-pad"
             maxLength={6}
@@ -120,19 +105,11 @@ export const VerrouSettingsCard = () => {
               setDraftPin(value.replace(/\D/g, "").slice(0, 6))
             }
             placeholder={t("verrou.pinPlaceholder")}
-            placeholderTextColor={colors.secondary}
             secureTextEntry
-            style={[
-              styles.input,
-              {
-                fontSize: fontSize(15),
-                minHeight: minTouchTarget,
-                paddingHorizontal: space.md,
-              },
-            ]}
+            style={styles.input}
             value={draftPin}
           />
-          <TextInput
+          <TextField
             accessibilityLabel={t("verrou.confirmPinA11y")}
             keyboardType="number-pad"
             maxLength={6}
@@ -140,68 +117,35 @@ export const VerrouSettingsCard = () => {
               setConfirmPin(value.replace(/\D/g, "").slice(0, 6))
             }
             placeholder={t("verrou.pinConfirm")}
-            placeholderTextColor={colors.secondary}
             secureTextEntry
-            style={[
-              styles.input,
-              {
-                fontSize: fontSize(15),
-                minHeight: minTouchTarget,
-                paddingHorizontal: space.md,
-              },
-            ]}
+            style={styles.input}
             value={confirmPin}
           />
           <View style={[styles.actions, { gap: space.sm }]}>
-            <Pressable
+            <Button
               accessibilityLabel={t("action.cancel")}
-              accessibilityRole="button"
               onPress={() => {
                 resetForm();
                 setMessage(undefined);
               }}
-              style={[
-                styles.secondaryButton,
-                {
-                  minHeight: minTouchTarget,
-                  paddingHorizontal: space.lg,
-                },
-              ]}
+              variant="secondary"
             >
-              <Text
-                style={[styles.secondaryButtonText, { fontSize: fontSize(14) }]}
-              >
-                {t("action.cancel")}
-              </Text>
-            </Pressable>
-            <Pressable
+              {t("action.cancel")}
+            </Button>
+            <Button
               accessibilityLabel={t("verrou.enableA11y")}
-              accessibilityRole="button"
               disabled={isBusy}
               onPress={() => void handleEnable()}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                {
-                  minHeight: minTouchTarget,
-                  paddingHorizontal: space.lg,
-                },
-                pressed ? styles.pressed : null,
-                isBusy ? styles.disabled : null,
-              ]}
             >
-              <Text
-                style={[styles.primaryButtonText, { fontSize: fontSize(14) }]}
-              >
-                {t("verrou.enable")}
-              </Text>
-            </Pressable>
+              {t("verrou.enable")}
+            </Button>
           </View>
         </View>
       ) : null}
 
       {mode === "disable" ? (
-        <View style={[styles.form, { gap: space.sm }]}>
-          <TextInput
+        <View style={{ gap: space.sm }}>
+          <TextField
             accessibilityLabel={t("verrou.pinCurrent")}
             keyboardType="number-pad"
             maxLength={6}
@@ -209,84 +153,43 @@ export const VerrouSettingsCard = () => {
               setDraftPin(value.replace(/\D/g, "").slice(0, 6))
             }
             placeholder={t("verrou.pinCurrent")}
-            placeholderTextColor={colors.secondary}
             secureTextEntry
-            style={[
-              styles.input,
-              {
-                fontSize: fontSize(15),
-                minHeight: minTouchTarget,
-                paddingHorizontal: space.md,
-              },
-            ]}
+            style={styles.input}
             value={draftPin}
           />
           <View style={[styles.actions, { gap: space.sm }]}>
-            <Pressable
+            <Button
               accessibilityLabel={t("action.cancel")}
-              accessibilityRole="button"
               onPress={() => {
                 resetForm();
                 setMessage(undefined);
               }}
-              style={[
-                styles.secondaryButton,
-                {
-                  minHeight: minTouchTarget,
-                  paddingHorizontal: space.lg,
-                },
-              ]}
+              variant="secondary"
             >
-              <Text
-                style={[styles.secondaryButtonText, { fontSize: fontSize(14) }]}
-              >
-                {t("action.cancel")}
-              </Text>
-            </Pressable>
-            <Pressable
+              {t("action.cancel")}
+            </Button>
+            <Button
               accessibilityLabel={t("verrou.disableA11y")}
-              accessibilityRole="button"
               disabled={isBusy}
               onPress={() => void handleDisable()}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                {
-                  minHeight: minTouchTarget,
-                  paddingHorizontal: space.lg,
-                },
-                pressed ? styles.pressed : null,
-                isBusy ? styles.disabled : null,
-              ]}
             >
-              <Text
-                style={[styles.primaryButtonText, { fontSize: fontSize(14) }]}
-              >
-                {t("verrou.disable")}
-              </Text>
-            </Pressable>
+              {t("verrou.disable")}
+            </Button>
           </View>
         </View>
       ) : null}
 
       {message ? (
-        <Text
-          accessibilityRole="text"
-          style={[styles.message, { fontSize: fontSize(13) }]}
-        >
+        <Text accessibilityRole="text" role="caption" tone="muted">
           {message}
         </Text>
       ) : null}
-    </View>
+    </Surface>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: "rgba(244, 240, 232, 0.08)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
+  card: {},
   header: {
     alignItems: "center",
     flexDirection: "row",
@@ -294,56 +197,12 @@ const styles = StyleSheet.create({
   copy: {
     flex: 1,
   },
-  title: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
-  },
-  body: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  form: {},
   input: {
     backgroundColor: colors.bg,
-    borderColor: "rgba(244, 240, 232, 0.12)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    color: colors.text,
-    fontFamily: fonts.ui,
+    borderColor: colors.borderInput,
   },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  primaryButtonText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
-  },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: "rgba(244, 240, 232, 0.2)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    justifyContent: "center",
-  },
-  secondaryButtonText: {
-    color: colors.secondary,
-    fontFamily: fonts.uiMedium,
-  },
-  message: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  disabled: {
-    opacity: 0.45,
   },
 });

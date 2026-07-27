@@ -11,12 +11,18 @@ type SymbolName = ComponentProps<typeof SymbolView>["name"];
 
 type TabIconProps = {
   readonly color: ColorValue;
+  readonly focused: boolean;
   readonly name: SymbolName;
   readonly size: number;
 };
 
-const TabIcon = ({ color, name, size }: TabIconProps) => (
-  <SymbolView name={name} size={size} tintColor={color} />
+const TabIcon = ({ color, focused, name, size }: TabIconProps) => (
+  <SymbolView
+    name={name}
+    size={size}
+    style={{ opacity: focused ? 1 : 0.72 }}
+    tintColor={color}
+  />
 );
 
 const navigateToTabRoot = (href: "/(tabs)/movies" | "/(tabs)/series") => {
@@ -33,7 +39,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.secondary,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: [styles.tabBarLabel, { fontSize: fontSize(11) }],
       }}
@@ -42,9 +48,10 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t("tabs.home"),
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color, focused }) => (
             <TabIcon
               color={color}
+              focused={focused}
               name={{
                 ios: "house.fill",
                 android: "home",
@@ -65,9 +72,10 @@ export default function TabLayout() {
         })}
         options={{
           title: t("tabs.movies"),
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color, focused }) => (
             <TabIcon
               color={color}
+              focused={focused}
               name={{
                 ios: "film.fill",
                 android: "movie",
@@ -88,9 +96,10 @@ export default function TabLayout() {
         })}
         options={{
           title: t("tabs.series"),
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color, focused }) => (
             <TabIcon
               color={color}
+              focused={focused}
               name={{
                 ios: "tv.fill",
                 android: "live_tv",
@@ -105,9 +114,10 @@ export default function TabLayout() {
         name="upcoming"
         options={{
           title: t("tabs.upcoming"),
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color, focused }) => (
             <TabIcon
               color={color}
+              focused={focused}
               name={{
                 ios: "calendar",
                 android: "calendar_month",
@@ -122,9 +132,10 @@ export default function TabLayout() {
         name="queue"
         options={{
           title: t("tabs.downloads"),
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color, focused }) => (
             <TabIcon
               color={color}
+              focused={focused}
               name={{
                 ios: "arrow.down.circle.fill",
                 android: "download",
@@ -145,9 +156,10 @@ export default function TabLayout() {
         })}
         options={{
           title: t("tabs.settings"),
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ color, focused }) => (
             <TabIcon
               color={color}
+              focused={focused}
               name={{
                 ios: "gearshape.fill",
                 android: "settings",
@@ -164,8 +176,8 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.bg,
-    borderTopColor: "rgba(244, 240, 232, 0.08)",
+    backgroundColor: colors.bgElevated,
+    borderTopColor: colors.borderSubtle,
     ...(Platform.OS === "ios"
       ? { borderTopWidth: StyleSheet.hairlineWidth }
       : {}),

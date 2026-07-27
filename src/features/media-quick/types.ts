@@ -1,4 +1,5 @@
 import type { ArrService, Availability, QueueStatus } from "@/arr-client";
+import type { ChipTone } from "@/ui/variant-styles";
 
 export type MediaQuickKind =
   | "movie"
@@ -69,13 +70,25 @@ export type PrimaryDestination =
       readonly ctaKey: "mediaQuick.seeDownloads";
     };
 
-export type MediaQuickStatusTone = "success" | "accent" | "muted" | "danger";
+export type MediaQuickStatusTone =
+  | "success"
+  | "accent"
+  | "warning"
+  | "info"
+  | "muted"
+  | "danger";
+
+export type MediaQuickChip = {
+  readonly label: string;
+  readonly tone: ChipTone;
+};
 
 export type MediaQuickViewModel = {
   readonly title: string;
   readonly subtitle: string | undefined;
+  readonly posterUrl: string | undefined;
   /** Short glanceable facts rendered as chips. */
-  readonly chips: readonly string[];
+  readonly chips: readonly MediaQuickChip[];
   /** Secondary facts on one compact line (added, quality, size…). */
   readonly detailLine: string | undefined;
   readonly statusLine: string;
