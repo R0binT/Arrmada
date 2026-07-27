@@ -133,7 +133,7 @@ export default function AddMovieScreen() {
           : undefined;
       setFeedback(t("add.movieAdded", { title: selected.title }));
       setSelected(undefined);
-      void lookupQuery.refetch();
+      await lookupQuery.refetch();
       if (createdId && radarr) {
         try {
           const releases = await radarr.getMovieReleases(createdId);

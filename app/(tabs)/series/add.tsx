@@ -134,7 +134,7 @@ export default function AddSeriesScreen() {
           : undefined;
       setFeedback(t("add.seriesAdded", { title: selected.title }));
       setSelected(undefined);
-      void lookupQuery.refetch();
+      await lookupQuery.refetch();
       if (createdId && sonarr) {
         try {
           const seasons = await sonarr.getSeasons(createdId);
