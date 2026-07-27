@@ -1,0 +1,171 @@
+name: Prepare release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semver without v (e.g. 1.0.2). Leave empty to bump patch from latest GitHub release.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    name: Bump version and open PR
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${INPUT_VERSION}" ]; then
+            VERSION="${INPUT_VERSION#v}"
+            if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Invalid version '${INPUT_VERSION}'. Expected MAJOR.MINOR.PATCH (e.g. 1.0.2)."
+              exit 1
+            fi
+            echo "Using provided version: ${VERSION}"
+          else
+            LATEST_TAG="$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')"
+            if [ -z "${LATEST_TAG}" ]; then
+              echo "::error::No GitHub release found. Provide an explicit version input."
+              exit 1
+            fi
+            BASE="${LATEST_TAG#v}"
+            if ! [[ "${BASE}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Latest release tag '${LATEST_TAG}' is not semver MAJOR.MINOR.PATCH."
+              exit 1
+            fi
+            IFS='.' read -r MAJOR MINOR PATCH <<< "${BASE}"
+            VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+            echo "Bumped patch from ${LATEST_TAG} → ${VERSION}"
+          fi
+
+          BRANCH="release/v${VERSION}"
+          if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
+            echo "::error::Branch ${BRANCH} already exists on origin."
+            exit 1
+          fi
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            echo "::error::GitHub release v${VERSION} already exists."
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "branch=${BRANCH}" >> "${GITHUB_OUTPUT}"
+          echo "tag=v${VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create release branch and bump files
+        id: bump
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: ${{ steps.version.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+
+          node <<'NODE'
+          const fs = require('fs');
+          const version = process.env.VERSION;
+          const pkgPath = 'package.json';
+          const appPath = 'app.json';
+
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          pkg.version = version;
+          fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+
+          const app = JSON.parse(fs.readFileSync(appPath, 'utf8'));
+          if (!app.expo || !app.expo.android) {
+            throw new Error('app.json missing expo.android');
+          }
+          const previousCode = Number(app.expo.android.versionCode);
+          if (!Number.isFinite(previousCode)) {
+            throw new Error(`Invalid android.versionCode: ${app.expo.android.versionCode}`);
+          }
+          app.expo.version = version;
+          app.expo.android.versionCode = previousCode + 1;
+          fs.writeFileSync(appPath, `${JSON.stringify(app, null, 2)}\n`);
+
+          console.log(`versionCode ${previousCode} → ${previousCode + 1}`);
+          NODE
+
+          # Keep package-lock.json version field in sync when present
+          if [ -f package-lock.json ]; then
+            node <<'NODE'
+            const fs = require('fs');
+            const version = process.env.VERSION;
+            const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+            lock.version = version;
+            if (lock.packages && lock.packages['']) {
+              lock.packages[''].version = version;
+            }
+            fs.writeFileSync('package-lock.json', `${JSON.stringify(lock, null, 2)}\n`);
+            NODE
+          fi
+
+          git add package.json app.json
+          if [ -f package-lock.json ]; then
+            git add package-lock.json
+          fi
+          git commit -m "release: v${VERSION}"
+          git push -u origin HEAD
+
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: ${{ steps.version.outputs.branch }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          BODY_FILE="$(mktemp)"
+          cat > "${BODY_FILE}" <<EOF
+          ## Summary
+          - Bumps app version to **${VERSION}** (\`${TAG}\`).
+          - Increments Android \`versionCode\` by 1.
+          - Merging this PR triggers **Publish release**, which builds the APK and attaches it to GitHub Release \`${TAG}\`.
+
+          ## Context
+          Prepared by the **Prepare release** workflow.
+
+          ## What changed
+          - \`package.json\` / \`package-lock.json\` version
+          - \`app.json\` \`expo.version\` and \`expo.android.versionCode\`
+
+          ## Test plan
+          - [ ] Diff shows only version bumps
+          - [ ] After merge, **Publish release** workflow succeeds
+          - [ ] Release \`${TAG}\` exists with \`Arrmada-${VERSION}.apk\`
+
+          ## Out of scope
+          - APK build (runs on merge via Publish release)
+          EOF
+          # Strip leading indentation from heredoc for nicer PR body
+          sed -i 's/^          //' "${BODY_FILE}"
+
+          gh pr create \
+            --base master \
+            --head "${BRANCH}" \
+            --title "release: v${VERSION}" \
+            --body-file "${BODY_FILE}"
+
+          echo "✅ Opened PR for ${BRANCH}"
