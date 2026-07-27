@@ -467,9 +467,6 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     fontFamily: fonts.ui,
   },
-  resultBadge: {
-    fontFamily: fonts.uiMedium,
-  },
   confirmCard: {
     backgroundColor: colors.surface,
     borderColor: "rgba(244, 240, 232, 0.08)",
