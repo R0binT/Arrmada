@@ -1,6 +1,6 @@
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { Image } from "expo-image";
-import { router, type Href } from "expo-router";
+import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -331,12 +331,10 @@ export default function AddMovieScreen() {
                     });
                     return;
                   }
-                  router.push(
-                    {
-                      pathname: "/(tabs)/movies/preview",
-                      params: { tmdbId: String(selected.tmdbId) },
-                    } as unknown as Href,
-                  );
+                  router.push({
+                    pathname: "/(tabs)/movies/preview",
+                    params: { tmdbId: String(selected.tmdbId) },
+                  });
                 },
               }
             : undefined

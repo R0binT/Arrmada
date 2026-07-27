@@ -13,6 +13,7 @@ export default function SeriesLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="add" />
+      <Stack.Screen name="preview" />
       <Stack.Screen name="[id]" />
     </Stack>
   );

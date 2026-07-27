@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { router, type Href } from "expo-router";
+import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -354,12 +354,10 @@ export default function AddSeriesScreen() {
                     });
                     return;
                   }
-                  router.push(
-                    {
-                      pathname: "/(tabs)/series/preview",
-                      params: { tvdbId: String(selected.tvdbId) },
-                    } as unknown as Href,
-                  );
+                  router.push({
+                    pathname: "/(tabs)/series/preview",
+                    params: { tvdbId: String(selected.tvdbId) },
+                  });
                 },
               }
             : undefined
