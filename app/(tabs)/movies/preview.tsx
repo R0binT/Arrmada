@@ -99,7 +99,7 @@ export default function MoviePreviewScreen() {
       pathname: "/(tabs)/movies/[id]",
       params: { id: String(candidate.libraryId) },
     });
-  }, [candidate?.libraryId]);
+  }, [candidate]);
 
   const handleAudioChoice = useCallback(
     async (preference: AudioPreference) => {

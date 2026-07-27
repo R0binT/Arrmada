@@ -100,7 +100,7 @@ export default function SeriesPreviewScreen() {
       pathname: "/(tabs)/series/[id]",
       params: { id: String(candidate.libraryId) },
     });
-  }, [candidate?.libraryId]);
+  }, [candidate]);
 
   const handleAudioChoice = useCallback(
     async (preference: AudioPreference) => {
