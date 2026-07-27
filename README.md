@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
+  <img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue.svg" />
   <img alt="Expo 57" src="https://img.shields.io/badge/Expo-57-black.svg" />
   <img alt="Android" src="https://img.shields.io/badge/platform-Android-3DDC84.svg" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178C6.svg" />
@@ -196,4 +196,4 @@ Git hooks (typecheck on commit, tests on push) enable after `npm install`. See [
 
 ## License
 
-[MIT](LICENSE) © [R0binT](https://github.com/R0binT)
+[PolyForm Noncommercial 1.0.0](LICENSE) © [R0binT](https://github.com/R0binT)
