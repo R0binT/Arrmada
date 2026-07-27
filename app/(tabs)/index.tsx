@@ -35,6 +35,10 @@ import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { createFadeIn, Text, useReduceMotion } from "@/ui";
 
+const HERO_PARALLAX_RANGE = 240;
+const HERO_PARALLAX_TRANSLATE_Y = -48;
+const HERO_PARALLAX_SCALE_MIN = 0.94;
+
 const formatHeroSubtitle = (hero: HomeHero): string => {
   if (hero.kind === "download") {
     const percent = Math.round(hero.item.progress * 100);
@@ -82,16 +86,16 @@ export default function HomeScreen() {
       {
         translateY: interpolate(
           scrollY.value,
-          [0, 240],
-          [0, -48],
+          [0, HERO_PARALLAX_RANGE],
+          [0, HERO_PARALLAX_TRANSLATE_Y],
           Extrapolation.CLAMP,
         ),
       },
       {
         scale: interpolate(
           scrollY.value,
-          [0, 240],
-          [1, 0.94],
+          [0, HERO_PARALLAX_RANGE],
+          [1, HERO_PARALLAX_SCALE_MIN],
           Extrapolation.CLAMP,
         ),
       },

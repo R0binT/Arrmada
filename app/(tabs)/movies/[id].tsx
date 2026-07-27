@@ -207,7 +207,7 @@ export default function MovieDetailScreen() {
       <DetailImmersiveHeader
         backLabel={t("action.back")}
         meta={
-          <View style={styles.metaRow}>
+          <View style={[styles.metaRow, { gap: scaledSpace.sm }]}>
             {movie.year ? (
               <Text role="label" tone="muted">
                 {movie.year}
@@ -329,7 +329,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
   },
   suiviRow: {
     alignItems: "center",
