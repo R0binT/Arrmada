@@ -101,12 +101,11 @@ export default function AddMovieScreen() {
           grabMutation.mutateAsync(release),
         );
         setFeedback(t("detail.downloadStarted"));
-        setTimeout(() => router.back(), 600);
       } catch (error) {
         setFeedback(getErrorMessage(error));
       }
     },
-    [grabMutation, pendingChoice],
+    [grabMutation, pendingChoice, t],
   );
 
   const handleAdd = useCallback(async () => {
@@ -133,6 +132,8 @@ export default function AddMovieScreen() {
           ? (created as { id: number }).id
           : undefined;
       setFeedback(t("add.movieAdded", { title: selected.title }));
+      setSelected(undefined);
+      await lookupQuery.refetch();
       if (createdId && radarr) {
         try {
           const releases = await radarr.getMovieReleases(createdId);
@@ -150,17 +151,18 @@ export default function AddMovieScreen() {
           // Keep add success even if grab fails.
         }
       }
-      setTimeout(() => router.back(), 600);
     } catch (error) {
       setFeedback(getErrorMessage(error));
     }
   }, [
     addMutation,
     grabMutation,
+    lookupQuery.refetch,
     qualityProfileId,
     radarr,
     rootFolderPath,
     selected,
+    t,
   ]);
 
   const listHeader = (
@@ -383,7 +385,6 @@ export default function AddMovieScreen() {
         onChooseVo={() => void handleAudioChoice("vo")}
         onDismiss={() => {
           setPendingChoice(undefined);
-          setTimeout(() => router.back(), 300);
         }}
         qualityName={pendingChoice?.qualityName ?? ""}
         visible={pendingChoice !== undefined}

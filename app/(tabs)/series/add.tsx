@@ -102,12 +102,11 @@ export default function AddSeriesScreen() {
           grabMutation.mutateAsync(release),
         );
         setFeedback(t("detail.downloadStarted"));
-        setTimeout(() => router.back(), 600);
       } catch (error) {
         setFeedback(getErrorMessage(error));
       }
     },
-    [grabMutation, pendingChoice],
+    [grabMutation, pendingChoice, t],
   );
 
   const handleAdd = useCallback(async () => {
@@ -134,6 +133,8 @@ export default function AddSeriesScreen() {
           ? (created as { id: number }).id
           : undefined;
       setFeedback(t("add.seriesAdded", { title: selected.title }));
+      setSelected(undefined);
+      await lookupQuery.refetch();
       if (createdId && sonarr) {
         try {
           const seasons = await sonarr.getSeasons(createdId);
@@ -161,17 +162,18 @@ export default function AddSeriesScreen() {
           // Keep add success even if grab fails.
         }
       }
-      setTimeout(() => router.back(), 600);
     } catch (error) {
       setFeedback(getErrorMessage(error));
     }
   }, [
     addMutation,
     grabMutation,
+    lookupQuery.refetch,
     qualityProfileId,
     rootFolderPath,
     selected,
     sonarr,
+    t,
   ]);
 
   const listHeader = (
@@ -406,7 +408,6 @@ export default function AddSeriesScreen() {
         onChooseVo={() => void handleAudioChoice("vo")}
         onDismiss={() => {
           setPendingChoice(undefined);
-          setTimeout(() => router.back(), 300);
         }}
         qualityName={pendingChoice?.qualityName ?? ""}
         visible={pendingChoice !== undefined}
