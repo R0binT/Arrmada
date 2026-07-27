@@ -88,12 +88,13 @@ jobs:
             echo "ℹ️ Release $RELEASE_TAG does not exist yet"
             exit 0
           fi
-          # Find and delete the old APK
-          ASSET_ID=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[] | select(.name | endswith(".apk")) | .id' | head -1)
-          if [ -n "$ASSET_ID" ]; then
-            gh release delete-asset "$RELEASE_TAG" "$ASSET_ID"
-            echo "✅ Deleted old APK (ID: $ASSET_ID)"
-          fi
+          # Find and delete APK assets by name
+          gh release view "$RELEASE_TAG" --json assets -q '.assets[] | select(.name | endswith(".apk")) | .name' | while read -r asset_name; do
+            if [ -n "$asset_name" ]; then
+              gh release delete-asset "$RELEASE_TAG" "$asset_name" || echo "⚠️ Could not delete $asset_name (may not exist)"
+            fi
+          done
+          echo "✅ Old APK assets cleaned up"
 
       - name: Upload APK to Release
         env:
