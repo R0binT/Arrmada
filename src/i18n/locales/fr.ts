@@ -149,6 +149,10 @@ export const frMessages = {
   "add.tryAnotherTitle": "Essaie un autre titre ou vérifie l’orthographe.",
   "add.movieAdded": "{{title}} ajouté",
   "add.seriesAdded": "{{title}} ajoutée",
+  "add.inLibrary": "Dans la bibliothèque",
+  "add.alreadyDownloaded": "Déjà téléchargé",
+  "add.episodeProgress": "{{have}}/{{total}} épisodes",
+  "add.alreadyInLibraryHint": "Déjà dans la bibliothèque.",
 
   // Detail
   "detail.suivi": "Suivi",
