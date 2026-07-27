@@ -1,6 +1,6 @@
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -18,9 +18,11 @@ import {
     ErrorBanner,
     IconButton,
     LookupStatusBadge,
+    MediaQuickSheet,
     Screen,
 } from "@/components";
 import { getMovieLookupLibraryStatus } from "@/features/library/lookup-library-status";
+import { buildMovieAddSelection } from "@/features/media-quick/build-add-candidate-selection";
 import {
     getErrorMessage,
     useAddMovie,
@@ -255,11 +257,7 @@ export default function AddMovieScreen() {
               accessibilityLabel={`${item.title} (${item.year})${badgeLabel ? `, ${badgeLabel}` : ""}`}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
-              onPress={() =>
-                setSelected((current) =>
-                  current?.tmdbId === item.tmdbId ? undefined : item,
-                )
-              }
+              onPress={() => setSelected(item)}
               style={({ pressed }) => [
                 styles.resultRow,
                 {
@@ -312,45 +310,38 @@ export default function AddMovieScreen() {
         style={styles.list}
       />
 
-      {selected ? (
-        <View
-          style={[
-            styles.confirmCard,
-            {
-              gap: scaledSpace.sm,
-              marginTop: scaledSpace.md,
-              padding: scaledSpace.md,
-            },
-          ]}
-        >
-          <Text style={[styles.confirmTitle, { fontSize: fontSize(16) }]}>
-            {selected.title}
-          </Text>
-          <Text style={[styles.confirmHint, { fontSize: fontSize(13) }]}>
-            {selected.inLibrary
-              ? t("add.alreadyInLibraryHint")
-              : t("add.defaultsHint")}
-          </Text>
-          <Pressable
-            accessibilityLabel={t("action.addNamedA11y", {
-              title: selected.title,
-            })}
-            accessibilityRole="button"
-            disabled={!canAdd}
-            onPress={() => void handleAdd()}
-            style={({ pressed }) => [
-              styles.addButton,
-              { marginTop: scaledSpace.sm, minHeight: minTouchTarget },
-              pressed ? styles.pressed : null,
-              !canAdd ? styles.disabled : null,
-            ]}
-          >
-            <Text style={[styles.addButtonText, { fontSize: fontSize(16) }]}>
-              {addMutation.isPending ? t("action.adding") : t("action.add")}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
+      <MediaQuickSheet
+        selection={
+          selected ? buildMovieAddSelection(selected) : undefined
+        }
+        onDismiss={() => setSelected(undefined)}
+        onOpenPrimary={() => {
+          /* unused in add mode */
+        }}
+        addActions={
+          selected
+            ? {
+                canAdd,
+                onAdd: () => void handleAdd(),
+                onSeeFiche: () => {
+                  if (selected.libraryId !== undefined) {
+                    router.push({
+                      pathname: "/(tabs)/movies/[id]",
+                      params: { id: String(selected.libraryId) },
+                    });
+                    return;
+                  }
+                  router.push(
+                    {
+                      pathname: "/(tabs)/movies/preview",
+                      params: { tmdbId: String(selected.tmdbId) },
+                    } as unknown as Href,
+                  );
+                },
+              }
+            : undefined
+        }
+      />
 
       {feedback ? (
         <View
@@ -444,30 +435,6 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     fontFamily: fonts.ui,
   },
-  confirmCard: {
-    backgroundColor: colors.surface,
-    borderColor: "rgba(244, 240, 232, 0.08)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
-  confirmTitle: {
-    color: colors.text,
-    fontFamily: fonts.uiBold,
-  },
-  confirmHint: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  addButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  addButtonText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
-  },
   toast: {
     alignSelf: "center",
     backgroundColor: colors.surface,
@@ -480,8 +447,5 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.5,
   },
 });
