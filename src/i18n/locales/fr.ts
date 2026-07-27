@@ -154,6 +154,8 @@ export const frMessages = {
   "add.episodeProgress": "{{have}}/{{total}} épisodes",
   "add.alreadyInLibraryHint": "Déjà dans la bibliothèque.",
   "add.seeFiche": "Voir la fiche",
+  "add.previewMovieTitle": "Aperçu Film",
+  "add.previewSeriesTitle": "Aperçu Série",
 
   // Detail
   "detail.suivi": "Suivi",
