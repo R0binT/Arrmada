@@ -1,0 +1,23 @@
+export const colors = {
+  bg: "#0B0B0F",
+  bgElevated: "#101016",
+  surface: "#16161C",
+  surfaceRaised: "#1E1E26",
+  overlay: "rgba(11, 11, 15, 0.72)",
+  text: "#F4F0E8",
+  textMuted: "#9A958C",
+  textFaint: "#6F6A63",
+  /** @deprecated Prefer textMuted — kept for existing call sites */
+  secondary: "#9A958C",
+  accent: "#F5A524",
+  accentMuted: "rgba(245, 165, 36, 0.18)",
+  accentGlow: "rgba(245, 165, 36, 0.35)",
+  danger: "#C45C4A",
+  dangerMuted: "rgba(196, 92, 74, 0.18)",
+  success: "#6FBF7A",
+  successMuted: "rgba(111, 191, 122, 0.18)",
+  warning: "#E0B35A",
+  warningMuted: "rgba(224, 179, 90, 0.18)",
+  borderSubtle: "rgba(244, 240, 232, 0.08)",
+  borderStrong: "rgba(244, 240, 232, 0.16)",
+} as const;
