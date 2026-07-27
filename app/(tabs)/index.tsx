@@ -35,8 +35,8 @@ import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { createFadeIn, Text, useReduceMotion } from "@/ui";
 
-const HERO_PARALLAX_RANGE = 360;
-const HERO_PARALLAX_TRANSLATE_Y = -36;
+const HERO_PARALLAX_RANGE = 180;
+const HERO_PARALLAX_TRANSLATE_Y = -18;
 const HERO_PARALLAX_SCALE_MIN = 0.96;
 
 const formatHeroSubtitle = (hero: HomeHero): string => {
@@ -217,7 +217,7 @@ export default function HomeScreen() {
         ) : (
           <Animated.View
             entering={fadeIn}
-            style={{ gap: scaledSpace.xl, paddingBottom: scaledSpace["2xl"] }}
+            style={{ gap: scaledSpace.lg, paddingBottom: scaledSpace["2xl"] }}
           >
             {home.hero ? (
               reduceMotion ? (

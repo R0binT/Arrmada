@@ -43,24 +43,21 @@ export const HeroBanner = ({
   const { space, scale } = useUiSize();
   const reduceMotion = useReduceMotion();
   const hasProgress = progress !== undefined && progress > 0;
-  const bannerMinHeight = Math.round((layout === "cinema" ? 360 : 180) * scale);
+  const bannerMinHeight = Math.round((layout === "cinema" ? 180 : 160) * scale);
   const ctaLabel =
     kind === "download"
       ? t("home.ctaQueue")
       : kind === "movie"
         ? t("home.ctaMovie")
         : t("home.ctaSeries");
-  const kindLabel =
-    kind === "download"
-      ? t("tabs.downloads")
-      : kind === "movie"
-        ? t("tabs.movies")
-        : t("tabs.series");
+  /** Why this item is featured — not the media type. */
+  const reasonLabel =
+    kind === "download" ? t("home.inProgress") : t("home.addedRecently");
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${title}. ${subtitle}. ${ctaLabel}`}
+      accessibilityLabel={`${reasonLabel}. ${title}. ${subtitle}. ${ctaLabel}`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.container,
@@ -84,12 +81,12 @@ export const HeroBanner = ({
       <View
         style={{
           flex: 1,
-          gap: space.sm,
+          gap: space.xs,
           justifyContent: "flex-end",
           minHeight: bannerMinHeight,
           paddingHorizontal: space.lg,
-          paddingBottom: space.lg,
-          paddingTop: space["2xl"],
+          paddingBottom: space.md,
+          paddingTop: space.md,
         }}
       >
         <Text
@@ -97,10 +94,10 @@ export const HeroBanner = ({
           style={styles.eyebrow}
           tone="accent"
         >
-          {kindLabel}
+          {reasonLabel}
         </Text>
         <Text
-          role="display"
+          role="title"
           style={styles.heroTitle}
         >
           {title}
