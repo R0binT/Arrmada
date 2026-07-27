@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.scrim,
   },
   sheet: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
     overflow: "hidden",

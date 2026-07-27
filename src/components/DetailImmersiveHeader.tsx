@@ -115,7 +115,7 @@ export const DetailImmersiveHeader = ({
               </View>
             ) : null}
             <View style={{ flex: 1, gap: space.xs, paddingBottom: space.xs }}>
-              <Text role="display" style={styles.title}>
+              <Text numberOfLines={2} role="title" style={styles.title}>
                 {title}
               </Text>
               {subtitle}

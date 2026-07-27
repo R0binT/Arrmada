@@ -19,58 +19,77 @@ describe("ui variant styles", () => {
     it("maps secondary to surface with border", () => {
       expect(resolveButtonVariantStyle("secondary")).toEqual({
         backgroundColor: colors.surface,
-        borderColor: colors.borderSubtle,
+        borderColor: colors.borderMuted,
         borderWidth: 1,
         labelColor: colors.text,
       });
     });
 
-    it("maps ghost to transparent", () => {
+    it("maps ghost to muted text", () => {
       expect(resolveButtonVariantStyle("ghost")).toEqual({
         backgroundColor: "transparent",
         borderColor: "transparent",
         borderWidth: 0,
-        labelColor: colors.text,
+        labelColor: colors.textMuted,
       });
     });
 
-    it("maps danger to danger fill", () => {
+    it("maps ghostAccent to accent outline", () => {
+      expect(resolveButtonVariantStyle("ghostAccent")).toEqual({
+        backgroundColor: colors.accentMuted,
+        borderColor: colors.accent,
+        borderWidth: 1,
+        labelColor: colors.accent,
+      });
+    });
+
+    it("maps danger to danger tint outline", () => {
       expect(resolveButtonVariantStyle("danger")).toEqual({
-        backgroundColor: colors.danger,
-        borderColor: "transparent",
-        borderWidth: 0,
-        labelColor: colors.text,
+        backgroundColor: colors.dangerMuted,
+        borderColor: colors.danger,
+        borderWidth: 1,
+        labelColor: colors.danger,
       });
     });
   });
 
   describe("resolveChipToneStyle", () => {
-    it("maps neutral to surface and muted text", () => {
+    it("maps neutral to raised surface and muted text", () => {
       expect(resolveChipToneStyle("neutral")).toEqual({
-        backgroundColor: colors.surface,
+        backgroundColor: colors.surfaceRaised,
+        borderColor: colors.borderMuted,
         labelColor: colors.textMuted,
       });
     });
 
-    it("maps accent to muted accent background", () => {
+    it("maps accent to soft tint with accent label", () => {
       expect(resolveChipToneStyle("accent")).toEqual({
         backgroundColor: colors.accentMuted,
+        borderColor: colors.accent,
         labelColor: colors.accent,
       });
     });
 
-    it("maps success danger and warning tones", () => {
+    it("maps success danger warning and info to soft tints", () => {
       expect(resolveChipToneStyle("success")).toEqual({
         backgroundColor: colors.successMuted,
+        borderColor: colors.success,
         labelColor: colors.success,
       });
       expect(resolveChipToneStyle("danger")).toEqual({
         backgroundColor: colors.dangerMuted,
+        borderColor: colors.danger,
         labelColor: colors.danger,
       });
       expect(resolveChipToneStyle("warning")).toEqual({
         backgroundColor: colors.warningMuted,
+        borderColor: colors.warning,
         labelColor: colors.warning,
+      });
+      expect(resolveChipToneStyle("info")).toEqual({
+        backgroundColor: colors.infoMuted,
+        borderColor: colors.info,
+        labelColor: colors.info,
       });
     });
   });

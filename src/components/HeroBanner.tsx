@@ -40,7 +40,7 @@ export const HeroBanner = ({
   layout = "cinema",
 }: HeroBannerProps) => {
   const { t } = useI18n();
-  const { space, minTouchTarget, scale } = useUiSize();
+  const { space, scale } = useUiSize();
   const reduceMotion = useReduceMotion();
   const hasProgress = progress !== undefined && progress > 0;
   const bannerMinHeight = Math.round((layout === "cinema" ? 360 : 180) * scale);
@@ -117,14 +117,13 @@ export const HeroBanner = ({
           style={[
             styles.cta,
             {
-              marginTop: space.sm,
-              minHeight: minTouchTarget,
-              paddingHorizontal: space.lg,
-              paddingVertical: space.sm,
+              marginTop: space.xs,
+              paddingHorizontal: space.md,
+              paddingVertical: space.xs,
             },
           ]}
         >
-          <Text role="label" style={styles.ctaLabel}>
+          <Text role="caption" style={styles.ctaLabel}>
             {ctaLabel}
           </Text>
         </View>
@@ -195,11 +194,13 @@ const styles = StyleSheet.create({
   cta: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+    borderColor: colors.accent,
     borderRadius: radii.full,
+    borderWidth: 1,
     justifyContent: "center",
   },
   ctaLabel: {
-    color: colors.bg,
+    color: colors.accent,
   },
 });

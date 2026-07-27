@@ -10,7 +10,7 @@ export type LookupStatusBadgeProps = {
 
 export const LookupStatusBadge = ({ badge }: LookupStatusBadgeProps) => {
   const { t } = useI18n();
-  const tone = badge === "alreadyDownloaded" ? "success" : "neutral";
+  const tone = badge === "alreadyDownloaded" ? "success" : "accent";
   const label =
     badge === "alreadyDownloaded"
       ? t("add.alreadyDownloaded")

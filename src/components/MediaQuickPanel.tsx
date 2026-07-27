@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { ProgressBar } from "@/components/ProgressBar";
@@ -8,7 +9,7 @@ import type {
   PrimaryDestination,
 } from "@/features/media-quick/types";
 import { t } from "@/i18n";
-import { colors } from "@/lib/theme";
+import { colors, elevation, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
@@ -24,6 +25,8 @@ type MediaQuickPanelProps = {
 const STATUS_TONE: Record<MediaQuickStatusTone, ChipTone> = {
   success: "success",
   accent: "accent",
+  warning: "warning",
+  info: "info",
   muted: "neutral",
   danger: "danger",
 };
@@ -33,15 +36,16 @@ export const MediaQuickPanel = ({
   onOpenPrimary,
   addActions,
 }: MediaQuickPanelProps) => {
-  const { space } = useUiSize();
+  const { space, scale } = useUiSize();
   const hasProgress =
     viewModel.progress !== undefined && viewModel.progress > 0;
   const hasStatus = viewModel.statusLine.length > 0;
+  const posterSize = Math.round(72 * scale);
 
   return (
     <View
       style={{
-        backgroundColor: colors.surface,
+        backgroundColor: colors.surfaceRaised,
         gap: space.md,
         maxHeight: "100%",
         paddingBottom: space.sm,
@@ -58,40 +62,53 @@ export const MediaQuickPanel = ({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View style={[styles.titleRow, { gap: space.sm }]}>
-            <Text role="title" style={styles.title}>
-              {viewModel.title}
-            </Text>
-            {hasStatus ? (
-              <Chip
-                style={
-                  viewModel.statusTone === "muted"
-                    ? { backgroundColor: colors.neutralMuted }
-                    : undefined
-                }
-                tone={STATUS_TONE[viewModel.statusTone]}
+        <View style={[styles.header, { gap: space.md }]}>
+          <View style={[styles.titleBlock, { gap: space.sm }]}>
+            {viewModel.posterUrl ? (
+              <View
+                style={[
+                  styles.posterFrame,
+                  elevation.low,
+                  { height: posterSize * 1.5, width: posterSize },
+                ]}
               >
-                {viewModel.statusLine}
-              </Chip>
+                <Image
+                  accessibilityIgnoresInvertColors
+                  contentFit="cover"
+                  source={{ uri: viewModel.posterUrl }}
+                  style={StyleSheet.absoluteFill}
+                  transition={180}
+                />
+              </View>
             ) : null}
+            <View style={[styles.headerCopy, { gap: space.xs }]}>
+              <View style={[styles.titleRow, { gap: space.sm }]}>
+                <Text role="title" style={styles.title}>
+                  {viewModel.title}
+                </Text>
+                {hasStatus ? (
+                  <Chip
+                    style={styles.statusChip}
+                    tone={STATUS_TONE[viewModel.statusTone]}
+                  >
+                    {viewModel.statusLine}
+                  </Chip>
+                ) : null}
+              </View>
+              {viewModel.subtitle ? (
+                <Text role="body" tone="muted">
+                  {viewModel.subtitle}
+                </Text>
+              ) : null}
+            </View>
           </View>
-          {viewModel.subtitle ? (
-            <Text role="body" tone="muted">
-              {viewModel.subtitle}
-            </Text>
-          ) : null}
         </View>
 
         {viewModel.chips.length > 0 ? (
           <View style={[styles.chipWrap, { gap: space.xs }]}>
             {viewModel.chips.map((chip) => (
-              <Chip
-                key={chip}
-                style={{ backgroundColor: colors.borderSubtle }}
-                tone="neutral"
-              >
-                {chip}
+              <Chip key={chip.label} tone={chip.tone}>
+                {chip.label}
               </Chip>
             ))}
           </View>
@@ -111,10 +128,11 @@ export const MediaQuickPanel = ({
       </ScrollView>
 
       {addActions ? (
-        <View style={{ gap: space.sm }}>
+        <View style={{ gap: space.xs }}>
           <Button
             accessibilityLabel={t("add.seeFiche")}
             onPress={addActions.onSeeFiche}
+            size="compact"
             style={styles.fullWidth}
             variant="secondary"
           >
@@ -124,6 +142,7 @@ export const MediaQuickPanel = ({
             accessibilityLabel={t("action.add")}
             disabled={!addActions.canAdd}
             onPress={addActions.onAdd}
+            size="compact"
             style={styles.fullWidth}
           >
             {t("action.add")}
@@ -133,6 +152,7 @@ export const MediaQuickPanel = ({
         <Button
           accessibilityLabel={t(viewModel.destination.ctaKey)}
           onPress={() => onOpenPrimary(viewModel.destination)}
+          size="compact"
           style={styles.fullWidth}
         >
           {t(viewModel.destination.ctaKey)}
@@ -143,16 +163,34 @@ export const MediaQuickPanel = ({
 };
 
 const styles = StyleSheet.create({
-  header: {
-    gap: 2,
+  header: {},
+  titleBlock: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+  },
+  headerCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   titleRow: {
     alignItems: "center",
     flexDirection: "row",
+    justifyContent: "space-between",
   },
   title: {
     flex: 1,
     minWidth: 0,
+  },
+  statusChip: {
+    alignSelf: "center",
+    flexShrink: 0,
+  },
+  posterFrame: {
+    backgroundColor: colors.surface,
+    borderColor: colors.borderSubtle,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    overflow: "hidden",
   },
   chipWrap: {
     flexDirection: "row",

@@ -20,6 +20,7 @@ type IconButtonProps = {
   readonly onPress: () => void;
   readonly icon: string;
   readonly variant?: IconButtonVariant;
+  readonly size?: "default" | "compact";
   readonly disabled?: boolean;
   readonly style?: StyleProp<ViewStyle>;
 };
@@ -29,12 +30,15 @@ export const IconButton = ({
   onPress,
   icon,
   variant = "default",
+  size = "default",
   disabled = false,
   style,
 }: IconButtonProps) => {
-  const { fontSize, minTouchTarget } = useUiSize();
+  const { fontSize, minTouchTarget, space } = useUiSize();
   const reduceMotion = useReduceMotion();
   const variantStyle = resolveIconButtonVariantStyle(variant);
+  const isCompact = size === "compact";
+  const side = isCompact ? Math.round(minTouchTarget * 0.72) : minTouchTarget;
 
   return (
     <Pressable
@@ -42,7 +46,7 @@ export const IconButton = ({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
       disabled={disabled}
-      hitSlop={8}
+      hitSlop={isCompact ? 10 : 8}
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
@@ -50,9 +54,10 @@ export const IconButton = ({
           backgroundColor: variantStyle.backgroundColor,
           borderColor: variantStyle.borderColor,
           borderWidth: variantStyle.borderWidth,
-          borderRadius: variant === "outline" ? minTouchTarget / 2 : radii.md,
-          minHeight: minTouchTarget,
-          minWidth: minTouchTarget,
+          borderRadius: variant === "outline" ? side / 2 : radii.md,
+          minHeight: side,
+          minWidth: side,
+          paddingHorizontal: isCompact ? space["2xs"] : 0,
         },
         disabled ? styles.disabled : null,
         pressScaleStyle(pressed && !disabled, reduceMotion),
@@ -62,7 +67,10 @@ export const IconButton = ({
       <Text
         style={[
           styles.icon,
-          { color: variantStyle.iconColor, fontSize: fontSize(16) },
+          {
+            color: variantStyle.iconColor,
+            fontSize: fontSize(isCompact ? 12 : 16),
+          },
         ]}
       >
         {icon}

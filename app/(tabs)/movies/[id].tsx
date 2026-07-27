@@ -8,6 +8,7 @@ import {
   canOfferDownload,
   classifyMovie,
 } from "@/arr-client";
+import { availabilityChipTone } from "@/features/library/availability-chip-tone";
 import { availabilityLabel, t } from "@/i18n";
 import {
   AudioChoiceSheet,
@@ -49,7 +50,7 @@ import {
 } from "@/ui";
 
 export default function MovieDetailScreen() {
-  const { space: scaledSpace, minTouchTarget } = useUiSize();
+  const { space: scaledSpace } = useUiSize();
   const reduceMotion = useReduceMotion();
   const { id: idParam } = useLocalSearchParams<{ id: string }>();
   const movieId = Number(idParam);
@@ -226,7 +227,9 @@ export default function MovieDetailScreen() {
                 {movie.year}
               </Text>
             ) : null}
-            <Chip tone="neutral">{statusLabel}</Chip>
+            <Chip tone={availabilityChipTone(movieAvailability)}>
+              {statusLabel}
+            </Chip>
           </View>
         }
         onBack={handleBack}
@@ -236,7 +239,7 @@ export default function MovieDetailScreen() {
 
       <Animated.View
         entering={createFadeSlideUp(reduceMotion, 0)}
-        style={{ gap: scaledSpace.md, marginBottom: scaledSpace.lg }}
+        style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.md }}
       >
         <MediaMetaBlock
           added={movie.added}
@@ -255,15 +258,20 @@ export default function MovieDetailScreen() {
             {movie.overview}
           </Text>
         ) : null}
+      </Animated.View>
 
-        <Surface padded tone="raised">
-          <View
-            style={[
-              styles.suiviRow,
-              { minHeight: minTouchTarget },
-            ]}
-          >
-            <Text role="headline">{t("detail.suivi")}</Text>
+      <Animated.View
+        entering={createFadeSlideUp(reduceMotion, 1)}
+        style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.xl }}
+      >
+        <Surface
+          padded
+          radius="md"
+          style={{ padding: scaledSpace.sm }}
+          tone="raised"
+        >
+          <View style={styles.suiviRow}>
+            <Text role="label">{t("detail.suivi")}</Text>
             <Switch
               accessibilityLabel={
                 movie.monitored
@@ -284,8 +292,9 @@ export default function MovieDetailScreen() {
           disabled={actionsBusy}
           loading={deleteMutation.isPending}
           onPress={handleRetirer}
+          size="compact"
           style={styles.fullWidthButton}
-          variant="secondary"
+          variant="danger"
         >
           {deleteMutation.isPending ? t("action.removing") : t("action.remove")}
         </Button>

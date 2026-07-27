@@ -47,6 +47,7 @@ import {
 } from "@/features/series/use-series";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useArrClients } from "@/hooks/use-arr-clients";
+import { availabilityChipTone } from "@/features/library/availability-chip-tone";
 import { availabilityLabel, t } from "@/i18n";
 import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
@@ -96,7 +97,7 @@ const episodesNeedingDownload = (
     );
 
 export default function SeriesDetailScreen() {
-  const { space: scaledSpace, minTouchTarget } = useUiSize();
+  const { space: scaledSpace } = useUiSize();
   const reduceMotion = useReduceMotion();
   const { id: idParam } = useLocalSearchParams<{ id: string }>();
   const seriesId = Number(idParam);
@@ -372,7 +373,9 @@ export default function SeriesDetailScreen() {
                 {series.year}
               </Text>
             ) : null}
-            <Chip tone="neutral">{statusLabel}</Chip>
+            <Chip tone={availabilityChipTone(seriesAvailability)}>
+              {statusLabel}
+            </Chip>
           </View>
         }
         onBack={handleBack}
@@ -394,7 +397,7 @@ export default function SeriesDetailScreen() {
 
       <Animated.View
         entering={createFadeSlideUp(reduceMotion, 0)}
-        style={{ gap: scaledSpace.md, marginBottom: scaledSpace.lg }}
+        style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.md }}
       >
         <MediaMetaBlock
           added={series.added}
@@ -407,51 +410,20 @@ export default function SeriesDetailScreen() {
             {series.overview}
           </Text>
         ) : null}
-
-        <Surface padded tone="raised">
-          <View style={[styles.suiviRow, { minHeight: minTouchTarget }]}>
-            <Text role="headline">{t("detail.suivi")}</Text>
-            <Switch
-              accessibilityLabel={
-                series.monitored
-                  ? t("detail.disableSuivi")
-                  : t("detail.enableSuivi")
-              }
-              accessibilityRole="switch"
-              disabled={monitoredMutation.isPending || deleteMutation.isPending}
-              onValueChange={(value) => void handleToggleSuivi(value)}
-              trackColor={{ false: colors.surface, true: colors.accent }}
-              value={series.monitored}
-            />
-          </View>
-        </Surface>
-
-        <Button
-          accessibilityLabel={t("detail.removeSeriesA11y")}
-          disabled={actionsBusy}
-          loading={deleteMutation.isPending}
-          onPress={handleRetirer}
-          style={styles.fullWidthButton}
-          variant="secondary"
-        >
-          {deleteMutation.isPending
-            ? t("action.removing")
-            : t("action.remove")}
-        </Button>
       </Animated.View>
 
       <Animated.View
         entering={createFadeSlideUp(reduceMotion, 1)}
         style={[
           styles.seasonsSection,
-          { gap: scaledSpace.md, marginBottom: scaledSpace.xl },
+          { gap: scaledSpace.sm, marginBottom: scaledSpace.xl },
         ]}
       >
-        <Text role="title">{t("detail.seasons")}</Text>
+        <Text role="headline">{t("detail.seasons")}</Text>
         {seasonsQuery.isLoading ? (
           <View style={{ gap: scaledSpace.sm }}>
-            <Skeleton height={56} />
-            <Skeleton height={56} />
+            <Skeleton height={40} />
+            <Skeleton height={40} />
           </View>
         ) : seasonsQuery.isError ? (
           <ErrorBanner
@@ -479,29 +451,34 @@ export default function SeriesDetailScreen() {
                 <View
                   style={[
                     styles.seasonHeaderRow,
-                    { gap: scaledSpace.sm, paddingRight: scaledSpace.sm },
+                    {
+                      gap: scaledSpace.xs,
+                      paddingLeft: scaledSpace.sm,
+                      paddingRight: scaledSpace.xs,
+                      paddingVertical: scaledSpace.xs,
+                    },
                   ]}
                 >
                   <Pressable
-                    accessibilityLabel={t("detail.seeDetailsA11y", {
-                      title: heading,
-                    })}
+                    accessibilityLabel={
+                      isExpanded
+                        ? t("detail.collapseA11y", { title: heading })
+                        : t("detail.expandA11y", { title: heading })
+                    }
                     accessibilityRole="button"
-                    onPress={() =>
+                    accessibilityState={{ expanded: isExpanded }}
+                    delayLongPress={350}
+                    onLongPress={() =>
                       quick.toggle(selectionFromSeason(series, season))
                     }
+                    onPress={() => handleToggleSeason(season.seasonNumber)}
                     style={({ pressed }) => [
                       styles.seasonHeader,
-                      {
-                        gap: scaledSpace.md,
-                        minHeight: minTouchTarget,
-                        paddingHorizontal: scaledSpace.md,
-                        paddingVertical: scaledSpace.sm,
-                      },
+                      { gap: scaledSpace.sm },
                       pressScaleStyle(pressed, reduceMotion),
                     ]}
                   >
-                    <Text role="headline" style={{ flex: 1 }}>
+                    <Text role="label" style={{ flex: 1 }} numberOfLines={1}>
                       {heading}
                     </Text>
                     <Text role="caption" tone="muted">
@@ -514,30 +491,36 @@ export default function SeriesDetailScreen() {
                           })}
                     </Text>
                   </Pressable>
-                  <IconButton
-                    accessibilityLabel={
-                      isExpanded
-                        ? t("detail.collapseA11y", { title: heading })
-                        : t("detail.expandA11y", { title: heading })
-                    }
-                    icon={isExpanded ? "▼" : "▶"}
-                    onPress={() => handleToggleSeason(season.seasonNumber)}
-                  />
-                  {showSeasonDownload ? (
-                    <Button
-                      accessibilityLabel={t("detail.downloadNamedA11y", {
-                        title: heading,
-                      })}
-                      disabled={actionsBusy}
-                      loading={seasonBusy}
-                      onPress={() =>
-                        void handleDownloadSeason(season.seasonNumber)
+                  <View
+                    style={[styles.seasonActions, { gap: scaledSpace["2xs"] }]}
+                  >
+                    {showSeasonDownload ? (
+                      <Button
+                        accessibilityLabel={t("detail.downloadNamedA11y", {
+                          title: heading,
+                        })}
+                        disabled={actionsBusy}
+                        loading={seasonBusy}
+                        onPress={() =>
+                          void handleDownloadSeason(season.seasonNumber)
+                        }
+                        size="compact"
+                        variant="primary"
+                      >
+                        {seasonBusy ? "…" : t("action.download")}
+                      </Button>
+                    ) : null}
+                    <IconButton
+                      accessibilityLabel={
+                        isExpanded
+                          ? t("detail.collapseA11y", { title: heading })
+                          : t("detail.expandA11y", { title: heading })
                       }
-                      variant="ghost"
-                    >
-                      {seasonBusy ? "…" : t("action.download")}
-                    </Button>
-                  ) : null}
+                      icon={isExpanded ? "▼" : "▶"}
+                      onPress={() => handleToggleSeason(season.seasonNumber)}
+                      size="compact"
+                    />
+                  </View>
                 </View>
                 {isExpanded
                   ? season.episodes.map((episode) => {
@@ -553,8 +536,8 @@ export default function SeriesDetailScreen() {
                             {
                               borderTopColor: colors.borderSubtle,
                               gap: scaledSpace.sm,
-                              paddingHorizontal: scaledSpace.md,
-                              paddingVertical: scaledSpace.sm,
+                              paddingHorizontal: scaledSpace.sm,
+                              paddingVertical: scaledSpace.xs,
                             },
                           ]}
                         >
@@ -570,14 +553,22 @@ export default function SeriesDetailScreen() {
                             }
                             style={({ pressed }) => [
                               styles.episodeCopy,
-                              { gap: scaledSpace.xs },
+                              { gap: scaledSpace.sm },
                               pressScaleStyle(pressed, reduceMotion),
                             ]}
                           >
-                            <Text role="label">{episodeHeading(episode)}</Text>
-                            <Text role="caption" tone="muted">
-                              {availabilityLabel(episode.availability)}
+                            <Text
+                              numberOfLines={1}
+                              role="caption"
+                              style={styles.episodeTitle}
+                            >
+                              {episodeHeading(episode)}
                             </Text>
+                            <Chip
+                              tone={availabilityChipTone(episode.availability)}
+                            >
+                              {availabilityLabel(episode.availability)}
+                            </Chip>
                           </Pressable>
                           {showEpisodeDownload ? (
                             <Button
@@ -592,7 +583,8 @@ export default function SeriesDetailScreen() {
                               onPress={() =>
                                 void handleDownloadEpisode(episode.id)
                               }
-                              variant="ghost"
+                              size="compact"
+                              variant="primary"
                             >
                               {episodeBusy ? "…" : t("action.download")}
                             </Button>
@@ -605,6 +597,48 @@ export default function SeriesDetailScreen() {
             );
           })
         )}
+      </Animated.View>
+
+      <Animated.View
+        entering={createFadeSlideUp(reduceMotion, 2)}
+        style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.xl }}
+      >
+        <Surface
+          padded
+          radius="md"
+          style={{ padding: scaledSpace.sm }}
+          tone="raised"
+        >
+          <View style={styles.suiviRow}>
+            <Text role="label">{t("detail.suivi")}</Text>
+            <Switch
+              accessibilityLabel={
+                series.monitored
+                  ? t("detail.disableSuivi")
+                  : t("detail.enableSuivi")
+              }
+              accessibilityRole="switch"
+              disabled={monitoredMutation.isPending || deleteMutation.isPending}
+              onValueChange={(value) => void handleToggleSuivi(value)}
+              trackColor={{ false: colors.surface, true: colors.accent }}
+              value={series.monitored}
+            />
+          </View>
+        </Surface>
+
+        <Button
+          accessibilityLabel={t("detail.removeSeriesA11y")}
+          disabled={actionsBusy}
+          loading={deleteMutation.isPending}
+          onPress={handleRetirer}
+          size="compact"
+          style={styles.fullWidthButton}
+          variant="danger"
+        >
+          {deleteMutation.isPending
+            ? t("action.removing")
+            : t("action.remove")}
+        </Button>
       </Animated.View>
 
       {toast ? (
@@ -664,6 +698,12 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
+    minWidth: 0,
+  },
+  seasonActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 0,
   },
   episodeRow: {
     alignItems: "center",
@@ -671,7 +711,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   episodeCopy: {
+    alignItems: "center",
     flex: 1,
+    flexDirection: "row",
+    minWidth: 0,
+  },
+  episodeTitle: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
   toast: {
     alignSelf: "center",

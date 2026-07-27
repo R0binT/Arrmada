@@ -29,6 +29,8 @@ describe("theme tokens", () => {
     expect(colors.accentMuted).toBeTruthy();
     expect(colors.accentGlow).toBeTruthy();
     expect(colors.warning).toBeTruthy();
+    expect(colors.info).toBe("#8B9BB4");
+    expect(colors.infoMuted).toBeTruthy();
     expect(colors.scrim).toBeTruthy();
     expect(colors.overlaySolid).toBeTruthy();
     expect(colors.borderSubtle).toBeTruthy();

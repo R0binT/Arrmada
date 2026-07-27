@@ -19,6 +19,7 @@ import {
 
 type ButtonProps = {
   readonly variant?: ButtonVariant;
+  readonly size?: "default" | "compact";
   readonly loading?: boolean;
   readonly disabled?: boolean;
   readonly onPress: () => void;
@@ -29,6 +30,7 @@ type ButtonProps = {
 
 export const Button = ({
   variant = "primary",
+  size = "default",
   loading = false,
   disabled = false,
   onPress,
@@ -40,6 +42,7 @@ export const Button = ({
   const reduceMotion = useReduceMotion();
   const variantStyle = resolveButtonVariantStyle(variant);
   const isDisabled = disabled || loading;
+  const isCompact = size === "compact";
 
   return (
     <Pressable
@@ -47,7 +50,7 @@ export const Button = ({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
-      hitSlop={8}
+      hitSlop={isCompact ? 10 : 8}
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
@@ -55,10 +58,11 @@ export const Button = ({
           backgroundColor: variantStyle.backgroundColor,
           borderColor: variantStyle.borderColor,
           borderWidth: variantStyle.borderWidth,
-          borderRadius: radii.md,
-          minHeight: minTouchTarget,
-          paddingHorizontal: space.lg,
-          paddingVertical: space.sm,
+          borderRadius: isCompact ? radii.full : radii.md,
+          minHeight: isCompact ? undefined : minTouchTarget,
+          paddingHorizontal: isCompact ? space.sm : space.lg,
+          paddingVertical: isCompact ? space.xs : space.sm,
+          alignSelf: isCompact ? "center" : "flex-start",
         },
         isDisabled ? styles.disabled : null,
         pressScaleStyle(pressed && !isDisabled, reduceMotion),
@@ -69,7 +73,7 @@ export const Button = ({
         <ActivityIndicator color={variantStyle.labelColor} />
       ) : (
         <Text
-          role="label"
+          role={isCompact ? "caption" : "label"}
           style={[styles.label, { color: variantStyle.labelColor }]}
         >
           {children}
@@ -82,7 +86,6 @@ export const Button = ({
 const styles = StyleSheet.create({
   base: {
     alignItems: "center",
-    alignSelf: "flex-start",
     justifyContent: "center",
   },
   label: {

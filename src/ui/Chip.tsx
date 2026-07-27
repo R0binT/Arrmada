@@ -26,7 +26,9 @@ export const Chip = ({
         {
           alignSelf: "flex-start",
           backgroundColor: toneStyle.backgroundColor,
+          borderColor: toneStyle.borderColor,
           borderRadius: radii.full,
+          borderWidth: 1,
           paddingHorizontal: space.sm,
           paddingVertical: space["2xs"],
         },

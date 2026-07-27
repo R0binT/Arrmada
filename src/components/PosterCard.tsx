@@ -24,8 +24,8 @@ type PosterCardProps = {
 
 const CORNER_COLOR: Record<Availability, string> = {
   dispo: colors.success,
-  aTelecharger: colors.accent,
-  aVenir: colors.textMuted,
+  aTelecharger: colors.info,
+  aVenir: colors.warning,
 };
 
 export const PosterCard = ({
