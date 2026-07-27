@@ -24,7 +24,7 @@ jobs:
       ANDROID_HOME: /usr/local/lib/android/sdk
     steps:
       - name: Checkout merge commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Resolve version from release branch
         id: version
