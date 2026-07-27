@@ -17,6 +17,7 @@ jest.mock("react-native-worklets", () => ({
 }));
 
 jest.mock("react-native-reanimated", () => {
+  const { View } = require("react-native");
   const animationBuilder = {
     duration: jest.fn(function duration() {
       return animationBuilder;
@@ -29,9 +30,14 @@ jest.mock("react-native-reanimated", () => {
   return {
     __esModule: true,
     default: {
+      View,
       call: jest.fn(),
     },
     FadeIn: animationBuilder,
     FadeInDown: animationBuilder,
+    useSharedValue: (initial) => ({ value: initial }),
+    useAnimatedStyle: (factory) => factory(),
+    withRepeat: (value) => value,
+    withTiming: (value) => value,
   };
 });
