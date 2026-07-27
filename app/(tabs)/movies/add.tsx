@@ -17,6 +17,7 @@ import {
     EmptyState,
     ErrorBanner,
     IconButton,
+    LookupStatusBadge,
     Screen,
 } from "@/components";
 import { getMovieLookupLibraryStatus } from "@/features/library/lookup-library-status";
@@ -249,10 +250,6 @@ export default function AddMovieScreen() {
               : status.badge === "inLibrary"
                 ? t("add.inLibrary")
                 : undefined;
-          const badgeColor =
-            status.badge === "alreadyDownloaded"
-              ? colors.success
-              : colors.secondary;
           return (
             <Pressable
               accessibilityLabel={`${item.title} (${item.year})${badgeLabel ? `, ${badgeLabel}` : ""}`}
@@ -304,15 +301,8 @@ export default function AddMovieScreen() {
                 <Text style={[styles.resultYear, { fontSize: fontSize(14) }]}>
                   {item.year}
                 </Text>
-                {badgeLabel ? (
-                  <Text
-                    style={[
-                      styles.resultBadge,
-                      { color: badgeColor, fontSize: fontSize(12) },
-                    ]}
-                  >
-                    {badgeLabel}
-                  </Text>
+                {status.badge !== "none" ? (
+                  <LookupStatusBadge badge={status.badge} />
                 ) : null}
               </View>
             </Pressable>

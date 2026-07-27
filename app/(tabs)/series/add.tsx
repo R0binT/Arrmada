@@ -17,6 +17,7 @@ import {
     EmptyState,
     ErrorBanner,
     IconButton,
+    LookupStatusBadge,
     Screen,
 } from "@/components";
 import { getSeriesLookupLibraryStatus } from "@/features/library/lookup-library-status";
@@ -260,10 +261,6 @@ export default function AddSeriesScreen() {
               : status.badge === "inLibrary"
                 ? t("add.inLibrary")
                 : undefined;
-          const badgeColor =
-            status.badge === "alreadyDownloaded"
-              ? colors.success
-              : colors.secondary;
           const progressLabel = status.episodeProgress
             ? t("add.episodeProgress", {
                 have: status.episodeProgress.have,
@@ -322,15 +319,8 @@ export default function AddSeriesScreen() {
                 <Text style={[styles.resultYear, { fontSize: fontSize(14) }]}>
                   {item.year}
                 </Text>
-                {badgeLabel ? (
-                  <Text
-                    style={[
-                      styles.resultBadge,
-                      { color: badgeColor, fontSize: fontSize(12) },
-                    ]}
-                  >
-                    {badgeLabel}
-                  </Text>
+                {status.badge !== "none" ? (
+                  <LookupStatusBadge badge={status.badge} />
                 ) : null}
                 {progressLabel ? (
                   <Text style={[styles.resultYear, { fontSize: fontSize(12) }]}>
