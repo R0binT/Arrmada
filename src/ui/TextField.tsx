@@ -6,7 +6,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { colors, radii } from "@/lib/theme";
+import { colors, fonts, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 
 type TextFieldProps = {
@@ -68,7 +68,7 @@ export const TextField = ({
         style={{
           color: colors.text,
           flex: 1,
-          fontFamily: "Figtree_400Regular",
+          fontFamily: fonts.ui,
           fontSize: fontSize(15),
           lineHeight: fontSize(22),
           padding: 0,

@@ -8,6 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { colors, radii } from "@/lib/theme";
+import { useReduceMotion } from "@/ui/motion/use-reduce-motion";
 
 type SkeletonProps = {
   readonly width?: number | `${number}%`;
@@ -22,11 +23,16 @@ export const Skeleton = ({
   borderRadius = radii.md,
   style,
 }: SkeletonProps) => {
+  const reduceMotion = useReduceMotion();
   const opacity = useSharedValue(0.45);
 
   useEffect(() => {
+    if (reduceMotion) {
+      opacity.value = 0.65;
+      return;
+    }
     opacity.value = withRepeat(withTiming(0.85, { duration: 900 }), -1, true);
-  }, [opacity]);
+  }, [opacity, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

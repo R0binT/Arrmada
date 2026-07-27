@@ -6,7 +6,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { radii } from "@/lib/theme";
+import { fonts, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { pressScaleStyle } from "@/ui/motion/presets";
 import { useReduceMotion } from "@/ui/motion/use-reduce-motion";
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   icon: {
-    fontFamily: "Figtree_500Medium",
+    fontFamily: fonts.uiMedium,
   },
   disabled: {
     opacity: 0.4,
