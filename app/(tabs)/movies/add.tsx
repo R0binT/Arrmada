@@ -200,6 +200,7 @@ export default function AddMovieScreen() {
       <TextField
         accessibilityLabel={t("library.addMovieA11y")}
         autoCapitalize="none"
+        autoCorrect={false}
         onChangeText={setTerm}
         placeholder={t("add.searchPlaceholder")}
         style={{ marginBottom: scaledSpace.md }}

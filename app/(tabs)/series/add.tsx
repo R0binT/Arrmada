@@ -211,6 +211,7 @@ export default function AddSeriesScreen() {
       <TextField
         accessibilityLabel={t("library.addSeriesA11y")}
         autoCapitalize="none"
+        autoCorrect={false}
         onChangeText={setTerm}
         placeholder={t("add.searchPlaceholder")}
         style={{ marginBottom: scaledSpace.md }}

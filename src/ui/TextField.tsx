@@ -9,19 +9,18 @@ import {
 import { colors, fonts, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 
-type TextFieldProps = {
+type TextFieldOwnProps = {
   readonly value: string;
   readonly onChangeText: (text: string) => void;
   readonly placeholder?: string;
   readonly editable?: boolean;
   readonly secureTextEntry?: boolean;
-  readonly autoCapitalize?: TextInputProps["autoCapitalize"];
-  readonly keyboardType?: TextInputProps["keyboardType"];
-  readonly returnKeyType?: TextInputProps["returnKeyType"];
-  readonly onSubmitEditing?: TextInputProps["onSubmitEditing"];
   readonly accessibilityLabel?: string;
   readonly style?: StyleProp<ViewStyle>;
 };
+
+type TextFieldProps = TextFieldOwnProps &
+  Omit<TextInputProps, keyof TextFieldOwnProps | "style" | "placeholderTextColor">;
 
 export const TextField = ({
   value,
@@ -29,12 +28,9 @@ export const TextField = ({
   placeholder,
   editable = true,
   secureTextEntry = false,
-  autoCapitalize,
-  keyboardType,
-  returnKeyType,
-  onSubmitEditing,
   accessibilityLabel,
   style,
+  ...rest
 }: TextFieldProps) => {
   const { fontSize, minTouchTarget, space } = useUiSize();
 
@@ -56,14 +52,10 @@ export const TextField = ({
     >
       <TextInput
         accessibilityLabel={accessibilityLabel ?? placeholder}
-        autoCapitalize={autoCapitalize}
         editable={editable}
-        keyboardType={keyboardType}
         onChangeText={onChangeText}
-        onSubmitEditing={onSubmitEditing}
         placeholder={placeholder}
         placeholderTextColor={colors.textFaint}
-        returnKeyType={returnKeyType}
         secureTextEntry={secureTextEntry}
         style={{
           color: colors.text,
@@ -74,6 +66,7 @@ export const TextField = ({
           padding: 0,
         }}
         value={value}
+        {...rest}
       />
     </View>
   );
