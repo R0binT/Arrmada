@@ -59,6 +59,15 @@ export const createRadarrClient = (baseUrl: string, apiKey: string) => {
         .map((item) => mapMovieCandidate(item, baseUrl))
         .filter((item): item is MovieCandidate => item !== null);
     },
+    lookupCandidateByTmdbId: async (
+      tmdbId: number,
+    ): Promise<MovieCandidate | null> => {
+      const raw = await http.getJson<unknown>(
+        `/api/v3/movie/lookup/tmdb?tmdbId=${encodeURIComponent(String(tmdbId))}`,
+      );
+      const payload = Array.isArray(raw) ? raw[0] : raw;
+      return mapMovieCandidate(payload, baseUrl);
+    },
     getAddDefaults: async (): Promise<ArrAddDefaults> => {
       const [profilesRaw, foldersRaw] = await Promise.all([
         http.getJson<unknown[]>("/api/v3/qualityprofile"),

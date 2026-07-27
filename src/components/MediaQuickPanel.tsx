@@ -2,6 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ProgressBar } from "@/components/ProgressBar";
 import type {
+    MediaQuickAddActions,
     MediaQuickStatusTone,
     MediaQuickViewModel,
     PrimaryDestination,
@@ -13,6 +14,7 @@ import { useUiSize } from "@/lib/UiSizeProvider";
 type MediaQuickPanelProps = {
   readonly viewModel: MediaQuickViewModel;
   readonly onOpenPrimary: (destination: PrimaryDestination) => void;
+  readonly addActions?: MediaQuickAddActions;
 };
 
 const STATUS_PILL: Record<
@@ -40,6 +42,7 @@ const STATUS_PILL: Record<
 export const MediaQuickPanel = ({
   viewModel,
   onOpenPrimary,
+  addActions,
 }: MediaQuickPanelProps) => {
   const { space, fontSize, minTouchTarget } = useUiSize();
   const hasProgress =
@@ -141,20 +144,55 @@ export const MediaQuickPanel = ({
         ) : null}
       </ScrollView>
 
-      <Pressable
-        accessibilityLabel={t(viewModel.destination.ctaKey)}
-        accessibilityRole="button"
-        onPress={() => onOpenPrimary(viewModel.destination)}
-        style={({ pressed }) => [
-          styles.cta,
-          { minHeight: minTouchTarget },
-          pressed ? styles.ctaPressed : null,
-        ]}
-      >
-        <Text style={[styles.ctaText, { fontSize: fontSize(16) }]}>
-          {t(viewModel.destination.ctaKey)}
-        </Text>
-      </Pressable>
+      {addActions ? (
+        <View style={{ gap: space.sm }}>
+          <Pressable
+            accessibilityLabel={t("add.seeFiche")}
+            accessibilityRole="button"
+            onPress={addActions.onSeeFiche}
+            style={({ pressed }) => [
+              styles.secondaryCta,
+              { minHeight: minTouchTarget },
+              pressed ? styles.ctaPressed : null,
+            ]}
+          >
+            <Text style={[styles.secondaryCtaText, { fontSize: fontSize(16) }]}>
+              {t("add.seeFiche")}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel={t("action.add")}
+            accessibilityRole="button"
+            disabled={!addActions.canAdd}
+            onPress={addActions.onAdd}
+            style={({ pressed }) => [
+              styles.cta,
+              { minHeight: minTouchTarget },
+              pressed ? styles.ctaPressed : null,
+              !addActions.canAdd ? styles.ctaDisabled : null,
+            ]}
+          >
+            <Text style={[styles.ctaText, { fontSize: fontSize(16) }]}>
+              {t("action.add")}
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          accessibilityLabel={t(viewModel.destination.ctaKey)}
+          accessibilityRole="button"
+          onPress={() => onOpenPrimary(viewModel.destination)}
+          style={({ pressed }) => [
+            styles.cta,
+            { minHeight: minTouchTarget },
+            pressed ? styles.ctaPressed : null,
+          ]}
+        >
+          <Text style={[styles.ctaText, { fontSize: fontSize(16) }]}>
+            {t(viewModel.destination.ctaKey)}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 };
@@ -213,8 +251,23 @@ const styles = StyleSheet.create({
   ctaPressed: {
     opacity: 0.85,
   },
+  ctaDisabled: {
+    opacity: 0.5,
+  },
   ctaText: {
     color: colors.bg,
+    fontFamily: fonts.uiBold,
+  },
+  secondaryCta: {
+    alignItems: "center",
+    backgroundColor: "transparent",
+    borderColor: "rgba(154, 149, 140, 0.35)",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    justifyContent: "center",
+  },
+  secondaryCtaText: {
+    color: colors.secondary,
     fontFamily: fonts.uiBold,
   },
 });

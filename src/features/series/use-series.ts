@@ -91,6 +91,18 @@ export const useSeriesLookup = (term: string) => {
   });
 };
 
+export const useSeriesCandidatePreview = (tvdbId: number) => {
+  const { sonarr } = useArrClients();
+  return useQuery({
+    queryKey: queryKeys.series.preview(tvdbId),
+    queryFn: async () => {
+      if (!sonarr) throw new Error("Sonarr is not configured.");
+      return sonarr.lookupCandidateByTvdbId(tvdbId);
+    },
+    enabled: Boolean(sonarr) && Number.isFinite(tvdbId) && tvdbId > 0,
+  });
+};
+
 export const useSeriesDefaults = () => {
   const { sonarr } = useArrClients();
 

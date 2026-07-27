@@ -3,6 +3,8 @@ export const queryKeys = {
     all: ["movies"] as const,
     detail: (id: number) => ["movies", id] as const,
     lookup: (term: string) => ["movies", "lookup", term] as const,
+    preview: (tmdbId: number) =>
+      [...queryKeys.movies.all, "preview", tmdbId] as const,
     defaults: ["movies", "defaults"] as const,
     releases: (id: number) => ["movies", id, "releases"] as const,
   },
@@ -11,6 +13,8 @@ export const queryKeys = {
     detail: (id: number) => ["series", id] as const,
     seasons: (id: number) => ["series", id, "seasons"] as const,
     lookup: (term: string) => ["series", "lookup", term] as const,
+    preview: (tvdbId: number) =>
+      [...queryKeys.series.all, "preview", tvdbId] as const,
     defaults: ["series", "defaults"] as const,
     releases: (id: number) => ["series", id, "releases"] as const,
   },

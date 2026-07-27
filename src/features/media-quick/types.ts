@@ -39,6 +39,14 @@ export type MediaQuickSelection = {
   readonly size?: number;
   readonly etaSeconds?: number;
   readonly service?: ArrService;
+  readonly glanceStatusLine?: string;
+  readonly glanceStatusTone?: MediaQuickStatusTone;
+};
+
+export type MediaQuickAddActions = {
+  readonly canAdd: boolean;
+  readonly onAdd: () => void;
+  readonly onSeeFiche: () => void;
 };
 
 export type PrimaryDestination =

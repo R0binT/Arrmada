@@ -6,6 +6,7 @@ export { ErrorBanner } from "@/components/ErrorBanner";
 export { formatBytes, formatEta } from "@/components/format";
 export { HeroBanner } from "@/components/HeroBanner";
 export { IconButton } from "@/components/IconButton";
+export { LookupStatusBadge } from "@/components/LookupStatusBadge";
 export { MediaMetaBlock } from "@/components/MediaMetaBlock";
 export { MediaQuickPanel } from "@/components/MediaQuickPanel";
 export { MediaQuickSheet } from "@/components/MediaQuickSheet";

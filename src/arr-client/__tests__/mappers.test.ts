@@ -90,6 +90,10 @@ describe("mappers", () => {
       posterUrl: "https://cdn/p.jpg",
       inLibrary: false,
       hasFile: false,
+      overview: "secret",
+      genres: [],
+      runtimeMinutes: undefined,
+      libraryId: undefined,
     });
   });
 
@@ -112,6 +116,10 @@ describe("mappers", () => {
       posterUrl: undefined,
       inLibrary: true,
       hasFile: true,
+      overview: "",
+      genres: [],
+      runtimeMinutes: undefined,
+      libraryId: 42,
     });
   });
 
@@ -129,6 +137,38 @@ describe("mappers", () => {
     );
     expect(actual?.inLibrary).toBe(false);
     expect(actual?.hasFile).toBe(false);
+    expect(actual).toMatchObject({
+      overview: "",
+      genres: [],
+      runtimeMinutes: undefined,
+      libraryId: undefined,
+    });
+  });
+
+  it("maps movie candidate overview genres runtime and libraryId", () => {
+    const actual = mapMovieCandidate(
+      {
+        id: 42,
+        tmdbId: 99,
+        title: "Night Harbor",
+        year: 2024,
+        hasFile: true,
+        overview: "Dockside noir.",
+        genres: ["Drama"],
+        runtime: 118,
+        images: [],
+      },
+      "http://192.168.1.10:7878",
+    );
+    expect(actual).toMatchObject({
+      tmdbId: 99,
+      inLibrary: true,
+      hasFile: true,
+      overview: "Dockside noir.",
+      genres: ["Drama"],
+      runtimeMinutes: 118,
+      libraryId: 42,
+    });
   });
 
   it("maps series candidate in library with episode statistics", () => {
@@ -151,6 +191,10 @@ describe("mappers", () => {
       inLibrary: true,
       episodeFileCount: 12,
       episodeCount: 24,
+      overview: "",
+      genres: [],
+      runtimeMinutes: undefined,
+      libraryId: 9,
     });
   });
 
@@ -172,6 +216,37 @@ describe("mappers", () => {
       inLibrary: false,
       episodeFileCount: 0,
       episodeCount: 0,
+      overview: "",
+      genres: [],
+      runtimeMinutes: undefined,
+      libraryId: undefined,
+    });
+  });
+
+  it("maps series candidate overview genres runtime and libraryId", () => {
+    const actual = mapSeriesCandidate(
+      {
+        id: 9,
+        tvdbId: 321,
+        title: "Harbor Show",
+        year: 2022,
+        overview: "Dockside drama.",
+        genres: ["Drama"],
+        runtime: 45,
+        images: [],
+        statistics: { episodeFileCount: 12, episodeCount: 24 },
+      },
+      "http://192.168.1.10:8989",
+    );
+    expect(actual).toMatchObject({
+      tvdbId: 321,
+      inLibrary: true,
+      overview: "Dockside drama.",
+      genres: ["Drama"],
+      runtimeMinutes: 45,
+      libraryId: 9,
+      episodeFileCount: 12,
+      episodeCount: 24,
     });
   });
 

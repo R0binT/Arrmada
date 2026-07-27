@@ -141,6 +141,9 @@ export const enMessages: Record<MessageKey, string> = {
   "add.alreadyDownloaded": "Already downloaded",
   "add.episodeProgress": "{{have}}/{{total}} episodes",
   "add.alreadyInLibraryHint": "Already in the library.",
+  "add.seeFiche": "View details",
+  "add.previewMovieTitle": "Movie preview",
+  "add.previewSeriesTitle": "Series preview",
 
   "detail.suivi": "Monitored",
   "detail.enableSuivi": "Turn monitoring on",

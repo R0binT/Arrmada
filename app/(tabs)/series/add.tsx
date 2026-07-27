@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -17,9 +17,12 @@ import {
     EmptyState,
     ErrorBanner,
     IconButton,
+    LookupStatusBadge,
+    MediaQuickSheet,
     Screen,
 } from "@/components";
 import { getSeriesLookupLibraryStatus } from "@/features/library/lookup-library-status";
+import { buildSeriesAddSelection } from "@/features/media-quick/build-add-candidate-selection";
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
     finishPendingAudioChoice,
@@ -63,6 +66,15 @@ export default function AddSeriesScreen() {
     const timer = setTimeout(() => setFeedback(undefined), 3000);
     return () => clearTimeout(timer);
   }, [feedback]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (term.trim().length === 0) {
+        return;
+      }
+      void lookupQuery.refetch();
+    }, [lookupQuery.refetch, term]),
+  );
 
   const qualityProfileId = defaultsQuery.data?.defaultQualityProfileId;
   const rootFolderPath = defaultsQuery.data?.defaultRootFolderPath;
@@ -260,10 +272,6 @@ export default function AddSeriesScreen() {
               : status.badge === "inLibrary"
                 ? t("add.inLibrary")
                 : undefined;
-          const badgeColor =
-            status.badge === "alreadyDownloaded"
-              ? colors.success
-              : colors.secondary;
           const progressLabel = status.episodeProgress
             ? t("add.episodeProgress", {
                 have: status.episodeProgress.have,
@@ -276,11 +284,7 @@ export default function AddSeriesScreen() {
               accessibilityLabel={`${item.title} (${item.year})${statusParts.length > 0 ? `, ${statusParts.join(", ")}` : ""}`}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
-              onPress={() =>
-                setSelected((current) =>
-                  current?.tvdbId === item.tvdbId ? undefined : item,
-                )
-              }
+              onPress={() => setSelected(item)}
               style={({ pressed }) => [
                 styles.resultRow,
                 {
@@ -322,15 +326,8 @@ export default function AddSeriesScreen() {
                 <Text style={[styles.resultYear, { fontSize: fontSize(14) }]}>
                   {item.year}
                 </Text>
-                {badgeLabel ? (
-                  <Text
-                    style={[
-                      styles.resultBadge,
-                      { color: badgeColor, fontSize: fontSize(12) },
-                    ]}
-                  >
-                    {badgeLabel}
-                  </Text>
+                {status.badge !== "none" ? (
+                  <LookupStatusBadge badge={status.badge} />
                 ) : null}
                 {progressLabel ? (
                   <Text style={[styles.resultYear, { fontSize: fontSize(12) }]}>
@@ -345,45 +342,38 @@ export default function AddSeriesScreen() {
         style={styles.list}
       />
 
-      {selected ? (
-        <View
-          style={[
-            styles.confirmCard,
-            {
-              gap: scaledSpace.sm,
-              marginTop: scaledSpace.md,
-              padding: scaledSpace.md,
-            },
-          ]}
-        >
-          <Text style={[styles.confirmTitle, { fontSize: fontSize(16) }]}>
-            {selected.title}
-          </Text>
-          <Text style={[styles.confirmHint, { fontSize: fontSize(13) }]}>
-            {selected.inLibrary
-              ? t("add.alreadyInLibraryHint")
-              : t("add.defaultsHint")}
-          </Text>
-          <Pressable
-            accessibilityLabel={t("action.addNamedA11y", {
-              title: selected.title,
-            })}
-            accessibilityRole="button"
-            disabled={!canAdd}
-            onPress={() => void handleAdd()}
-            style={({ pressed }) => [
-              styles.addButton,
-              { marginTop: scaledSpace.sm, minHeight: minTouchTarget },
-              pressed ? styles.pressed : null,
-              !canAdd ? styles.disabled : null,
-            ]}
-          >
-            <Text style={[styles.addButtonText, { fontSize: fontSize(16) }]}>
-              {addMutation.isPending ? t("action.adding") : t("action.add")}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
+      <MediaQuickSheet
+        selection={
+          selected ? buildSeriesAddSelection(selected) : undefined
+        }
+        onDismiss={() => setSelected(undefined)}
+        onOpenPrimary={() => {
+          /* unused in add mode */
+        }}
+        addActions={
+          selected
+            ? {
+                canAdd,
+                onAdd: () => void handleAdd(),
+                onSeeFiche: () => {
+                  const candidate = selected;
+                  setSelected(undefined);
+                  if (candidate.libraryId !== undefined) {
+                    router.push({
+                      pathname: "/(tabs)/series/[id]",
+                      params: { id: String(candidate.libraryId) },
+                    });
+                    return;
+                  }
+                  router.push({
+                    pathname: "/(tabs)/series/preview",
+                    params: { tvdbId: String(candidate.tvdbId) },
+                  });
+                },
+              }
+            : undefined
+        }
+      />
 
       {feedback ? (
         <View
@@ -477,33 +467,6 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     fontFamily: fonts.ui,
   },
-  resultBadge: {
-    fontFamily: fonts.uiMedium,
-  },
-  confirmCard: {
-    backgroundColor: colors.surface,
-    borderColor: "rgba(244, 240, 232, 0.08)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
-  confirmTitle: {
-    color: colors.text,
-    fontFamily: fonts.uiBold,
-  },
-  confirmHint: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  addButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  addButtonText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
-  },
   toast: {
     alignSelf: "center",
     backgroundColor: colors.surface,
@@ -516,8 +479,5 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.5,
   },
 });

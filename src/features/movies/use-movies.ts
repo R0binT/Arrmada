@@ -77,6 +77,18 @@ export const useMovieLookup = (term: string) => {
   });
 };
 
+export const useMovieCandidatePreview = (tmdbId: number) => {
+  const { radarr } = useArrClients();
+  return useQuery({
+    queryKey: queryKeys.movies.preview(tmdbId),
+    queryFn: async () => {
+      if (!radarr) throw new Error("Radarr is not configured.");
+      return radarr.lookupCandidateByTmdbId(tmdbId);
+    },
+    enabled: Boolean(radarr) && Number.isFinite(tmdbId) && tmdbId > 0,
+  });
+};
+
 export const useMovieDefaults = () => {
   const { radarr } = useArrClients();
 
