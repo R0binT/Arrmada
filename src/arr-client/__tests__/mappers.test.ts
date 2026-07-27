@@ -87,7 +87,47 @@ describe("mappers", () => {
       title: "Night Harbor",
       year: 2024,
       posterUrl: "https://cdn/p.jpg",
+      inLibrary: false,
+      hasFile: false,
     });
+  });
+
+  it("maps movie candidate in library with file from lookup id and hasFile", () => {
+    const actual = mapMovieCandidate(
+      {
+        id: 42,
+        tmdbId: 99,
+        title: "Night Harbor",
+        year: 2024,
+        hasFile: true,
+        images: [],
+      },
+      "http://192.168.1.10:7878",
+    );
+    expect(actual).toEqual({
+      tmdbId: 99,
+      title: "Night Harbor",
+      year: 2024,
+      posterUrl: undefined,
+      inLibrary: true,
+      hasFile: true,
+    });
+  });
+
+  it("maps movie candidate id 0 as not in library", () => {
+    const actual = mapMovieCandidate(
+      {
+        id: 0,
+        tmdbId: 7,
+        title: "New Title",
+        year: 2025,
+        hasFile: false,
+        images: [],
+      },
+      "http://192.168.1.10:7878",
+    );
+    expect(actual?.inLibrary).toBe(false);
+    expect(actual?.hasFile).toBe(false);
   });
 
   it("maps sonarr series overview and qualityProfileId", () => {

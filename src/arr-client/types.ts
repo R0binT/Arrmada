@@ -69,6 +69,8 @@ export type MovieCandidate = {
   readonly title: string;
   readonly year: number;
   readonly posterUrl: string | undefined;
+  readonly inLibrary: boolean;
+  readonly hasFile: boolean;
 };
 
 export type SeriesCandidate = {
