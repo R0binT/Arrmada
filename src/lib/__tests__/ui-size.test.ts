@@ -31,9 +31,12 @@ describe("ui-size", () => {
     expect(isUiSizeId(null)).toBe(false);
   });
 
-  it("scales fonts and space", () => {
+  it("scales fonts and space including 2xs and 2xl", () => {
     expect(scaleFontSize(16, 0.9)).toBe(14.4);
     expect(scaleSpace(1.15).md).toBe(18);
+    expect(scaleSpace(1)["2xs"]).toBe(2);
+    expect(scaleSpace(1)["2xl"]).toBe(48);
+    expect(scaleSpace(1.15)["2xl"]).toBe(55);
   });
 
   it("keeps touch targets at least 44", () => {
