@@ -83,17 +83,19 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "${BRANCH}"
 
+          # Single heredoc: nested/indented NODE delimiters break bash after YAML dedent.
           node <<'NODE'
           const fs = require('fs');
           const version = process.env.VERSION;
-          const pkgPath = 'package.json';
-          const appPath = 'app.json';
+          if (!version) {
+            throw new Error('VERSION env is required');
+          }
 
-          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
           pkg.version = version;
-          fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+          fs.writeFileSync('package.json', `${JSON.stringify(pkg, null, 2)}\n`);
 
-          const app = JSON.parse(fs.readFileSync(appPath, 'utf8'));
+          const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
           if (!app.expo || !app.expo.android) {
             throw new Error('app.json missing expo.android');
           }
@@ -103,24 +105,18 @@ jobs:
           }
           app.expo.version = version;
           app.expo.android.versionCode = previousCode + 1;
-          fs.writeFileSync(appPath, `${JSON.stringify(app, null, 2)}\n`);
-
+          fs.writeFileSync('app.json', `${JSON.stringify(app, null, 2)}\n`);
           console.log(`versionCode ${previousCode} → ${previousCode + 1}`);
-          NODE
 
-          # Keep package-lock.json version field in sync when present
-          if [ -f package-lock.json ]; then
-            node <<'NODE'
-            const fs = require('fs');
-            const version = process.env.VERSION;
+          if (fs.existsSync('package-lock.json')) {
             const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
             lock.version = version;
             if (lock.packages && lock.packages['']) {
               lock.packages[''].version = version;
             }
             fs.writeFileSync('package-lock.json', `${JSON.stringify(lock, null, 2)}\n`);
-            NODE
-          fi
+          }
+          NODE
 
           git add package.json app.json
           if [ -f package-lock.json ]; then
