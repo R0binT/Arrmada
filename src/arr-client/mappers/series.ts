@@ -75,6 +75,10 @@ export const mapSeriesCandidate = (
       statistics?.episodeFileCount ?? obj.episodeFileCount ?? 0,
     ),
     episodeCount: Number(statistics?.episodeCount ?? obj.episodeCount ?? 0),
+    overview: String(obj.overview ?? ""),
+    genres: mapStringArray(obj.genres),
+    runtimeMinutes: mapOptionalNumber(obj.runtime),
+    libraryId: id > 0 ? id : undefined,
   };
 };
 

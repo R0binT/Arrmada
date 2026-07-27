@@ -110,6 +110,10 @@ export const mapMovieCandidate = (
     posterUrl: getPosterUrl(obj.images, baseUrl),
     inLibrary: id > 0,
     hasFile: Boolean(obj.hasFile),
+    overview: String(obj.overview ?? ""),
+    genres: mapStringArray(obj.genres),
+    runtimeMinutes: mapOptionalNumber(obj.runtime),
+    libraryId: id > 0 ? id : undefined,
   };
 };
 
