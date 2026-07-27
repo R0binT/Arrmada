@@ -1,54 +1,56 @@
-import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useCallback, useEffect, useState } from "react";
-import {
-    ActivityIndicator,
-    Pressable,
-    StyleSheet,
-    Switch,
-    Text,
-    View,
-} from "react-native";
+import { StyleSheet, Switch, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import {
-    canOfferDownload,
-    classifyMovie,
+  canOfferDownload,
+  classifyMovie,
 } from "@/arr-client";
 import { availabilityLabel, t } from "@/i18n";
 import {
-    AudioChoiceSheet,
-    ErrorBanner,
-    IconButton,
-    MediaMetaBlock,
-    Screen,
+  AudioChoiceSheet,
+  DetailImmersiveHeader,
+  DetailLoadingSkeleton,
+  ErrorBanner,
+  IconButton,
+  MediaMetaBlock,
+  Screen,
 } from "@/components";
 import {
-    confirmRetirer,
-    deleteFilesForRetirerAction,
-    type RetirerAction,
+  confirmRetirer,
+  deleteFilesForRetirerAction,
+  type RetirerAction,
 } from "@/features/library/retirer-action";
 import {
-    getErrorMessage,
-    useDeleteMovie,
-    useGrabMovieRelease,
-    useMovie,
-    useUpdateMovieMonitored,
+  getErrorMessage,
+  useDeleteMovie,
+  useGrabMovieRelease,
+  useMovie,
+  useUpdateMovieMonitored,
 } from "@/features/movies/use-movies";
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
-    finishPendingAudioChoice,
-    smartGrabReleases,
-    type PendingAudioChoice,
+  finishPendingAudioChoice,
+  smartGrabReleases,
+  type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
 import { useArrClients } from "@/hooks/use-arr-clients";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import {
+  Button,
+  Chip,
+  createFadeSlideUp,
+  Surface,
+  Text,
+  useReduceMotion,
+} from "@/ui";
 
 export default function MovieDetailScreen() {
-  const { fontSize, space: scaledSpace, minTouchTarget, scale } = useUiSize();
-  const posterWidth = Math.round(120 * scale);
-  const posterHeight = Math.round(180 * scale);
+  const { space: scaledSpace, minTouchTarget } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const { id: idParam } = useLocalSearchParams<{ id: string }>();
   const movieId = Number(idParam);
   const { radarr } = useArrClients();
@@ -163,16 +165,10 @@ export default function MovieDetailScreen() {
   if (movieQuery.isLoading) {
     return (
       <Screen>
-        <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
-          <IconButton
-            accessibilityLabel={t("action.back")}
-            icon="←"
-            onPress={handleBack}
-          />
-        </View>
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.accent} size="large" />
-        </View>
+        <DetailLoadingSkeleton
+          backLabel={t("action.back")}
+          onBack={handleBack}
+        />
       </Screen>
     );
   }
@@ -180,7 +176,7 @@ export default function MovieDetailScreen() {
   if (movieQuery.isError || !movieQuery.data) {
     return (
       <Screen>
-        <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
+        <View style={{ marginBottom: scaledSpace.md }}>
           <IconButton
             accessibilityLabel={t("action.back")}
             icon="←"
@@ -208,145 +204,98 @@ export default function MovieDetailScreen() {
 
   return (
     <Screen scroll>
-      <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
-        <IconButton accessibilityLabel={t("action.back")} icon="←" onPress={handleBack} />
-      </View>
-
-      <View
-        style={[
-          styles.hero,
-          { gap: scaledSpace.md, marginBottom: scaledSpace.lg },
-        ]}
-      >
-        {movie.posterUrl ? (
-          <Image
-            accessibilityIgnoresInvertColors
-            contentFit="cover"
-            source={{ uri: movie.posterUrl }}
-            style={[
-              styles.poster,
-              { height: posterHeight, width: posterWidth },
-            ]}
-            transition={200}
-          />
-        ) : (
-          <View
-            style={[
-              styles.poster,
-              styles.posterPlaceholder,
-              { height: posterHeight, width: posterWidth },
-            ]}
-          >
-            <Text style={[styles.posterInitial, { fontSize: fontSize(40) }]}>
-              {movie.title.slice(0, 1).toUpperCase()}
-            </Text>
+      <DetailImmersiveHeader
+        backLabel={t("action.back")}
+        meta={
+          <View style={styles.metaRow}>
+            {movie.year ? (
+              <Text role="label" tone="muted">
+                {movie.year}
+              </Text>
+            ) : null}
+            <Chip tone="neutral">{statusLabel}</Chip>
           </View>
-        )}
-        <View style={[styles.heroCopy, { gap: scaledSpace.sm }]}>
-          <Text style={[styles.movieTitle, { fontSize: fontSize(28) }]}>
-            {movie.title}
-          </Text>
-          <Text style={[styles.movieMeta, { fontSize: fontSize(15) }]}>
-            {movie.year} · {statusLabel}
-          </Text>
-        </View>
-      </View>
-
-      <MediaMetaBlock
-        added={movie.added}
-        fileQuality={
-          movieAvailability === "dispo" ? movie.fileQuality : undefined
         }
-        genres={movie.genres}
-        networkOrStudio={movie.studio}
-        runtimeMinutes={movie.runtimeMinutes}
-        sizeOnDisk={
-          movieAvailability === "dispo" ? movie.sizeOnDisk : undefined
-        }
+        onBack={handleBack}
+        posterUrl={movie.posterUrl}
+        title={movie.title}
       />
 
-      {movie.overview.trim().length > 0 ? (
-        <Text
-          style={[
-            styles.overview,
-            {
-              fontSize: fontSize(15),
-              lineHeight: fontSize(22),
-              marginBottom: scaledSpace.lg,
-            },
-          ]}
-        >
-          {movie.overview}
-        </Text>
-      ) : null}
-
-      <View
-        style={[
-          styles.suiviRow,
-          { marginBottom: scaledSpace.lg, minHeight: minTouchTarget },
-        ]}
+      <Animated.View
+        entering={createFadeSlideUp(reduceMotion, 0)}
+        style={{ gap: scaledSpace.md, marginBottom: scaledSpace.lg }}
       >
-        <Text style={[styles.suiviLabel, { fontSize: fontSize(16) }]}>
-          {t("detail.suivi")}
-        </Text>
-        <Switch
-          accessibilityLabel={
-            movie.monitored ? t("detail.disableSuivi") : t("detail.enableSuivi")
-          }
-          accessibilityRole="switch"
-          disabled={monitoredMutation.isPending || deleteMutation.isPending}
-          onValueChange={(value) => void handleToggleSuivi(value)}
-          trackColor={{ false: colors.surface, true: colors.accent }}
-          value={movie.monitored}
-        />
-      </View>
+        <Surface padded tone="raised">
+          <MediaMetaBlock
+            added={movie.added}
+            fileQuality={
+              movieAvailability === "dispo" ? movie.fileQuality : undefined
+            }
+            genres={movie.genres}
+            networkOrStudio={movie.studio}
+            runtimeMinutes={movie.runtimeMinutes}
+            sizeOnDisk={
+              movieAvailability === "dispo" ? movie.sizeOnDisk : undefined
+            }
+          />
+          {movie.overview.trim().length > 0 ? (
+            <Text role="body" tone="muted">
+              {movie.overview}
+            </Text>
+          ) : null}
+        </Surface>
 
-      <View style={[styles.actions, { gap: scaledSpace.md }]}>
-        {showDownload ? (
-          <Pressable
-            accessibilityLabel={t("detail.downloadMovieA11y")}
-            accessibilityRole="button"
-            disabled={actionsBusy}
-            onPress={() => void handleDownload()}
-            style={({ pressed }) => [
-              styles.searchButton,
-              {
-                minHeight: minTouchTarget,
-                paddingHorizontal: scaledSpace.lg,
-              },
-              pressed ? styles.pressed : null,
-              actionsBusy ? styles.disabled : null,
+        <Surface padded tone="raised">
+          <View
+            style={[
+              styles.suiviRow,
+              { minHeight: minTouchTarget },
             ]}
           >
-            <Text style={[styles.searchButtonText, { fontSize: fontSize(16) }]}>
+            <Text role="headline">{t("detail.suivi")}</Text>
+            <Switch
+              accessibilityLabel={
+                movie.monitored
+                  ? t("detail.disableSuivi")
+                  : t("detail.enableSuivi")
+              }
+              accessibilityRole="switch"
+              disabled={monitoredMutation.isPending || deleteMutation.isPending}
+              onValueChange={(value) => void handleToggleSuivi(value)}
+              trackColor={{ false: colors.surface, true: colors.accent }}
+              value={movie.monitored}
+            />
+          </View>
+        </Surface>
+
+        <View style={[styles.actions, { gap: scaledSpace.md }]}>
+          {showDownload ? (
+            <Button
+              accessibilityLabel={t("detail.downloadMovieA11y")}
+              disabled={actionsBusy}
+              loading={downloadBusy}
+              onPress={() => void handleDownload()}
+              style={styles.fullWidthButton}
+            >
               {downloadBusy ? t("action.searching") : t("action.download")}
-            </Text>
-          </Pressable>
-        ) : null}
-        <Pressable
-          accessibilityLabel={t("detail.removeMovieA11y")}
-          accessibilityRole="button"
-          disabled={actionsBusy}
-          onPress={handleRetirer}
-          style={({ pressed }) => [
-            styles.dangerButton,
-            {
-              minHeight: minTouchTarget,
-              paddingHorizontal: scaledSpace.lg,
-            },
-            pressed ? styles.pressed : null,
-            actionsBusy ? styles.disabled : null,
-          ]}
-        >
-          <Text style={[styles.dangerButtonText, { fontSize: fontSize(16) }]}>
+            </Button>
+          ) : null}
+          <Button
+            accessibilityLabel={t("detail.removeMovieA11y")}
+            disabled={actionsBusy}
+            loading={deleteMutation.isPending}
+            onPress={handleRetirer}
+            style={styles.fullWidthButton}
+            variant="secondary"
+          >
             {deleteMutation.isPending ? t("action.removing") : t("action.remove")}
-          </Text>
-        </Pressable>
-      </View>
+          </Button>
+        </View>
+      </Animated.View>
 
       {toast ? (
-        <View
-          accessibilityLiveRegion="polite"
+        <Surface
+          radius="md"
           style={[
             styles.toast,
             {
@@ -356,11 +305,12 @@ export default function MovieDetailScreen() {
               paddingVertical: scaledSpace.md,
             },
           ]}
+          tone="elevated"
         >
-          <Text style={[styles.toastText, { fontSize: fontSize(14) }]}>
-            {toast}
-          </Text>
-        </View>
+          <View accessibilityLiveRegion="polite">
+            <Text role="label">{toast}</Text>
+          </View>
+        </Surface>
       ) : null}
 
       <AudioChoiceSheet
@@ -375,89 +325,23 @@ export default function MovieDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  topBar: {},
-  loading: {
+  metaRow: {
     alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-  },
-  hero: {
     flexDirection: "row",
-  },
-  poster: {
-    borderRadius: radii.md,
-  },
-  posterPlaceholder: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    justifyContent: "center",
-  },
-  posterInitial: {
-    color: colors.secondary,
-    fontFamily: fonts.display,
-  },
-  heroCopy: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  movieTitle: {
-    color: colors.text,
-    fontFamily: fonts.display,
-  },
-  movieMeta: {
-    color: colors.secondary,
-    fontFamily: fonts.uiMedium,
-  },
-  overview: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
+    flexWrap: "wrap",
+    gap: 8,
   },
   suiviRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  suiviLabel: {
-    color: colors.text,
-    fontFamily: fonts.uiBold,
-  },
   actions: {},
-  searchButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  searchButtonText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
-  },
-  dangerButton: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.accent,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    justifyContent: "center",
-  },
-  dangerButtonText: {
-    color: colors.accent,
-    fontFamily: fonts.uiBold,
+  fullWidthButton: {
+    alignSelf: "stretch",
   },
   toast: {
     alignSelf: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
     position: "absolute",
-  },
-  toastText: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.5,
   },
 });

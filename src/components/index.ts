@@ -1,6 +1,10 @@
 export { AppLogo } from "@/components/AppLogo";
 export { ArrServiceLogo } from "@/components/ArrServiceLogo";
 export { AudioChoiceSheet } from "@/components/AudioChoiceSheet";
+export {
+  DetailImmersiveHeader,
+  DetailLoadingSkeleton,
+} from "@/components/DetailImmersiveHeader";
 export { EmptyState } from "@/components/EmptyState";
 export { ErrorBanner } from "@/components/ErrorBanner";
 export { formatBytes, formatEta } from "@/components/format";
