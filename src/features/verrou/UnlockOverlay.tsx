@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { useVerrou } from "@/features/verrou/VerrouProvider";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { t } from "@/i18n";
+import { Button } from "@/ui/Button";
+import { Surface } from "@/ui/Surface";
+import { Text } from "@/ui/Text";
+import { TextField } from "@/ui/TextField";
 
 export const UnlockOverlay = () => {
-  const { fontSize, space: scaledSpace, minTouchTarget } = useUiSize();
+  const { space: scaledSpace } = useUiSize();
   const {
     isReady,
     isEnabled,
@@ -82,19 +80,16 @@ export const UnlockOverlay = () => {
       pointerEvents="auto"
       style={[styles.overlay, { padding: scaledSpace.lg }]}
     >
-      <View style={[styles.card, { gap: scaledSpace.md, padding: scaledSpace.lg }]}>
-        <Text style={[styles.title, { fontSize: fontSize(28) }]}>
-          {t("verrou.title")}
-        </Text>
-        <Text
-          style={[
-            styles.body,
-            { fontSize: fontSize(15), lineHeight: fontSize(22) },
-          ]}
-        >
+      <Surface
+        padded
+        radius="md"
+        style={[styles.card, { gap: scaledSpace.md, maxWidth: 400 }]}
+      >
+        <Text role="display">{t("verrou.title")}</Text>
+        <Text role="body" tone="muted">
           {t("verrou.unlockBody")}
         </Text>
-        <TextInput
+        <TextField
           accessibilityLabel={t("verrou.pinA11y")}
           autoComplete="off"
           keyboardType="number-pad"
@@ -104,68 +99,33 @@ export const UnlockOverlay = () => {
             setErrorMessage(undefined);
           }}
           placeholder="••••"
-          placeholderTextColor={colors.secondary}
           secureTextEntry
-          style={[
-            styles.input,
-            {
-              fontSize: fontSize(22),
-              letterSpacing: fontSize(8),
-              minHeight: minTouchTarget,
-              paddingHorizontal: scaledSpace.md,
-            },
-          ]}
+          style={styles.pinField}
           value={pin}
         />
         {errorMessage ? (
-          <Text
-            accessibilityRole="alert"
-            style={[styles.error, { fontSize: fontSize(13) }]}
-          >
+          <Text accessibilityRole="alert" role="caption" tone="danger">
             {errorMessage}
           </Text>
         ) : null}
-        <Pressable
+        <Button
           accessibilityLabel={t("verrou.unlockWithPinA11y")}
-          accessibilityRole="button"
           disabled={isBusy || pin.length < 4}
           onPress={() => void handleUnlock()}
-          style={({ pressed }) => [
-            styles.button,
-            {
-              minHeight: minTouchTarget,
-              paddingHorizontal: scaledSpace.lg,
-            },
-            pressed ? styles.pressed : null,
-            isBusy || pin.length < 4 ? styles.disabled : null,
-          ]}
         >
-          <Text style={[styles.buttonText, { fontSize: fontSize(16) }]}>
-            {t("verrou.unlock")}
-          </Text>
-        </Pressable>
+          {t("verrou.unlock")}
+        </Button>
         {biometricsAvailable ? (
-          <Pressable
+          <Button
             accessibilityLabel={t("verrou.biometric")}
-            accessibilityRole="button"
             disabled={isBusy}
             onPress={() => void handleBiometrics()}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              {
-                minHeight: minTouchTarget,
-                paddingHorizontal: scaledSpace.lg,
-              },
-              pressed ? styles.pressed : null,
-              isBusy ? styles.disabled : null,
-            ]}
+            variant="secondary"
           >
-            <Text style={[styles.secondaryButtonText, { fontSize: fontSize(15) }]}>
-              {t("verrou.biometricShort")}
-            </Text>
-          </Pressable>
+            {t("verrou.biometricShort")}
+          </Button>
         ) : null}
-      </View>
+      </Surface>
     </View>
   );
 };
@@ -174,64 +134,15 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
     alignItems: "center",
-    backgroundColor: "rgba(8, 10, 14, 0.96)",
+    backgroundColor: colors.overlaySolid,
     justifyContent: "center",
     zIndex: 1000,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderColor: "rgba(244, 240, 232, 0.08)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    maxWidth: 400,
     width: "100%",
   },
-  title: {
-    color: colors.text,
-    fontFamily: fonts.display,
-  },
-  body: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  input: {
+  pinField: {
     backgroundColor: colors.bg,
-    borderColor: "rgba(244, 240, 232, 0.12)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    color: colors.text,
-    fontFamily: fonts.ui,
-    textAlign: "center",
-  },
-  error: {
-    color: colors.danger,
-    fontFamily: fonts.ui,
-  },
-  button: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  buttonText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
-  },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: colors.accent,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    justifyContent: "center",
-  },
-  secondaryButtonText: {
-    color: colors.accent,
-    fontFamily: fonts.uiMedium,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  disabled: {
-    opacity: 0.45,
+    borderColor: colors.borderInput,
   },
 });

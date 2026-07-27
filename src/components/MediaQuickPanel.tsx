@@ -1,15 +1,19 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 
 import { ProgressBar } from "@/components/ProgressBar";
 import type {
-    MediaQuickAddActions,
-    MediaQuickStatusTone,
-    MediaQuickViewModel,
-    PrimaryDestination,
+  MediaQuickAddActions,
+  MediaQuickStatusTone,
+  MediaQuickViewModel,
+  PrimaryDestination,
 } from "@/features/media-quick/types";
 import { t } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { Button } from "@/ui/Button";
+import { Chip } from "@/ui/Chip";
+import { Text } from "@/ui/Text";
+import type { ChipTone } from "@/ui/variant-styles";
 
 type MediaQuickPanelProps = {
   readonly viewModel: MediaQuickViewModel;
@@ -17,26 +21,11 @@ type MediaQuickPanelProps = {
   readonly addActions?: MediaQuickAddActions;
 };
 
-const STATUS_PILL: Record<
-  MediaQuickStatusTone,
-  { readonly backgroundColor: string; readonly color: string }
-> = {
-  success: {
-    backgroundColor: "rgba(111, 191, 122, 0.18)",
-    color: colors.success,
-  },
-  accent: {
-    backgroundColor: "rgba(245, 165, 36, 0.16)",
-    color: colors.accent,
-  },
-  muted: {
-    backgroundColor: "rgba(154, 149, 140, 0.18)",
-    color: colors.secondary,
-  },
-  danger: {
-    backgroundColor: "rgba(196, 92, 74, 0.18)",
-    color: colors.danger,
-  },
+const STATUS_TONE: Record<MediaQuickStatusTone, ChipTone> = {
+  success: "success",
+  accent: "accent",
+  muted: "neutral",
+  danger: "danger",
 };
 
 export const MediaQuickPanel = ({
@@ -44,11 +33,10 @@ export const MediaQuickPanel = ({
   onOpenPrimary,
   addActions,
 }: MediaQuickPanelProps) => {
-  const { space, fontSize, minTouchTarget } = useUiSize();
+  const { space } = useUiSize();
   const hasProgress =
     viewModel.progress !== undefined && viewModel.progress > 0;
   const hasStatus = viewModel.statusLine.length > 0;
-  const statusColors = STATUS_PILL[viewModel.statusTone];
 
   return (
     <View
@@ -72,40 +60,24 @@ export const MediaQuickPanel = ({
       >
         <View style={styles.header}>
           <View style={[styles.titleRow, { gap: space.sm }]}>
-            <Text
-              style={[
-                styles.title,
-                {
-                  fontSize: fontSize(22),
-                  lineHeight: fontSize(28),
-                },
-              ]}
-            >
+            <Text role="title" style={styles.title}>
               {viewModel.title}
             </Text>
             {hasStatus ? (
-              <View
-                style={[
-                  styles.statusPill,
-                  { backgroundColor: statusColors.backgroundColor },
-                ]}
+              <Chip
+                style={
+                  viewModel.statusTone === "muted"
+                    ? { backgroundColor: colors.neutralMuted }
+                    : undefined
+                }
+                tone={STATUS_TONE[viewModel.statusTone]}
               >
-                <Text
-                  style={[
-                    styles.statusPillText,
-                    {
-                      color: statusColors.color,
-                      fontSize: fontSize(12),
-                    },
-                  ]}
-                >
-                  {viewModel.statusLine}
-                </Text>
-              </View>
+                {viewModel.statusLine}
+              </Chip>
             ) : null}
           </View>
           {viewModel.subtitle ? (
-            <Text style={[styles.subtitle, { fontSize: fontSize(14) }]}>
+            <Text role="body" tone="muted">
               {viewModel.subtitle}
             </Text>
           ) : null}
@@ -114,25 +86,19 @@ export const MediaQuickPanel = ({
         {viewModel.chips.length > 0 ? (
           <View style={[styles.chipWrap, { gap: space.xs }]}>
             {viewModel.chips.map((chip) => (
-              <View key={chip} style={styles.chip}>
-                <Text style={[styles.chipText, { fontSize: fontSize(12) }]}>
-                  {chip}
-                </Text>
-              </View>
+              <Chip
+                key={chip}
+                style={{ backgroundColor: colors.borderSubtle }}
+                tone="neutral"
+              >
+                {chip}
+              </Chip>
             ))}
           </View>
         ) : null}
 
         {viewModel.detailLine ? (
-          <Text
-            style={[
-              styles.detail,
-              {
-                fontSize: fontSize(13),
-                lineHeight: fontSize(18),
-              },
-            ]}
-          >
+          <Text role="body" tone="muted">
             {viewModel.detailLine}
           </Text>
         ) : null}
@@ -146,52 +112,31 @@ export const MediaQuickPanel = ({
 
       {addActions ? (
         <View style={{ gap: space.sm }}>
-          <Pressable
+          <Button
             accessibilityLabel={t("add.seeFiche")}
-            accessibilityRole="button"
             onPress={addActions.onSeeFiche}
-            style={({ pressed }) => [
-              styles.secondaryCta,
-              { minHeight: minTouchTarget },
-              pressed ? styles.ctaPressed : null,
-            ]}
+            style={styles.fullWidth}
+            variant="secondary"
           >
-            <Text style={[styles.secondaryCtaText, { fontSize: fontSize(16) }]}>
-              {t("add.seeFiche")}
-            </Text>
-          </Pressable>
-          <Pressable
+            {t("add.seeFiche")}
+          </Button>
+          <Button
             accessibilityLabel={t("action.add")}
-            accessibilityRole="button"
             disabled={!addActions.canAdd}
             onPress={addActions.onAdd}
-            style={({ pressed }) => [
-              styles.cta,
-              { minHeight: minTouchTarget },
-              pressed ? styles.ctaPressed : null,
-              !addActions.canAdd ? styles.ctaDisabled : null,
-            ]}
+            style={styles.fullWidth}
           >
-            <Text style={[styles.ctaText, { fontSize: fontSize(16) }]}>
-              {t("action.add")}
-            </Text>
-          </Pressable>
+            {t("action.add")}
+          </Button>
         </View>
       ) : (
-        <Pressable
+        <Button
           accessibilityLabel={t(viewModel.destination.ctaKey)}
-          accessibilityRole="button"
           onPress={() => onOpenPrimary(viewModel.destination)}
-          style={({ pressed }) => [
-            styles.cta,
-            { minHeight: minTouchTarget },
-            pressed ? styles.ctaPressed : null,
-          ]}
+          style={styles.fullWidth}
         >
-          <Text style={[styles.ctaText, { fontSize: fontSize(16) }]}>
-            {t(viewModel.destination.ctaKey)}
-          </Text>
-        </Pressable>
+          {t(viewModel.destination.ctaKey)}
+        </Button>
       )}
     </View>
   );
@@ -206,68 +151,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   title: {
-    color: colors.text,
     flex: 1,
-    fontFamily: fonts.display,
     minWidth: 0,
-  },
-  subtitle: {
-    color: colors.secondary,
-    fontFamily: fonts.uiMedium,
-  },
-  statusPill: {
-    borderRadius: 8,
-    flexShrink: 0,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusPillText: {
-    fontFamily: fonts.uiMedium,
   },
   chipWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
   },
-  chip: {
-    backgroundColor: "rgba(244, 240, 232, 0.08)",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  chipText: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
-  },
-  detail: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  cta: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  ctaPressed: {
-    opacity: 0.85,
-  },
-  ctaDisabled: {
-    opacity: 0.5,
-  },
-  ctaText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
-  },
-  secondaryCta: {
-    alignItems: "center",
-    backgroundColor: "transparent",
-    borderColor: "rgba(154, 149, 140, 0.35)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    justifyContent: "center",
-  },
-  secondaryCtaText: {
-    color: colors.secondary,
-    fontFamily: fonts.uiBold,
+  fullWidth: {
+    alignSelf: "stretch",
   },
 });

@@ -23,3 +23,9 @@ export const pressScaleStyle = (
   if (reduceMotion) return { opacity: 0.92 };
   return { opacity: 0.92, transform: [{ scale: 0.97 }] };
 };
+
+export const sheetPresentDuration = (reduceMotion: boolean): number =>
+  reduceMotion ? motion.duration.instant : motion.duration.normal;
+
+export const sheetDismissDuration = (reduceMotion: boolean): number =>
+  reduceMotion ? motion.duration.instant : motion.duration.fast;

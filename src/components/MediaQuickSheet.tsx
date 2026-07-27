@@ -1,24 +1,29 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
-    Animated,
-    Modal,
-    PanResponder,
-    Pressable,
-    StyleSheet,
-    View,
+  Animated,
+  Modal,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MediaQuickPanel } from "@/components/MediaQuickPanel";
 import { buildMediaQuickViewModel } from "@/features/media-quick/build-media-quick-view-model";
 import type {
-    MediaQuickAddActions,
-    MediaQuickSelection,
-    PrimaryDestination,
+  MediaQuickAddActions,
+  MediaQuickSelection,
+  PrimaryDestination,
 } from "@/features/media-quick/types";
 import { t } from "@/i18n";
 import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import {
+  sheetDismissDuration,
+  sheetPresentDuration,
+} from "@/ui/motion/presets";
+import { useReduceMotion } from "@/ui/motion/use-reduce-motion";
 
 type MediaQuickSheetProps = {
   readonly selection: MediaQuickSelection | undefined;
@@ -40,7 +45,10 @@ export const MediaQuickSheet = ({
   const visible = selection !== undefined;
   const insets = useSafeAreaInsets();
   const { space, scale } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const translateY = useRef(new Animated.Value(SHEET_OFFSCREEN)).current;
+  const scrimOpacity = useRef(new Animated.Value(0)).current;
+  const sheetOpacity = useRef(new Animated.Value(0)).current;
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
 
@@ -52,64 +60,114 @@ export const MediaQuickSheet = ({
   useEffect(() => {
     if (!visible) {
       translateY.setValue(SHEET_OFFSCREEN);
+      scrimOpacity.setValue(0);
+      sheetOpacity.setValue(0);
       return;
     }
-    Animated.timing(translateY, {
-      toValue: 0,
-      duration: 220,
-      useNativeDriver: true,
-    }).start();
-  }, [translateY, visible]);
 
-  const dismiss = () => {
-    Animated.timing(translateY, {
-      toValue: SHEET_OFFSCREEN,
-      duration: 180,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
+    const presentDuration = sheetPresentDuration(reduceMotion);
+    if (reduceMotion) {
+      Animated.parallel([
+        Animated.timing(scrimOpacity, {
+          toValue: 1,
+          duration: presentDuration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sheetOpacity, {
+          toValue: 1,
+          duration: presentDuration,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
+    }
+
+    translateY.setValue(SHEET_OFFSCREEN);
+    Animated.parallel([
+      Animated.timing(scrimOpacity, {
+        toValue: 1,
+        duration: presentDuration,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: presentDuration,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [reduceMotion, scrimOpacity, sheetOpacity, translateY, visible]);
+
+  const dismiss = useCallback(() => {
+    const dismissDuration = sheetDismissDuration(reduceMotion);
+    if (reduceMotion) {
+      Animated.parallel([
+        Animated.timing(scrimOpacity, {
+          toValue: 0,
+          duration: dismissDuration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sheetOpacity, {
+          toValue: 0,
+          duration: dismissDuration,
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) {
+          onDismissRef.current();
+        }
+      });
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(scrimOpacity, {
+        toValue: 0,
+        duration: dismissDuration,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: SHEET_OFFSCREEN,
+        duration: dismissDuration,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
       if (finished) {
         onDismissRef.current();
       }
     });
-  };
+  }, [reduceMotion, scrimOpacity, sheetOpacity, translateY]);
 
   const panResponder = useMemo(
     () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_event, gestureState) =>
-          gestureState.dy > 2 &&
-          Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
-        onPanResponderTerminationRequest: () => false,
-        onPanResponderMove: (_event, gestureState) => {
-          if (gestureState.dy > 0) {
-            translateY.setValue(gestureState.dy);
-          }
-        },
-        onPanResponderRelease: (_event, gestureState) => {
-          const shouldDismiss =
-            gestureState.dy > DISMISS_THRESHOLD ||
-            (gestureState.dy > 0 && gestureState.vy > DISMISS_VELOCITY);
-          if (shouldDismiss) {
-            Animated.timing(translateY, {
-              toValue: SHEET_OFFSCREEN,
-              duration: 180,
-              useNativeDriver: true,
-            }).start(({ finished }) => {
-              if (finished) {
-                onDismissRef.current();
+      reduceMotion
+        ? PanResponder.create({})
+        : PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_event, gestureState) =>
+              gestureState.dy > 2 &&
+              Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+            onPanResponderTerminationRequest: () => false,
+            onPanResponderMove: (_event, gestureState) => {
+              if (gestureState.dy > 0) {
+                translateY.setValue(gestureState.dy);
               }
-            });
-            return;
-          }
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 180,
-            useNativeDriver: true,
-          }).start();
-        },
-      }),
-    [translateY],
+            },
+            onPanResponderRelease: (_event, gestureState) => {
+              const shouldDismiss =
+                gestureState.dy > DISMISS_THRESHOLD ||
+                (gestureState.dy > 0 && gestureState.vy > DISMISS_VELOCITY);
+              if (shouldDismiss) {
+                dismiss();
+                return;
+              }
+              Animated.timing(translateY, {
+                toValue: 0,
+                duration: sheetDismissDuration(reduceMotion),
+                useNativeDriver: true,
+              }).start();
+            },
+          }),
+    [dismiss, reduceMotion, translateY],
   );
 
   if (!visible || !viewModel) {
@@ -124,17 +182,23 @@ export const MediaQuickSheet = ({
       visible={visible}
     >
       <View style={styles.root}>
-        <Pressable
-          accessibilityLabel={t("mediaQuick.dismiss")}
-          accessibilityRole="button"
-          onPress={dismiss}
-          style={styles.scrim}
-        />
+        <Animated.View
+          style={[StyleSheet.absoluteFill, { opacity: scrimOpacity }]}
+        >
+          <Pressable
+            accessibilityLabel={t("mediaQuick.dismiss")}
+            accessibilityRole="button"
+            onPress={dismiss}
+            style={styles.scrim}
+          />
+        </Animated.View>
         <Animated.View
           style={[
             styles.sheet,
             { paddingBottom: Math.max(insets.bottom, space.sm) },
-            { transform: [{ translateY }] },
+            reduceMotion
+              ? { opacity: sheetOpacity }
+              : { transform: [{ translateY }] },
           ]}
         >
           <View
@@ -179,7 +243,7 @@ const styles = StyleSheet.create({
   },
   scrim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(11, 11, 15, 0.55)",
+    backgroundColor: colors.scrim,
   },
   sheet: {
     backgroundColor: colors.surface,
@@ -192,7 +256,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dragHandleBar: {
-    backgroundColor: "rgba(244, 240, 232, 0.35)",
+    backgroundColor: colors.handle,
     borderRadius: 2,
   },
 });

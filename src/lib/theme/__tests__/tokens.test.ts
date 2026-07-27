@@ -29,8 +29,15 @@ describe("theme tokens", () => {
     expect(colors.accentMuted).toBeTruthy();
     expect(colors.accentGlow).toBeTruthy();
     expect(colors.warning).toBeTruthy();
+    expect(colors.scrim).toBeTruthy();
+    expect(colors.overlaySolid).toBeTruthy();
     expect(colors.borderSubtle).toBeTruthy();
+    expect(colors.borderInput).toBeTruthy();
+    expect(colors.borderMuted).toBeTruthy();
     expect(colors.borderStrong).toBeTruthy();
+    expect(colors.handle).toBeTruthy();
+    expect(colors.neutralMuted).toBeTruthy();
+    expect(colors.secondaryBorder).toBeTruthy();
   });
 
   it("exposes expanded space and radii", () => {

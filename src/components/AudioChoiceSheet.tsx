@@ -1,9 +1,17 @@
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, Modal, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useI18n } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { Button } from "@/ui/Button";
+import {
+  sheetDismissDuration,
+  sheetPresentDuration,
+} from "@/ui/motion/presets";
+import { useReduceMotion } from "@/ui/motion/use-reduce-motion";
+import { Text } from "@/ui/Text";
 
 export type AudioChoiceSheetProps = {
   readonly visible: boolean;
@@ -22,91 +30,106 @@ export const AudioChoiceSheet = ({
 }: AudioChoiceSheetProps) => {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const { space, fontSize, minTouchTarget } = useUiSize();
+  const { space } = useUiSize();
+  const reduceMotion = useReduceMotion();
+  const scrimOpacity = useRef(new Animated.Value(0)).current;
+  const sheetOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!visible) {
+      scrimOpacity.setValue(0);
+      sheetOpacity.setValue(0);
+      return;
+    }
+
+    const presentDuration = sheetPresentDuration(reduceMotion);
+    Animated.parallel([
+      Animated.timing(scrimOpacity, {
+        toValue: 1,
+        duration: presentDuration,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetOpacity, {
+        toValue: 1,
+        duration: presentDuration,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [reduceMotion, scrimOpacity, sheetOpacity, visible]);
+
+  const handleDismiss = () => {
+    const dismissDuration = sheetDismissDuration(reduceMotion);
+    Animated.parallel([
+      Animated.timing(scrimOpacity, {
+        toValue: 0,
+        duration: dismissDuration,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetOpacity, {
+        toValue: 0,
+        duration: dismissDuration,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) {
+        onDismiss();
+      }
+    });
+  };
 
   return (
     <Modal
-      animationType="slide"
-      onRequestClose={onDismiss}
+      animationType="none"
+      onRequestClose={handleDismiss}
       transparent
       visible={visible}
     >
       <View style={styles.root}>
-        <Pressable
-          accessibilityLabel={t("audio.closeA11y")}
-          accessibilityRole="button"
-          onPress={onDismiss}
-          style={styles.scrim}
-        />
-        <View
+        <Animated.View
+          style={[StyleSheet.absoluteFill, { opacity: scrimOpacity }]}
+        >
+          <Pressable
+            accessibilityLabel={t("audio.closeA11y")}
+            accessibilityRole="button"
+            onPress={handleDismiss}
+            style={styles.scrim}
+          />
+        </Animated.View>
+        <Animated.View
           style={[
             styles.sheet,
             {
               gap: space.sm,
+              opacity: sheetOpacity,
               paddingBottom: Math.max(insets.bottom, space.md),
               paddingHorizontal: space.lg,
               paddingTop: space.lg,
             },
           ]}
         >
-          <Text style={[styles.title, { fontSize: fontSize(22) }]}>
-            {t("audio.title")}
-          </Text>
-          <Text
-            style={[
-              styles.message,
-              {
-                fontSize: fontSize(14),
-                lineHeight: fontSize(20),
-                marginBottom: space.sm,
-              },
-            ]}
-          >
+          <Text role="title">{t("audio.title")}</Text>
+          <Text role="body" style={{ marginBottom: space.sm }} tone="muted">
             {t("audio.body", { quality: qualityName })}
           </Text>
-          <Pressable
+          <Button
             accessibilityLabel={t("audio.vfA11y")}
-            accessibilityRole="button"
             onPress={onChooseVf}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              { minHeight: minTouchTarget },
-              pressed ? styles.pressed : null,
-            ]}
+            style={styles.fullWidth}
           >
-            <Text
-              style={[styles.primaryButtonText, { fontSize: fontSize(16) }]}
-            >
-              VF
-            </Text>
-          </Pressable>
-          <Pressable
+            VF
+          </Button>
+          <Button
             accessibilityLabel={t("audio.voA11y")}
-            accessibilityRole="button"
             onPress={onChooseVo}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              { minHeight: minTouchTarget },
-              pressed ? styles.pressed : null,
-            ]}
+            style={styles.fullWidth}
+            variant="secondary"
           >
-            <Text
-              style={[styles.secondaryButtonText, { fontSize: fontSize(16) }]}
-            >
-              VO
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityLabel={t("action.cancel")}
-            accessibilityRole="button"
-            onPress={onDismiss}
-            style={[styles.cancelButton, { minHeight: minTouchTarget }]}
-          >
-            <Text style={[styles.cancelText, { fontSize: fontSize(15) }]}>
-              {t("action.cancel")}
-            </Text>
-          </Pressable>
-        </View>
+            VO
+          </Button>
+          <Button onPress={handleDismiss} style={styles.fullWidth} variant="ghost">
+            {t("action.cancel")}
+          </Button>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -119,51 +142,14 @@ const styles = StyleSheet.create({
   },
   scrim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(11, 11, 15, 0.55)",
+    backgroundColor: colors.scrim,
   },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
   },
-  title: {
-    color: colors.text,
-    fontFamily: fonts.display,
-  },
-  message: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  primaryButtonText: {
-    color: colors.bg,
-    fontFamily: fonts.uiBold,
-  },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: colors.accent,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    justifyContent: "center",
-  },
-  secondaryButtonText: {
-    color: colors.accent,
-    fontFamily: fonts.uiBold,
-  },
-  cancelButton: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelText: {
-    color: colors.secondary,
-    fontFamily: fonts.uiMedium,
-  },
-  pressed: {
-    opacity: 0.85,
+  fullWidth: {
+    alignSelf: "stretch",
   },
 });

@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     backgroundColor: colors.surface,
-    borderColor: "rgba(244, 240, 232, 0.08)",
+    borderColor: colors.borderSubtle,
     borderRadius: radii.md,
     borderWidth: 1,
     color: colors.text,
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     alignItems: "center",
-    borderColor: "rgba(244, 240, 232, 0.12)",
+    borderColor: colors.borderInput,
     borderRadius: radii.md,
     borderWidth: 1,
     justifyContent: "center",
