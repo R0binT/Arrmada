@@ -1,4 +1,3 @@
-import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -8,6 +7,7 @@ import Animated from "react-native-reanimated";
 import { canOfferDownload } from "@/arr-client";
 import {
   AudioChoiceSheet,
+  DetailImmersiveHeader,
   EmptyState,
   ErrorBanner,
   IconButton,
@@ -29,7 +29,7 @@ import {
 } from "@/features/series/use-series";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { useI18n } from "@/i18n";
-import { colors, elevation, radii } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import {
   Button,
@@ -46,10 +46,8 @@ const parseTvdbId = (value: string | string[] | undefined): number => {
 
 export default function SeriesPreviewScreen() {
   const { t } = useI18n();
-  const { space: scaledSpace, minTouchTarget, scale } = useUiSize();
+  const { space: scaledSpace } = useUiSize();
   const reduceMotion = useReduceMotion();
-  const posterWidth = Math.round(160 * scale);
-  const posterHeight = Math.round(240 * scale);
   const { tvdbId: tvdbIdParam } = useLocalSearchParams<{ tvdbId: string }>();
   const tvdbId = parseTvdbId(tvdbIdParam);
   const { sonarr } = useArrClients();
@@ -241,86 +239,9 @@ export default function SeriesPreviewScreen() {
 
   return (
     <Screen scroll>
-      <View style={[styles.topBar, { marginBottom: scaledSpace.md }]}>
-        <IconButton
-          accessibilityLabel={t("action.back")}
-          icon="←"
-          onPress={handleBack}
-        />
-        <Text role="title" style={styles.screenTitle}>
-          {t("add.previewSeriesTitle")}
-        </Text>
-        <View style={{ width: minTouchTarget }} />
-      </View>
-
-      <Animated.View
-        entering={createFadeIn(reduceMotion)}
-        style={{ gap: scaledSpace.lg, marginBottom: scaledSpace.lg }}
-      >
-        <View style={[styles.posterHero, { gap: scaledSpace.md }]}>
-          {candidate.posterUrl ? (
-            <View
-              style={[
-                styles.posterFrame,
-                elevation.mid,
-                { height: posterHeight, width: posterWidth },
-              ]}
-            >
-              <Image
-                accessibilityIgnoresInvertColors
-                contentFit="cover"
-                source={{ uri: candidate.posterUrl }}
-                style={styles.posterImage}
-                transition={200}
-              />
-            </View>
-          ) : (
-            <View
-              style={[
-                styles.posterFrame,
-                styles.posterPlaceholder,
-                elevation.mid,
-                { height: posterHeight, width: posterWidth },
-              ]}
-            >
-              <Text role="display" tone="faint">
-                {candidate.title.slice(0, 1).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View style={[styles.heroCopy, { gap: scaledSpace.xs }]}>
-            <Text role="display" style={styles.heroTitle}>
-              {candidate.title}
-            </Text>
-            <Text role="label" tone="muted">
-              {candidate.year}
-            </Text>
-          </View>
-        </View>
-
-        <Surface padded tone="raised">
-          {candidate.overview.trim().length > 0 ? (
-            <Text
-              role="body"
-              tone="muted"
-              style={{ marginBottom: scaledSpace.md }}
-            >
-              {candidate.overview}
-            </Text>
-          ) : null}
-          <MediaMetaBlock
-            added={undefined}
-            genres={candidate.genres}
-            networkOrStudio={undefined}
-            runtimeMinutes={candidate.runtimeMinutes}
-          />
-        </Surface>
-
-        {isInLibrary ? (
-          <View style={{ gap: scaledSpace.sm }}>
-            <Text role="body" tone="muted">
-              {t("add.alreadyInLibraryHint")}
-            </Text>
+      <DetailImmersiveHeader
+        actions={
+          isInLibrary ? (
             <Button
               accessibilityLabel={t("add.seeFiche")}
               onPress={handleOpenLibrary}
@@ -328,20 +249,51 @@ export default function SeriesPreviewScreen() {
             >
               {t("add.seeFiche")}
             </Button>
-          </View>
-        ) : (
-          <Button
-            accessibilityLabel={t("action.addNamedA11y", {
-              title: candidate.title,
-            })}
-            disabled={!canAdd}
-            loading={addMutation.isPending}
-            onPress={() => void handleAdd()}
-            style={styles.fullWidthButton}
-          >
-            {addMutation.isPending ? t("action.adding") : t("action.add")}
-          </Button>
-        )}
+          ) : (
+            <Button
+              accessibilityLabel={t("action.addNamedA11y", {
+                title: candidate.title,
+              })}
+              disabled={!canAdd}
+              loading={addMutation.isPending}
+              onPress={() => void handleAdd()}
+              style={styles.fullWidthButton}
+            >
+              {addMutation.isPending ? t("action.adding") : t("action.add")}
+            </Button>
+          )
+        }
+        backLabel={t("action.back")}
+        meta={
+          <Text role="label" tone="muted">
+            {candidate.year}
+          </Text>
+        }
+        onBack={handleBack}
+        posterUrl={candidate.posterUrl}
+        title={candidate.title}
+      />
+
+      <Animated.View
+        entering={createFadeIn(reduceMotion)}
+        style={{ gap: scaledSpace.md, marginBottom: scaledSpace.lg }}
+      >
+        <MediaMetaBlock
+          added={undefined}
+          genres={candidate.genres}
+          networkOrStudio={undefined}
+          runtimeMinutes={candidate.runtimeMinutes}
+        />
+        {candidate.overview.trim().length > 0 ? (
+          <Text role="body" tone="muted">
+            {candidate.overview}
+          </Text>
+        ) : null}
+        {isInLibrary ? (
+          <Text role="body" tone="muted">
+            {t("add.alreadyInLibraryHint")}
+          </Text>
+        ) : null}
       </Animated.View>
 
       <AudioChoiceSheet
@@ -382,36 +334,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
   },
-  screenTitle: {
-    flex: 1,
-    textAlign: "center",
-  },
   loading: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-  },
-  posterHero: {
-    alignItems: "center",
-  },
-  posterFrame: {
-    borderRadius: radii.lg,
-    overflow: "hidden",
-  },
-  posterImage: {
-    height: "100%",
-    width: "100%",
-  },
-  posterPlaceholder: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    justifyContent: "center",
-  },
-  heroCopy: {
-    alignItems: "center",
-  },
-  heroTitle: {
-    textAlign: "center",
   },
   fullWidthButton: {
     alignSelf: "stretch",

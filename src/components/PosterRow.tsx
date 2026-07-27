@@ -34,17 +34,14 @@ export const PosterRow = ({ title, children, onSeeAll }: PosterRowProps) => {
 
   const headerContent = (
     <>
-      <Text
-        accessibilityRole="header"
-        role="caption"
-        style={{ flex: 1, letterSpacing: 1.2, textTransform: "uppercase" }}
-        tone="muted"
-      >
+      <Text accessibilityRole="header" role="headline" style={{ flex: 1 }}>
         {title}
       </Text>
-      <Text role="headline" style={{ paddingLeft: space.sm }} tone="muted">
-        ›
-      </Text>
+      {onSeeAll ? (
+        <Text role="label" tone="accent">
+          {t("action.seeAll")}
+        </Text>
+      ) : null}
     </>
   );
 
@@ -84,7 +81,7 @@ export const PosterRow = ({ title, children, onSeeAll }: PosterRowProps) => {
       <ScrollView
         horizontal
         contentContainerStyle={{
-          gap: space.md,
+          gap: space.sm,
           paddingHorizontal: space.md,
         }}
         showsHorizontalScrollIndicator={false}

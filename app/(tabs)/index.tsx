@@ -35,9 +35,9 @@ import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { createFadeIn, Text, useReduceMotion } from "@/ui";
 
-const HERO_PARALLAX_RANGE = 240;
-const HERO_PARALLAX_TRANSLATE_Y = -48;
-const HERO_PARALLAX_SCALE_MIN = 0.94;
+const HERO_PARALLAX_RANGE = 360;
+const HERO_PARALLAX_TRANSLATE_Y = -36;
+const HERO_PARALLAX_SCALE_MIN = 0.96;
 
 const formatHeroSubtitle = (hero: HomeHero): string => {
   if (hero.kind === "download") {
@@ -64,6 +64,7 @@ export default function HomeScreen() {
   const scrollY = useSharedValue(0);
   const [isFocused, setIsFocused] = useState(false);
   const quick = useMediaQuickController();
+  const posterWidth = Math.round(128 * scale);
 
   useFocusEffect(
     useCallback(() => {
@@ -149,54 +150,57 @@ export default function HomeScreen() {
     handleOpenSeriesItem(home.hero.item.id);
   }, [handleOpenMovie, handleOpenQueue, handleOpenSeriesItem, home.hero]);
 
-  const contentPadding = {
-    paddingHorizontal: scaledSpace.md,
-    paddingVertical: scaledSpace.md,
-  };
-
   const fadeIn = createFadeIn(reduceMotion);
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.safe}>
+    <View style={styles.root}>
       <Animated.ScrollView
-        contentContainerStyle={[styles.scrollContent, contentPadding]}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         style={styles.scroll}
       >
-        <View style={[styles.header, { marginBottom: scaledSpace.md }]}>
-          <View style={[styles.brandRow, { gap: scaledSpace.sm }]}>
-            <AppLogo size={Math.round(36 * scale)} />
-            <View style={{ gap: scaledSpace["2xs"] }}>
+        <SafeAreaView edges={["top"]} style={styles.topSafe}>
+          <View
+            style={[
+              styles.header,
+              {
+                paddingHorizontal: scaledSpace.md,
+                paddingBottom: scaledSpace.sm,
+              },
+            ]}
+          >
+            <View style={[styles.brandRow, { gap: scaledSpace.sm }]}>
+              <AppLogo size={Math.round(34 * scale)} />
               <Text role="headline">Arrmada</Text>
-              <Text role="caption" tone="muted">
-                {t("tabs.home")}
-              </Text>
+            </View>
+            <View style={[styles.healthRow, { gap: scaledSpace.md }]}>
+              {home.health.radarr ? (
+                <ServiceHealthDot
+                  health={home.health.radarr}
+                  showLabel={false}
+                  useLogo
+                />
+              ) : null}
+              {home.health.sonarr ? (
+                <ServiceHealthDot
+                  health={home.health.sonarr}
+                  showLabel={false}
+                  useLogo
+                />
+              ) : null}
             </View>
           </View>
-          <View style={[styles.healthRow, { gap: scaledSpace.md }]}>
-            {home.health.radarr ? (
-              <ServiceHealthDot
-                health={home.health.radarr}
-                showLabel={false}
-                useLogo
-              />
-            ) : null}
-            {home.health.sonarr ? (
-              <ServiceHealthDot
-                health={home.health.sonarr}
-                showLabel={false}
-                useLogo
-              />
-            ) : null}
-          </View>
-        </View>
+        </SafeAreaView>
 
         {home.networkErrors.map((entry) => (
           <View
             key={entry.service}
-            style={[styles.bannerWrap, { marginBottom: scaledSpace.md }]}
+            style={{
+              marginBottom: scaledSpace.md,
+              paddingHorizontal: scaledSpace.md,
+            }}
           >
             <ErrorBanner
               message={entry.message}
@@ -213,15 +217,13 @@ export default function HomeScreen() {
         ) : (
           <Animated.View
             entering={fadeIn}
-            style={[
-              styles.content,
-              { gap: scaledSpace.xl, paddingBottom: scaledSpace.xl },
-            ]}
+            style={{ gap: scaledSpace.xl, paddingBottom: scaledSpace["2xl"] }}
           >
             {home.hero ? (
               reduceMotion ? (
                 <HeroBanner
                   kind={home.hero.kind}
+                  layout="cinema"
                   onPress={handleHeroPress}
                   posterUrl={home.hero.item.posterUrl}
                   progress={getHeroProgress(home.hero)}
@@ -232,6 +234,7 @@ export default function HomeScreen() {
                 <Animated.View style={heroParallaxStyle}>
                   <HeroBanner
                     kind={home.hero.kind}
+                    layout="cinema"
                     onPress={handleHeroPress}
                     posterUrl={home.hero.item.posterUrl}
                     progress={getHeroProgress(home.hero)}
@@ -243,137 +246,124 @@ export default function HomeScreen() {
             ) : null}
 
             {home.downloadingItems.length > 0 ? (
-              <View
-                style={[styles.rowWrap, { marginHorizontal: -scaledSpace.md }]}
+              <PosterRow
+                onSeeAll={handleOpenQueue}
+                title={t("home.inProgress")}
               >
-                <PosterRow
-                  onSeeAll={handleOpenQueue}
-                  title={t("home.inProgress")}
-                >
-                  {home.downloadingItems.map((item) => {
-                    const selection = selectionFromDownload(item);
-                    return (
-                      <PosterCard
-                        key={selection.key}
-                        onLongPress={() =>
-                          quick.openPrimaryFromSelection(selection)
-                        }
-                        onPress={() => quick.toggle(selection)}
-                        posterUrl={item.posterUrl}
-                        progress={item.progress > 0 ? item.progress : undefined}
-                        selected={quick.selected?.key === selection.key}
-                        title={item.title}
-                        width={Math.round(112 * scale)}
-                      />
-                    );
-                  })}
-                </PosterRow>
-              </View>
+                {home.downloadingItems.map((item) => {
+                  const selection = selectionFromDownload(item);
+                  return (
+                    <PosterCard
+                      key={selection.key}
+                      onLongPress={() =>
+                        quick.openPrimaryFromSelection(selection)
+                      }
+                      onPress={() => quick.toggle(selection)}
+                      posterUrl={item.posterUrl}
+                      progress={item.progress > 0 ? item.progress : undefined}
+                      selected={quick.selected?.key === selection.key}
+                      title={item.title}
+                      width={posterWidth}
+                    />
+                  );
+                })}
+              </PosterRow>
             ) : null}
 
             {upcoming.previewItems.length > 0 ? (
-              <View
-                style={[styles.rowWrap, { marginHorizontal: -scaledSpace.md }]}
+              <PosterRow
+                onSeeAll={handleOpenUpcoming}
+                title={t("home.sectionUpcoming")}
               >
-                <PosterRow
-                  onSeeAll={handleOpenUpcoming}
-                  title={t("home.sectionUpcoming")}
-                >
-                  {upcoming.previewItems.map((item) => {
-                    const selection = selectionFromUpcoming(item, {
-                      movies: home.movies,
-                      series: home.series,
-                    });
-                    return (
-                      <PosterCard
-                        key={selection.key}
-                        availability={selection.availability}
-                        cornerBadge={formatPosterDate(item.date)}
-                        onLongPress={() =>
-                          quick.openPrimaryFromSelection(selection)
-                        }
-                        onPress={() => quick.toggle(selection)}
-                        posterUrl={item.posterUrl}
-                        selected={quick.selected?.key === selection.key}
-                        title={item.title}
-                        width={Math.round(112 * scale)}
-                      />
-                    );
-                  })}
-                </PosterRow>
-              </View>
+                {upcoming.previewItems.map((item) => {
+                  const selection = selectionFromUpcoming(item, {
+                    movies: home.movies,
+                    series: home.series,
+                  });
+                  return (
+                    <PosterCard
+                      key={selection.key}
+                      availability={selection.availability}
+                      cornerBadge={formatPosterDate(item.date)}
+                      onLongPress={() =>
+                        quick.openPrimaryFromSelection(selection)
+                      }
+                      onPress={() => quick.toggle(selection)}
+                      posterUrl={item.posterUrl}
+                      selected={quick.selected?.key === selection.key}
+                      title={item.title}
+                      width={posterWidth}
+                    />
+                  );
+                })}
+              </PosterRow>
             ) : null}
 
             {home.recentMovies.length > 0 ? (
-              <View
-                style={[styles.rowWrap, { marginHorizontal: -scaledSpace.md }]}
+              <PosterRow
+                onSeeAll={handleOpenMovies}
+                title={t("home.sectionRecentMovies")}
               >
-                <PosterRow
-                  onSeeAll={handleOpenMovies}
-                  title={t("home.sectionRecentMovies")}
-                >
-                  {home.recentMovies.map((movie) => {
-                    const selection = selectionFromMovie(movie);
-                    return (
-                      <PosterCard
-                        key={selection.key}
-                        availability={selection.availability}
-                        onLongPress={() =>
-                          quick.openPrimaryFromSelection(selection)
-                        }
-                        onPress={() => quick.toggle(selection)}
-                        posterUrl={movie.posterUrl}
-                        selected={quick.selected?.key === selection.key}
-                        title={movie.title}
-                        width={Math.round(112 * scale)}
-                      />
-                    );
-                  })}
-                </PosterRow>
-              </View>
+                {home.recentMovies.map((movie) => {
+                  const selection = selectionFromMovie(movie);
+                  return (
+                    <PosterCard
+                      key={selection.key}
+                      availability={selection.availability}
+                      onLongPress={() =>
+                        quick.openPrimaryFromSelection(selection)
+                      }
+                      onPress={() => quick.toggle(selection)}
+                      posterUrl={movie.posterUrl}
+                      selected={quick.selected?.key === selection.key}
+                      title={movie.title}
+                      width={posterWidth}
+                    />
+                  );
+                })}
+              </PosterRow>
             ) : null}
 
             {home.recentSeries.length > 0 ? (
-              <View
-                style={[styles.rowWrap, { marginHorizontal: -scaledSpace.md }]}
+              <PosterRow
+                onSeeAll={handleOpenSeries}
+                title={t("home.sectionRecentSeries")}
               >
-                <PosterRow
-                  onSeeAll={handleOpenSeries}
-                  title={t("home.sectionRecentSeries")}
-                >
-                  {home.recentSeries.map((series) => {
-                    const selection = selectionFromSeries(series);
-                    return (
-                      <PosterCard
-                        key={selection.key}
-                        availability={selection.availability}
-                        onLongPress={() =>
-                          quick.openPrimaryFromSelection(selection)
-                        }
-                        onPress={() => quick.toggle(selection)}
-                        posterUrl={series.posterUrl}
-                        selected={quick.selected?.key === selection.key}
-                        title={series.title}
-                        width={Math.round(112 * scale)}
-                      />
-                    );
-                  })}
-                </PosterRow>
-              </View>
+                {home.recentSeries.map((series) => {
+                  const selection = selectionFromSeries(series);
+                  return (
+                    <PosterCard
+                      key={selection.key}
+                      availability={selection.availability}
+                      onLongPress={() =>
+                        quick.openPrimaryFromSelection(selection)
+                      }
+                      onPress={() => quick.toggle(selection)}
+                      posterUrl={series.posterUrl}
+                      selected={quick.selected?.key === selection.key}
+                      title={series.title}
+                      width={posterWidth}
+                    />
+                  );
+                })}
+              </PosterRow>
             ) : null}
           </Animated.View>
         )}
       </Animated.ScrollView>
 
       <MediaQuickSheet {...quick.sheetProps} />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
+  root: {
     backgroundColor: colors.bg,
     flex: 1,
+  },
+  topSafe: {
+    backgroundColor: "transparent",
   },
   scroll: {
     backgroundColor: colors.bg,
@@ -395,13 +385,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
   },
-  bannerWrap: {},
   loading: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    minHeight: 240,
+    minHeight: 320,
   },
-  content: {},
-  rowWrap: {},
 });

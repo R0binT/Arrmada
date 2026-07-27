@@ -205,6 +205,19 @@ export default function MovieDetailScreen() {
   return (
     <Screen scroll>
       <DetailImmersiveHeader
+        actions={
+          showDownload ? (
+            <Button
+              accessibilityLabel={t("detail.downloadMovieA11y")}
+              disabled={actionsBusy}
+              loading={downloadBusy}
+              onPress={() => void handleDownload()}
+              style={styles.fullWidthButton}
+            >
+              {downloadBusy ? t("action.searching") : t("action.download")}
+            </Button>
+          ) : null
+        }
         backLabel={t("action.back")}
         meta={
           <View style={[styles.metaRow, { gap: scaledSpace.sm }]}>
@@ -225,25 +238,23 @@ export default function MovieDetailScreen() {
         entering={createFadeSlideUp(reduceMotion, 0)}
         style={{ gap: scaledSpace.md, marginBottom: scaledSpace.lg }}
       >
-        <Surface padded tone="raised">
-          <MediaMetaBlock
-            added={movie.added}
-            fileQuality={
-              movieAvailability === "dispo" ? movie.fileQuality : undefined
-            }
-            genres={movie.genres}
-            networkOrStudio={movie.studio}
-            runtimeMinutes={movie.runtimeMinutes}
-            sizeOnDisk={
-              movieAvailability === "dispo" ? movie.sizeOnDisk : undefined
-            }
-          />
-          {movie.overview.trim().length > 0 ? (
-            <Text role="body" tone="muted">
-              {movie.overview}
-            </Text>
-          ) : null}
-        </Surface>
+        <MediaMetaBlock
+          added={movie.added}
+          fileQuality={
+            movieAvailability === "dispo" ? movie.fileQuality : undefined
+          }
+          genres={movie.genres}
+          networkOrStudio={movie.studio}
+          runtimeMinutes={movie.runtimeMinutes}
+          sizeOnDisk={
+            movieAvailability === "dispo" ? movie.sizeOnDisk : undefined
+          }
+        />
+        {movie.overview.trim().length > 0 ? (
+          <Text role="body" tone="muted">
+            {movie.overview}
+          </Text>
+        ) : null}
 
         <Surface padded tone="raised">
           <View
@@ -268,29 +279,16 @@ export default function MovieDetailScreen() {
           </View>
         </Surface>
 
-        <View style={[styles.actions, { gap: scaledSpace.md }]}>
-          {showDownload ? (
-            <Button
-              accessibilityLabel={t("detail.downloadMovieA11y")}
-              disabled={actionsBusy}
-              loading={downloadBusy}
-              onPress={() => void handleDownload()}
-              style={styles.fullWidthButton}
-            >
-              {downloadBusy ? t("action.searching") : t("action.download")}
-            </Button>
-          ) : null}
-          <Button
-            accessibilityLabel={t("detail.removeMovieA11y")}
-            disabled={actionsBusy}
-            loading={deleteMutation.isPending}
-            onPress={handleRetirer}
-            style={styles.fullWidthButton}
-            variant="secondary"
-          >
-            {deleteMutation.isPending ? t("action.removing") : t("action.remove")}
-          </Button>
-        </View>
+        <Button
+          accessibilityLabel={t("detail.removeMovieA11y")}
+          disabled={actionsBusy}
+          loading={deleteMutation.isPending}
+          onPress={handleRetirer}
+          style={styles.fullWidthButton}
+          variant="secondary"
+        >
+          {deleteMutation.isPending ? t("action.removing") : t("action.remove")}
+        </Button>
       </Animated.View>
 
       {toast ? (
@@ -335,7 +333,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  actions: {},
   fullWidthButton: {
     alignSelf: "stretch",
   },

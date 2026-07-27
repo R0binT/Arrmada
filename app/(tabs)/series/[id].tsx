@@ -351,6 +351,19 @@ export default function SeriesDetailScreen() {
   return (
     <Screen scroll>
       <DetailImmersiveHeader
+        actions={
+          showSeriesDownload ? (
+            <Button
+              accessibilityLabel={t("detail.downloadSeriesA11y")}
+              disabled={actionsBusy}
+              loading={downloadBusy}
+              onPress={() => void handleDownloadSeries()}
+              style={styles.fullWidthButton}
+            >
+              {downloadBusy ? t("action.searching") : t("action.download")}
+            </Button>
+          ) : null
+        }
         backLabel={t("action.back")}
         meta={
           <View style={[styles.metaRow, { gap: scaledSpace.sm }]}>
@@ -383,19 +396,17 @@ export default function SeriesDetailScreen() {
         entering={createFadeSlideUp(reduceMotion, 0)}
         style={{ gap: scaledSpace.md, marginBottom: scaledSpace.lg }}
       >
-        <Surface padded tone="raised">
-          <MediaMetaBlock
-            added={series.added}
-            genres={series.genres}
-            networkOrStudio={series.network}
-            runtimeMinutes={series.runtimeMinutes}
-          />
-          {series.overview.trim().length > 0 ? (
-            <Text role="body" tone="muted">
-              {series.overview}
-            </Text>
-          ) : null}
-        </Surface>
+        <MediaMetaBlock
+          added={series.added}
+          genres={series.genres}
+          networkOrStudio={series.network}
+          runtimeMinutes={series.runtimeMinutes}
+        />
+        {series.overview.trim().length > 0 ? (
+          <Text role="body" tone="muted">
+            {series.overview}
+          </Text>
+        ) : null}
 
         <Surface padded tone="raised">
           <View style={[styles.suiviRow, { minHeight: minTouchTarget }]}>
@@ -415,31 +426,18 @@ export default function SeriesDetailScreen() {
           </View>
         </Surface>
 
-        <View style={[styles.actions, { gap: scaledSpace.md }]}>
-          {showSeriesDownload ? (
-            <Button
-              accessibilityLabel={t("detail.downloadSeriesA11y")}
-              disabled={actionsBusy}
-              loading={downloadBusy}
-              onPress={() => void handleDownloadSeries()}
-              style={styles.fullWidthButton}
-            >
-              {downloadBusy ? t("action.searching") : t("action.download")}
-            </Button>
-          ) : null}
-          <Button
-            accessibilityLabel={t("detail.removeSeriesA11y")}
-            disabled={actionsBusy}
-            loading={deleteMutation.isPending}
-            onPress={handleRetirer}
-            style={styles.fullWidthButton}
-            variant="secondary"
-          >
-            {deleteMutation.isPending
-              ? t("action.removing")
-              : t("action.remove")}
-          </Button>
-        </View>
+        <Button
+          accessibilityLabel={t("detail.removeSeriesA11y")}
+          disabled={actionsBusy}
+          loading={deleteMutation.isPending}
+          onPress={handleRetirer}
+          style={styles.fullWidthButton}
+          variant="secondary"
+        >
+          {deleteMutation.isPending
+            ? t("action.removing")
+            : t("action.remove")}
+        </Button>
       </Animated.View>
 
       <Animated.View
@@ -653,7 +651,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  actions: {},
   fullWidthButton: {
     alignSelf: "stretch",
   },
