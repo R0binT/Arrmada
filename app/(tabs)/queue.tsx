@@ -1,28 +1,30 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import type { QueueItem } from "@/arr-client";
 import {
-    EmptyState,
-    ErrorBanner,
-    QueueRow,
-    QueueSkeleton,
-    Screen,
+  EmptyState,
+  ErrorBanner,
+  QueueRow,
+  QueueSkeleton,
+  Screen,
 } from "@/components";
 import {
-    getQueueErrorMessage,
-    useQueue,
-    useQueueMutations,
+  getQueueErrorMessage,
+  useQueue,
+  useQueueMutations,
 } from "@/features/queue/use-queue";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useI18n } from "@/i18n";
-import { colors, fonts } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { createFadeSlideUp, Surface, Text, useReduceMotion } from "@/ui";
 
 export default function QueueScreen() {
   const { t } = useI18n();
-  const { fontSize, space: scaledSpace } = useUiSize();
+  const { space: scaledSpace } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const [isFocused, setIsFocused] = useState(false);
 
   useFocusEffect(
@@ -47,7 +49,6 @@ export default function QueueScreen() {
   ).length;
 
   const handleOpenMovies = useCallback(() => {
-    // Use the tab root — `movies/index` can match the `[id]` route as id="index".
     router.navigate("/(tabs)/movies");
   }, []);
 
@@ -77,22 +78,19 @@ export default function QueueScreen() {
     [mutations.pause, runMutation],
   );
 
+  const renderHeader = () => (
+    <View style={{ marginBottom: scaledSpace.md }}>
+      <Text role="title">{t("queue.title")}</Text>
+      <Text role="body" style={{ marginTop: scaledSpace.xs }} tone="muted">
+        {t("queue.activeCount", { count: activeCount })}
+      </Text>
+    </View>
+  );
+
   if (queueQuery.isError) {
     return (
       <Screen>
-        <View style={[styles.header, { marginBottom: scaledSpace.md }]}>
-          <Text style={[styles.title, { fontSize: fontSize(32) }]}>
-            {t("queue.title")}
-          </Text>
-          <Text
-            style={[
-              styles.subtitle,
-              { fontSize: fontSize(15), marginTop: scaledSpace.xs },
-            ]}
-          >
-            {t("queue.activeCount", { count: 0 })}
-          </Text>
-        </View>
+        {renderHeader()}
         {queueQuery.radarrError ? (
           <View style={styles.bannerWrap}>
             <ErrorBanner
@@ -128,22 +126,10 @@ export default function QueueScreen() {
 
   return (
     <Screen>
-      <View style={[styles.header, { marginBottom: scaledSpace.md }]}>
-        <Text style={[styles.title, { fontSize: fontSize(32) }]}>
-          {t("queue.title")}
-        </Text>
-        <Text
-          style={[
-            styles.subtitle,
-            { fontSize: fontSize(15), marginTop: scaledSpace.xs },
-          ]}
-        >
-          {t("queue.activeCount", { count: activeCount })}
-        </Text>
-      </View>
+      {renderHeader()}
 
       {queueQuery.radarrError ? (
-        <View style={[styles.bannerWrap, { marginBottom: scaledSpace.md }]}>
+        <View style={{ marginBottom: scaledSpace.md }}>
           <ErrorBanner
             message={t("queue.moviesError", {
               message: getQueueErrorMessage(queueQuery.radarrError),
@@ -154,7 +140,7 @@ export default function QueueScreen() {
         </View>
       ) : null}
       {queueQuery.sonarrError ? (
-        <View style={[styles.bannerWrap, { marginBottom: scaledSpace.md }]}>
+        <View style={{ marginBottom: scaledSpace.md }}>
           <ErrorBanner
             message={t("queue.seriesError", {
               message: getQueueErrorMessage(queueQuery.sonarrError),
@@ -182,12 +168,14 @@ export default function QueueScreen() {
           ]}
           data={queueQuery.items}
           keyExtractor={(item) => `${item.service}-${item.id}`}
-          renderItem={({ item }) => (
-            <QueueRow
-              item={item}
-              onPause={item.canPause ? () => handlePause(item) : undefined}
-              onRemove={() => handleRemove(item)}
-            />
+          renderItem={({ item, index }) => (
+            <Animated.View entering={createFadeSlideUp(reduceMotion, index)}>
+              <QueueRow
+                item={item}
+                onPause={item.canPause ? () => handlePause(item) : undefined}
+                onRemove={() => handleRemove(item)}
+              />
+            </Animated.View>
           )}
           showsVerticalScrollIndicator={false}
           style={styles.listContainer}
@@ -195,8 +183,8 @@ export default function QueueScreen() {
       )}
 
       {toast ? (
-        <View
-          accessibilityLiveRegion="polite"
+        <Surface
+          radius="md"
           style={[
             styles.toast,
             {
@@ -205,26 +193,18 @@ export default function QueueScreen() {
               paddingVertical: scaledSpace.md,
             },
           ]}
+          tone="elevated"
         >
-          <Text style={[styles.toastText, { fontSize: fontSize(14) }]}>
-            {toast}
-          </Text>
-        </View>
+          <View accessibilityLiveRegion="polite">
+            <Text role="label">{toast}</Text>
+          </View>
+        </Surface>
       ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {},
-  title: {
-    color: colors.text,
-    fontFamily: fonts.display,
-  },
-  subtitle: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
   bannerWrap: {},
   listContainer: {
     flex: 1,
@@ -232,12 +212,6 @@ const styles = StyleSheet.create({
   list: {},
   toast: {
     alignSelf: "center",
-    backgroundColor: colors.surface,
-    borderRadius: 12,
     position: "absolute",
-  },
-  toastText: {
-    color: colors.text,
-    fontFamily: fonts.uiMedium,
   },
 });

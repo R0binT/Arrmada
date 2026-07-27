@@ -1,44 +1,48 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
 } from "react-native";
+import Animated from "react-native-reanimated";
 
 import type { CalendarEvent, UpcomingItem } from "@/arr-client";
 import {
-    EmptyState,
-    ErrorBanner,
-    Screen,
-    UpcomingCalendar,
-    UpcomingRow,
+  EmptyState,
+  ErrorBanner,
+  Screen,
+  UpcomingCalendar,
+  UpcomingRow,
 } from "@/components";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import {
-    loadUpcomingViewMode,
-    saveUpcomingViewMode,
-    type UpcomingViewMode,
+  loadUpcomingViewMode,
+  saveUpcomingViewMode,
+  type UpcomingViewMode,
 } from "@/features/upcoming/upcoming-view-preference";
 import { useUpcoming } from "@/features/upcoming/use-upcoming";
 import { useI18n } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import {
+  createFadeSlideUp,
+  pressScaleStyle,
+  Surface,
+  Text,
+  useReduceMotion,
+} from "@/ui";
 
 const startOfMonth = (date: Date): Date =>
   new Date(date.getFullYear(), date.getMonth(), 1);
 
 export default function UpcomingScreen() {
   const { t } = useI18n();
-  const {
-    fontSize,
-    space: scaledSpace,
-    minTouchTarget: touchTarget,
-  } = useUiSize();
+  const { space: scaledSpace, minTouchTarget: touchTarget } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const [viewMode, setViewMode] = useState<UpcomingViewMode>("list");
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfMonth(new Date()),
@@ -76,6 +80,31 @@ export default function UpcomingScreen() {
 
   const listEmpty = !upcoming.isLoading && upcoming.items.length === 0;
 
+  const renderToggle = (mode: UpcomingViewMode, label: string, a11y: string) => {
+    const selected = viewMode === mode;
+    return (
+      <Pressable
+        accessibilityLabel={a11y}
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+        onPress={() => handleSetViewMode(mode)}
+        style={({ pressed }) => [
+          styles.toggleButton,
+          {
+            minHeight: touchTarget - 8,
+            paddingHorizontal: scaledSpace.md,
+          },
+          selected ? styles.toggleActive : null,
+          pressScaleStyle(pressed, reduceMotion),
+        ]}
+      >
+        <Text role="label" tone={selected ? "accent" : "muted"}>
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
+
   return (
     <Screen>
       <View
@@ -84,65 +113,25 @@ export default function UpcomingScreen() {
           { gap: scaledSpace.md, marginBottom: scaledSpace.md },
         ]}
       >
-        <Text style={[styles.title, { fontSize: fontSize(28) }]}>
-          {t("upcoming.title")}
-        </Text>
-        <View style={styles.toggle}>
-          <Pressable
-            accessibilityLabel={t("upcoming.listA11y")}
-            accessibilityRole="button"
-            accessibilityState={{ selected: viewMode === "list" }}
-            onPress={() => handleSetViewMode("list")}
-            style={[
-              styles.toggleButton,
-              {
-                minHeight: touchTarget - 8,
-                paddingHorizontal: scaledSpace.md,
-              },
-              viewMode === "list" ? styles.toggleActive : null,
-            ]}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                { fontSize: fontSize(14) },
-                viewMode === "list" ? styles.toggleTextActive : null,
-              ]}
-            >
-              {t("upcoming.list")}
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityLabel={t("upcoming.calendarA11y")}
-            accessibilityRole="button"
-            accessibilityState={{ selected: viewMode === "calendar" }}
-            onPress={() => handleSetViewMode("calendar")}
-            style={[
-              styles.toggleButton,
-              {
-                minHeight: touchTarget - 8,
-                paddingHorizontal: scaledSpace.md,
-              },
-              viewMode === "calendar" ? styles.toggleActive : null,
-            ]}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                { fontSize: fontSize(14) },
-                viewMode === "calendar" ? styles.toggleTextActive : null,
-              ]}
-            >
-              {t("upcoming.calendar")}
-            </Text>
-          </Pressable>
-        </View>
+        <Text role="title">{t("upcoming.title")}</Text>
+        <Surface
+          radius="md"
+          style={[styles.toggle, { padding: 4 }]}
+          tone="base"
+        >
+          {renderToggle("list", t("upcoming.list"), t("upcoming.listA11y"))}
+          {renderToggle(
+            "calendar",
+            t("upcoming.calendar"),
+            t("upcoming.calendarA11y"),
+          )}
+        </Surface>
       </View>
 
       {upcoming.networkErrors.map((entry) => (
         <View
           key={entry.service}
-          style={[styles.bannerWrap, { marginBottom: scaledSpace.md }]}
+          style={{ marginBottom: scaledSpace.md }}
         >
           <ErrorBanner
             message={entry.message}
@@ -178,8 +167,10 @@ export default function UpcomingScreen() {
           }}
           data={[...upcoming.items]}
           keyExtractor={(item) => `${item.kind}-${item.id}`}
-          renderItem={({ item }) => (
-            <UpcomingRow item={item} onPress={() => handleOpenItem(item)} />
+          renderItem={({ item, index }) => (
+            <Animated.View entering={createFadeSlideUp(reduceMotion, index)}>
+              <UpcomingRow item={item} onPress={() => handleOpenItem(item)} />
+            </Animated.View>
           )}
           ItemSeparatorComponent={() => (
             <View style={{ height: scaledSpace.sm }} />
@@ -192,32 +183,17 @@ export default function UpcomingScreen() {
 
 const styles = StyleSheet.create({
   header: {},
-  title: {
-    color: colors.text,
-    fontFamily: fonts.display,
-  },
   toggle: {
     alignSelf: "flex-start",
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
     flexDirection: "row",
-    padding: 4,
   },
   toggleButton: {
     borderRadius: radii.md - 2,
     justifyContent: "center",
   },
   toggleActive: {
-    backgroundColor: "rgba(245, 165, 36, 0.18)",
+    backgroundColor: colors.accentMuted,
   },
-  toggleText: {
-    color: colors.secondary,
-    fontFamily: fonts.uiMedium,
-  },
-  toggleTextActive: {
-    color: colors.accent,
-  },
-  bannerWrap: {},
   loading: {
     alignItems: "center",
     flex: 1,

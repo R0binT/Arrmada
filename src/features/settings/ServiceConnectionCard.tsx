@@ -1,18 +1,19 @@
 import { useState } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import type { ArrService, ServiceHealth } from "@/arr-client";
 import { ServiceHealthDot } from "@/components/ServiceHealthDot";
 import { useVerrou } from "@/features/verrou/VerrouProvider";
-import { colors, fonts, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { t } from "@/i18n";
+import {
+  Button,
+  Chip,
+  IconButton,
+  Surface,
+  Text,
+  TextField,
+} from "@/ui";
 
 type ServiceConnectionCardProps = {
   readonly service: ArrService;
@@ -42,7 +43,7 @@ export const ServiceConnectionCard = ({
   isTesting = false,
   showReadyBadge = false,
 }: ServiceConnectionCardProps) => {
-  const { fontSize, space: scaledSpace, minTouchTarget } = useUiSize();
+  const { space: scaledSpace, minTouchTarget } = useUiSize();
   const { isEnabled: isVerrouEnabled, isUnlocked, requireUnlock } = useVerrou();
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
   const serviceLabel = SERVICE_LABELS[service];
@@ -77,22 +78,12 @@ export const ServiceConnectionCard = ({
     }
     if (showReadyBadge && isReady) {
       return (
-        <View
-          accessibilityLabel={t("connection.readyA11y", { service: serviceLabel })}
-          style={[
-            styles.readyBadge,
-            {
-              gap: scaledSpace.xs,
-              paddingHorizontal: scaledSpace.sm,
-              paddingVertical: scaledSpace.xs,
-            },
-          ]}
+        <Chip
+          tone="success"
+          style={{ alignSelf: "flex-start" }}
         >
-          <Text style={[styles.readyIcon, { fontSize: fontSize(12) }]}>✓</Text>
-          <Text style={[styles.readyText, { fontSize: fontSize(12) }]}>
-            {t("connection.ready")}
-          </Text>
-        </View>
+          ✓ {t("connection.ready")}
+        </Chip>
       );
     }
     if (!showReadyBadge) {
@@ -101,159 +92,89 @@ export const ServiceConnectionCard = ({
     return null;
   };
 
-  const inputStyle = [
-    styles.input,
-    {
-      fontSize: fontSize(15),
-      minHeight: minTouchTarget,
-      paddingHorizontal: scaledSpace.md,
-      paddingVertical: scaledSpace.sm,
-    },
-  ];
-
   return (
-    <View style={[styles.card, { gap: scaledSpace.md, padding: scaledSpace.md }]}>
+    <Surface
+      padded
+      radius="md"
+      style={{ gap: scaledSpace.md }}
+      tone="raised"
+    >
       <View style={styles.header}>
-        <Text style={[styles.serviceTitle, { fontSize: fontSize(22) }]}>
-          {serviceLabel}
-        </Text>
+        <Text role="headline">{serviceLabel}</Text>
         {renderStatus()}
       </View>
 
-      <View style={[styles.field, { gap: scaledSpace.xs }]}>
-        <Text style={[styles.label, { fontSize: fontSize(12) }]}>
+      <View style={{ gap: scaledSpace.xs }}>
+        <Text role="caption" tone="muted">
           {t("connection.address")}
         </Text>
-        <TextInput
+        <TextField
           accessibilityLabel={t("connection.addressA11y", { service: serviceLabel })}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
           onChangeText={onUrlChange}
           placeholder="http://192.168.1.10:7878"
-          placeholderTextColor={colors.secondary}
-          style={inputStyle}
           value={url}
         />
       </View>
 
-      <View style={[styles.field, { gap: scaledSpace.xs }]}>
-        <Text style={[styles.label, { fontSize: fontSize(12) }]}>
+      <View style={{ gap: scaledSpace.xs }}>
+        <Text role="caption" tone="muted">
           {t("connection.accessKey")}
         </Text>
         <View style={[styles.apiKeyRow, { gap: scaledSpace.sm }]}>
-          <TextInput
+          <TextField
             accessibilityLabel={t("connection.keyA11y", { service: serviceLabel })}
             autoCapitalize="none"
             autoCorrect={false}
             editable={canEditKeys}
             onChangeText={(value) => void handleApiKeyChange(value)}
             placeholder="••••••••••••••••"
-            placeholderTextColor={colors.secondary}
             secureTextEntry={!apiKeyVisible}
-            style={[inputStyle, styles.apiKeyInput]}
+            style={styles.apiKeyInput}
             value={apiKey}
           />
-          <Pressable
+          <IconButton
             accessibilityLabel={
               apiKeyVisible
                 ? t("connection.hideKey")
                 : t("connection.showKey")
             }
-            accessibilityRole="button"
-            hitSlop={8}
+            icon={apiKeyVisible ? "◉" : "◎"}
             onPress={() => void handleRevealPress()}
-            style={[
-              styles.visibilityButton,
-              { minHeight: minTouchTarget, minWidth: minTouchTarget },
-            ]}
-          >
-            <Text style={[styles.visibilityIcon, { fontSize: fontSize(18) }]}>
-              {apiKeyVisible ? "◉" : "◎"}
-            </Text>
-          </Pressable>
+            style={{ minHeight: minTouchTarget, minWidth: minTouchTarget }}
+            variant="default"
+          />
         </View>
       </View>
 
       {onTest ? (
-        <Pressable
+        <Button
           accessibilityLabel={t("connection.testService", { service: serviceLabel })}
-          accessibilityRole="button"
-          disabled={isTesting}
+          loading={isTesting}
           onPress={onTest}
-          style={({ pressed }) => [
-            styles.testButton,
-            {
-              minHeight: minTouchTarget,
-              paddingHorizontal: scaledSpace.lg,
-              paddingVertical: scaledSpace.sm,
-            },
-            pressed ? styles.pressed : null,
-            isTesting ? styles.disabled : null,
-          ]}
+          style={{ alignSelf: "flex-end" }}
+          variant="secondary"
         >
-          <Text style={[styles.testButtonText, { fontSize: fontSize(14) }]}>
-            {isTesting ? t("connection.testServiceBusy") : t("onboarding.testConnection")}
-          </Text>
-        </Pressable>
+          {isTesting ? t("connection.testServiceBusy") : t("onboarding.testConnection")}
+        </Button>
       ) : null}
 
       {health && !health.online && health.message ? (
-        <Text
-          accessibilityRole="alert"
-          style={[styles.errorText, { fontSize: fontSize(13) }]}
-        >
+        <Text accessibilityRole="alert" role="caption" tone="danger">
           {health.message}
         </Text>
       ) : null}
-    </View>
+    </Surface>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: "rgba(244, 240, 232, 0.08)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
   header: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-  },
-  serviceTitle: {
-    color: colors.text,
-    fontFamily: fonts.display,
-  },
-  readyBadge: {
-    alignItems: "center",
-    backgroundColor: "rgba(111, 191, 122, 0.15)",
-    borderRadius: radii.md,
-    flexDirection: "row",
-  },
-  readyIcon: {
-    color: colors.success,
-    fontFamily: fonts.uiMedium,
-  },
-  readyText: {
-    color: colors.success,
-    fontFamily: fonts.uiMedium,
-  },
-  field: {},
-  label: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  input: {
-    backgroundColor: colors.bg,
-    borderColor: "rgba(244, 240, 232, 0.12)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    color: colors.text,
-    fontFamily: fonts.ui,
   },
   apiKeyRow: {
     alignItems: "center",
@@ -261,32 +182,5 @@ const styles = StyleSheet.create({
   },
   apiKeyInput: {
     flex: 1,
-  },
-  visibilityButton: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  visibilityIcon: {
-    color: colors.secondary,
-  },
-  testButton: {
-    alignSelf: "flex-end",
-    borderColor: colors.accent,
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
-  testButtonText: {
-    color: colors.accent,
-    fontFamily: fonts.uiMedium,
-  },
-  errorText: {
-    color: colors.danger,
-    fontFamily: fonts.ui,
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-  disabled: {
-    opacity: 0.5,
   },
 });

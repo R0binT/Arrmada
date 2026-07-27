@@ -1,14 +1,16 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { useI18n } from "@/i18n";
+import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
-import { colors, fonts, radii } from "@/lib/theme";
 import type { UiSizeId } from "@/lib/ui-size";
 import { UI_SIZE_IDS } from "@/lib/ui-size";
+import { pressScaleStyle, Surface, Text, useReduceMotion } from "@/ui";
 
 export const InterfaceSizeCard = () => {
   const { t } = useI18n();
-  const { size, setSize, space, fontSize, minTouchTarget } = useUiSize();
+  const { size, setSize, space, minTouchTarget } = useUiSize();
+  const reduceMotion = useReduceMotion();
 
   const labelFor = (value: UiSizeId): string => {
     switch (value) {
@@ -26,24 +28,13 @@ export const InterfaceSizeCard = () => {
   };
 
   return (
-    <View
-      style={{
-        backgroundColor: colors.surface,
-        borderRadius: radii.lg,
-        gap: space.md,
-        marginBottom: space.md,
-        padding: space.md,
-      }}
+    <Surface
+      padded
+      radius="lg"
+      style={{ gap: space.md, marginBottom: space.md }}
+      tone="raised"
     >
-      <Text
-        style={{
-          color: colors.text,
-          fontFamily: fonts.display,
-          fontSize: fontSize(20),
-        }}
-      >
-        {t("settings.uiSize")}
-      </Text>
+      <Text role="headline">{t("settings.uiSize")}</Text>
       <View
         accessibilityLabel={t("settings.uiSizeA11y")}
         accessibilityRole="radiogroup"
@@ -65,40 +56,26 @@ export const InterfaceSizeCard = () => {
               style={({ pressed }) => [
                 {
                   alignItems: "center",
-                  borderColor: selected
-                    ? colors.accent
-                    : "rgba(244, 240, 232, 0.12)",
+                  borderColor: selected ? colors.accent : colors.borderStrong,
                   borderRadius: radii.md,
                   borderWidth: 1,
                   backgroundColor: selected
-                    ? "rgba(245, 165, 36, 0.18)"
+                    ? colors.accentMuted
                     : "transparent",
                   justifyContent: "center",
                   minHeight: minTouchTarget,
                   paddingHorizontal: space.md,
                 },
-                pressed ? styles.pressed : null,
+                pressScaleStyle(pressed, reduceMotion),
               ]}
             >
-              <Text
-                style={{
-                  color: selected ? colors.accent : colors.secondary,
-                  fontFamily: fonts.uiMedium,
-                  fontSize: fontSize(14),
-                }}
-              >
+              <Text role="label" tone={selected ? "accent" : "muted"}>
                 {labelFor(option)}
               </Text>
             </Pressable>
           );
         })}
       </View>
-    </View>
+    </Surface>
   );
 };
-
-const styles = StyleSheet.create({
-  pressed: {
-    opacity: 0.85,
-  },
-});
