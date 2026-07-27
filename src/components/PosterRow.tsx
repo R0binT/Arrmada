@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Children, isValidElement } from "react";
+import { Pressable, ScrollView, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import { useI18n } from "@/i18n";
-import { colors, fonts } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { createFadeSlideUp, pressScaleStyle, Text, useReduceMotion } from "@/ui";
 
 type PosterRowProps = {
   readonly title: string;
@@ -13,21 +15,34 @@ type PosterRowProps = {
 
 export const PosterRow = ({ title, children, onSeeAll }: PosterRowProps) => {
   const { t } = useI18n();
-  const { space, fontSize, minTouchTarget } = useUiSize();
+  const { space, minTouchTarget } = useUiSize();
+  const reduceMotion = useReduceMotion();
+
+  const animatedChildren = Children.toArray(children).map((child, index) => {
+    if (!isValidElement(child)) {
+      return child;
+    }
+    return (
+      <Animated.View
+        key={child.key ?? `poster-row-item-${index}`}
+        entering={createFadeSlideUp(reduceMotion, index)}
+      >
+        {child}
+      </Animated.View>
+    );
+  });
+
   const headerContent = (
     <>
       <Text
         accessibilityRole="header"
-        style={[styles.title, { fontSize: fontSize(12) }]}
+        role="caption"
+        style={{ flex: 1, letterSpacing: 1.2, textTransform: "uppercase" }}
+        tone="muted"
       >
         {title}
       </Text>
-      <Text
-        style={[
-          styles.chevron,
-          { fontSize: fontSize(18), paddingLeft: space.sm },
-        ]}
-      >
+      <Text role="headline" style={{ paddingLeft: space.sm }} tone="muted">
         ›
       </Text>
     </>
@@ -48,7 +63,7 @@ export const PosterRow = ({ title, children, onSeeAll }: PosterRowProps) => {
               minHeight: minTouchTarget,
               paddingHorizontal: space.md,
             },
-            pressed ? styles.headerPressed : null,
+            pressScaleStyle(pressed, reduceMotion),
           ]}
         >
           {headerContent}
@@ -74,25 +89,8 @@ export const PosterRow = ({ title, children, onSeeAll }: PosterRowProps) => {
         }}
         showsHorizontalScrollIndicator={false}
       >
-        {children}
+        {animatedChildren}
       </ScrollView>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  headerPressed: {
-    opacity: 0.7,
-  },
-  title: {
-    color: colors.secondary,
-    flex: 1,
-    fontFamily: fonts.uiMedium,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
-  chevron: {
-    color: colors.secondary,
-    fontFamily: fonts.ui,
-  },
-});

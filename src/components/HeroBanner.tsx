@@ -1,10 +1,11 @@
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { ProgressBar } from "@/components/ProgressBar";
 import { useI18n } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { Chip, pressScaleStyle, Text, useReduceMotion } from "@/ui";
 
 export type HeroBannerKind = "download" | "movie" | "series";
 
@@ -17,6 +18,35 @@ type HeroBannerProps = {
   readonly onPress: () => void;
 };
 
+const HeroGradientOverlay = () => (
+  <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <View
+      style={[
+        styles.overlayStep,
+        { height: "40%", opacity: 0.12, top: 0 },
+      ]}
+    />
+    <View
+      style={[
+        styles.overlayStep,
+        { height: "45%", opacity: 0.45, top: "30%" },
+      ]}
+    />
+    <View
+      style={[
+        styles.overlayStep,
+        { height: "55%", opacity: 0.72, top: "45%" },
+      ]}
+    />
+    <View
+      style={[
+        styles.overlayStep,
+        { backgroundColor: colors.bg, height: "30%", opacity: 0.55, top: "70%" },
+      ]}
+    />
+  </View>
+);
+
 export const HeroBanner = ({
   title,
   subtitle,
@@ -26,7 +56,8 @@ export const HeroBanner = ({
   onPress,
 }: HeroBannerProps) => {
   const { t } = useI18n();
-  const { space, fontSize, minTouchTarget, scale } = useUiSize();
+  const { space, minTouchTarget, scale } = useUiSize();
+  const reduceMotion = useReduceMotion();
   const hasProgress = progress !== undefined && progress > 0;
   const bannerMinHeight = Math.round(140 * scale);
   const ctaLabel =
@@ -44,7 +75,7 @@ export const HeroBanner = ({
       style={({ pressed }) => [
         styles.container,
         { minHeight: bannerMinHeight },
-        pressed ? styles.pressed : null,
+        pressScaleStyle(pressed, reduceMotion),
       ]}
     >
       {posterUrl ? (
@@ -58,7 +89,7 @@ export const HeroBanner = ({
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.placeholder]} />
       )}
-      <View style={styles.overlay} />
+      <HeroGradientOverlay />
       <View
         style={{
           flex: 1,
@@ -68,8 +99,10 @@ export const HeroBanner = ({
           padding: space.md,
         }}
       >
-        <Text style={[styles.title, { fontSize: fontSize(22) }]}>{title}</Text>
-        <Text style={[styles.subtitle, { fontSize: fontSize(13) }]}>
+        <Text role="title" style={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+          {title}
+        </Text>
+        <Text role="label" tone="muted">
           {subtitle}
         </Text>
         {hasProgress ? (
@@ -86,9 +119,7 @@ export const HeroBanner = ({
             minHeight: minTouchTarget,
           }}
         >
-          <Text style={[styles.ctaText, { fontSize: fontSize(13) }]}>
-            {ctaLabel}
-          </Text>
+          <Chip tone="accent">{ctaLabel}</Chip>
         </View>
       </View>
     </Pressable>
@@ -97,32 +128,16 @@ export const HeroBanner = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     overflow: "hidden",
-  },
-  pressed: {
-    opacity: 0.92,
   },
   placeholder: {
     backgroundColor: colors.surface,
   },
-  overlay: {
+  overlayStep: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(11, 11, 15, 0.55)",
-  },
-  title: {
-    color: colors.text,
-    fontFamily: fonts.display,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  subtitle: {
-    color: colors.text,
-    fontFamily: fonts.ui,
-    opacity: 0.9,
-  },
-  ctaText: {
-    color: colors.accent,
-    fontFamily: fonts.uiMedium,
+    backgroundColor: colors.overlay,
+    left: 0,
+    right: 0,
   },
 });

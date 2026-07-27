@@ -1,8 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { t } from "@/i18n";
-import { colors, fonts, radii } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { pressScaleStyle, Surface, Text, useReduceMotion } from "@/ui";
 
 type ErrorBannerProps = {
   readonly message: string;
@@ -15,33 +16,31 @@ export const ErrorBanner = ({
   onRetry,
   onSettings,
 }: ErrorBannerProps) => {
-  const { space, fontSize, minTouchTarget } = useUiSize();
+  const { space, minTouchTarget } = useUiSize();
+  const reduceMotion = useReduceMotion();
 
   return (
-    <View
-      accessibilityRole="alert"
-      style={[styles.banner, { gap: space.md, padding: space.md }]}
-    >
-      <View style={[styles.header, { gap: space.sm }]}>
-        <Text
-          style={[
-            styles.warningIcon,
-            { fontSize: fontSize(20), lineHeight: fontSize(24) },
-          ]}
-        >
+    <View accessibilityRole="alert">
+      <Surface
+        padded
+        radius="md"
+        style={{
+          backgroundColor: colors.dangerMuted,
+          borderColor: colors.danger,
+          gap: space.md,
+        }}
+        tone="base"
+      >
+      <View style={{ alignItems: "flex-start", flexDirection: "row", gap: space.sm }}>
+        <Text role="headline" tone="danger">
           ⚠
         </Text>
-        <Text
-          style={[
-            styles.message,
-            { fontSize: fontSize(15), lineHeight: fontSize(22) },
-          ]}
-        >
+        <Text role="body" style={{ flex: 1 }}>
           {message}
         </Text>
       </View>
       {(onRetry || onSettings) && (
-        <View style={[styles.actions, { gap: space.md }]}>
+        <View style={{ alignItems: "center", flexDirection: "row", gap: space.md }}>
           {onRetry ? (
             <Pressable
               accessibilityRole="button"
@@ -56,18 +55,27 @@ export const ErrorBanner = ({
                   minHeight: minTouchTarget,
                   paddingHorizontal: space.sm,
                 },
-                pressed ? styles.pressed : null,
+                pressScaleStyle(pressed, reduceMotion),
               ]}
             >
-              <Text style={[styles.actionIcon, { fontSize: fontSize(14) }]}>
+              <Text role="label" tone="danger">
                 ↻
               </Text>
-              <Text style={[styles.actionText, { fontSize: fontSize(14) }]}>
+              <Text role="label" tone="danger">
                 {t("error.retry")}
               </Text>
             </Pressable>
           ) : null}
-          {onRetry && onSettings ? <View style={styles.divider} /> : null}
+          {onRetry && onSettings ? (
+            <View
+              style={{
+                backgroundColor: colors.danger,
+                height: 16,
+                opacity: 0.4,
+                width: 1,
+              }}
+            />
+          ) : null}
           {onSettings ? (
             <Pressable
               accessibilityRole="button"
@@ -82,60 +90,20 @@ export const ErrorBanner = ({
                   minHeight: minTouchTarget,
                   paddingHorizontal: space.sm,
                 },
-                pressed ? styles.pressed : null,
+                pressScaleStyle(pressed, reduceMotion),
               ]}
             >
-              <Text style={[styles.actionIcon, { fontSize: fontSize(14) }]}>
+              <Text role="label" tone="danger">
                 ⚙
               </Text>
-              <Text style={[styles.actionText, { fontSize: fontSize(14) }]}>
+              <Text role="label" tone="danger">
                 {t("action.settings")}
               </Text>
             </Pressable>
           ) : null}
         </View>
       )}
+      </Surface>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  banner: {
-    backgroundColor: "rgba(196, 92, 74, 0.18)",
-    borderColor: colors.accent,
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
-  header: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-  },
-  warningIcon: {
-    color: colors.accent,
-  },
-  message: {
-    color: colors.text,
-    flex: 1,
-    fontFamily: fonts.ui,
-  },
-  actions: {
-    alignItems: "center",
-    flexDirection: "row",
-  },
-  actionIcon: {
-    color: colors.accent,
-  },
-  actionText: {
-    color: colors.accent,
-    fontFamily: fonts.uiMedium,
-  },
-  divider: {
-    backgroundColor: colors.accent,
-    height: 16,
-    opacity: 0.4,
-    width: 1,
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-});
