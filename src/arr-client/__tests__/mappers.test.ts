@@ -1,6 +1,7 @@
 import { mapHealth } from "../mappers/health";
 import { mapMovieCandidate, mapRadarrMovie } from "../mappers/movie";
 import { mapRadarrCredits, mapTvMazeCast } from "../mappers/cast";
+import { mapRatings, formatRatingLabel } from "../mappers/ratings";
 import { computeProgress, mapQueueItem } from "../mappers/queue";
 import {
     groupEpisodesIntoSeasons,
@@ -41,6 +42,19 @@ describe("mappers", () => {
       genres: [],
       runtimeMinutes: undefined,
       studio: undefined,
+      ratings: [],
+      certification: undefined,
+      originalLanguage: undefined,
+      inCinemas: undefined,
+      digitalRelease: undefined,
+      physicalRelease: undefined,
+      collectionTitle: undefined,
+      externalIds: {
+        imdbId: undefined,
+        tmdbId: undefined,
+        tvdbId: undefined,
+        tvMazeId: undefined,
+      },
     });
   });
 
@@ -484,6 +498,22 @@ describe("mappers", () => {
       "http://192.168.1.10:8989",
     );
     expect(actual.tvMazeId).toBe(169);
+  });
+
+  it("maps provider ratings and formats labels", () => {
+    const scores = mapRatings({
+      tmdb: { value: 7.8, votes: 100 },
+      imdb: { value: 8.1, votes: 200 },
+      rottenTomatoes: { value: 92, votes: 50 },
+      crew: { value: 1 },
+    });
+    expect(scores).toEqual([
+      { source: "tmdb", value: 7.8, votes: 100 },
+      { source: "imdb", value: 8.1, votes: 200 },
+      { source: "rottenTomatoes", value: 92, votes: 50 },
+    ]);
+    expect(formatRatingLabel(scores[0]!)).toBe("TMDB 7.8");
+    expect(formatRatingLabel(scores[2]!)).toBe("RT 92%");
   });
 
   it("maps radarr credits cast only limited to six", () => {

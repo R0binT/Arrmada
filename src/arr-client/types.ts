@@ -7,6 +7,29 @@ export type CastMember = {
   readonly photoUrl: string | undefined;
 };
 
+export type CrewMember = {
+  readonly name: string;
+  readonly job: string;
+};
+
+export type RatingScore = {
+  readonly source: "tmdb" | "imdb" | "rottenTomatoes" | "trakt" | "value";
+  readonly value: number;
+  readonly votes: number | undefined;
+};
+
+export type ExternalIds = {
+  readonly imdbId: string | undefined;
+  readonly tmdbId: number | undefined;
+  readonly tvdbId: number | undefined;
+  readonly tvMazeId: number | undefined;
+};
+
+export type MediaCredits = {
+  readonly cast: readonly CastMember[];
+  readonly crew: readonly CrewMember[];
+};
+
 export type QueueStatus =
   | "downloading"
   | "queued"
@@ -32,6 +55,14 @@ export type Movie = {
   readonly genres: readonly string[];
   readonly runtimeMinutes: number | undefined;
   readonly studio: string | undefined;
+  readonly ratings: readonly RatingScore[];
+  readonly certification: string | undefined;
+  readonly originalLanguage: string | undefined;
+  readonly inCinemas: string | undefined;
+  readonly digitalRelease: string | undefined;
+  readonly physicalRelease: string | undefined;
+  readonly collectionTitle: string | undefined;
+  readonly externalIds: ExternalIds;
 };
 
 export type Series = {
@@ -51,6 +82,13 @@ export type Series = {
   readonly network: string | undefined;
   /** TVMaze id used to load cast when Sonarr has no credit API. */
   readonly tvMazeId: number | undefined;
+  readonly ratings: readonly RatingScore[];
+  readonly certification: string | undefined;
+  readonly originalLanguage: string | undefined;
+  readonly ended: boolean | undefined;
+  readonly firstAired: string | undefined;
+  readonly lastAired: string | undefined;
+  readonly externalIds: ExternalIds;
 };
 
 /** One Épisode of a Série, with domain availability already classified. */

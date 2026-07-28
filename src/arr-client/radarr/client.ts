@@ -1,6 +1,6 @@
 import { createArrHttp } from "../http";
 import { mapCalendarMovie } from "../mappers/calendar";
-import { mapRadarrCredits } from "../mappers/cast";
+import { mapRadarrMediaCredits } from "../mappers/cast";
 import { mapHealth } from "../mappers/health";
 import {
     mapMovieCandidate,
@@ -13,7 +13,7 @@ import { mapReleaseOffer } from "../mappers/release";
 import type {
     ArrAddDefaults,
     CalendarMovie,
-    CastMember,
+    MediaCredits,
     Movie,
     MovieCandidate,
     QueueItem,
@@ -47,11 +47,11 @@ export const createRadarrClient = (baseUrl: string, apiKey: string) => {
       const raw = await http.getJson<unknown>(`/api/v3/movie/${id}`);
       return mapRadarrMovie(raw, baseUrl);
     },
-    getMovieCredits: async (movieId: number): Promise<readonly CastMember[]> => {
+    getMovieCredits: async (movieId: number): Promise<MediaCredits> => {
       const raw = await http.getJson<unknown>(
         `/api/v3/credit?movieId=${encodeURIComponent(String(movieId))}`,
       );
-      return mapRadarrCredits(raw, baseUrl);
+      return mapRadarrMediaCredits(raw, baseUrl);
     },
     lookup: async (term: string): Promise<Movie[]> => {
       const raw = await http.getJson<unknown[]>(

@@ -18,6 +18,18 @@ const series = (overrides: Partial<Series>): Series => ({
   runtimeMinutes: undefined,
   network: undefined,
   tvMazeId: undefined,
+  ratings: [],
+  certification: undefined,
+  originalLanguage: undefined,
+  ended: undefined,
+  firstAired: undefined,
+  lastAired: undefined,
+  externalIds: {
+    imdbId: undefined,
+    tmdbId: undefined,
+    tvdbId: undefined,
+    tvMazeId: undefined,
+  },
   ...overrides,
 });
 

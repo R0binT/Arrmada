@@ -28,6 +28,19 @@ const movie = (overrides: Partial<Movie> = {}): Movie => ({
   genres: ["Thriller", "Drama"],
   runtimeMinutes: 118,
   studio: "A24",
+  ratings: [],
+  certification: undefined,
+  originalLanguage: undefined,
+  inCinemas: undefined,
+  digitalRelease: undefined,
+  physicalRelease: undefined,
+  collectionTitle: undefined,
+  externalIds: {
+    imdbId: undefined,
+    tmdbId: undefined,
+    tvdbId: undefined,
+    tvMazeId: undefined,
+  },
   ...overrides,
 });
 
@@ -47,6 +60,18 @@ const series = (overrides: Partial<Series> = {}): Series => ({
   runtimeMinutes: 45,
   network: "HBO",
   tvMazeId: undefined,
+  ratings: [],
+  certification: undefined,
+  originalLanguage: undefined,
+  ended: undefined,
+  firstAired: undefined,
+  lastAired: undefined,
+  externalIds: {
+    imdbId: undefined,
+    tmdbId: undefined,
+    tvdbId: undefined,
+    tvMazeId: undefined,
+  },
   ...overrides,
 });
 

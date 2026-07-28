@@ -1,6 +1,6 @@
 import { createArrHttp } from "../http";
 import { mapCalendarEpisode } from "../mappers/calendar";
-import { mapTvMazeCast } from "../mappers/cast";
+import { mapTvMazeMediaCredits } from "../mappers/cast";
 import { mapHealth } from "../mappers/health";
 import {
   mapQualityProfileOption,
@@ -17,7 +17,7 @@ import {
 import type {
   ArrAddDefaults,
   CalendarEpisode,
-  CastMember,
+  MediaCredits,
   QueueItem,
   QueuePriority,
   ReleaseOffer,
@@ -63,22 +63,25 @@ export const createSonarrClient = (baseUrl: string, apiKey: string) => {
       const raw = await http.getJson<unknown>(`/api/v3/series/${id}`);
       return mapSonarrSeries(raw, baseUrl);
     },
-    getSeriesCredits: async (
-      seriesId: number,
-    ): Promise<readonly CastMember[]> => {
+    getSeriesCredits: async (seriesId: number): Promise<MediaCredits> => {
       const seriesRaw = await http.getJson<unknown>(
         `/api/v3/series/${seriesId}`,
       );
       const series = mapSonarrSeries(seriesRaw, baseUrl);
-      if (series.tvMazeId === undefined) return [];
-      const response = await fetch(
-        `https://api.tvmaze.com/shows/${encodeURIComponent(String(series.tvMazeId))}/cast`,
-      );
-      if (!response.ok) {
-        throw new Error(`TVMaze cast request failed (${response.status}).`);
+      if (series.tvMazeId === undefined) return { cast: [], crew: [] };
+      const showId = encodeURIComponent(String(series.tvMazeId));
+      const [castResponse, crewResponse] = await Promise.all([
+        fetch(`https://api.tvmaze.com/shows/${showId}/cast`),
+        fetch(`https://api.tvmaze.com/shows/${showId}/crew`),
+      ]);
+      if (!castResponse.ok) {
+        throw new Error(`TVMaze cast request failed (${castResponse.status}).`);
       }
-      const raw: unknown = await response.json();
-      return mapTvMazeCast(raw);
+      const castRaw: unknown = await castResponse.json();
+      const crewRaw: unknown = crewResponse.ok
+        ? await crewResponse.json()
+        : [];
+      return mapTvMazeMediaCredits(castRaw, crewRaw);
     },
     getSeasons: async (seriesId: number): Promise<Season[]> => {
       const raw = await http.getJson<unknown[]>(

@@ -1,4 +1,5 @@
 import { availabilityLabel, t } from "@/i18n";
+import { formatRatingLabel } from "@/arr-client/mappers/ratings";
 import type { ChipTone } from "@/ui/variant-styles";
 
 import {
@@ -159,6 +160,25 @@ const pushCastDetail = (
   detailParts.push(`${t("mediaQuick.castLabel")}: ${names.join(", ")}`);
 };
 
+const pushRatingChips = (
+  chips: MediaQuickChip[],
+  selection: MediaQuickSelection,
+): void => {
+  const ratings = selection.ratings ?? [];
+  const preferred = [...ratings].sort((left, right) => {
+    const rank = (source: string): number => {
+      if (source === "tmdb") return 0;
+      if (source === "imdb") return 1;
+      if (source === "rottenTomatoes") return 2;
+      return 3;
+    };
+    return rank(left.source) - rank(right.source);
+  });
+  for (const score of preferred.slice(0, 2)) {
+    pushChip(chips, formatRatingLabel(score), "warning");
+  }
+};
+
 type MetaBuckets = {
   readonly chips: MediaQuickChip[];
   readonly detailParts: string[];
@@ -167,6 +187,8 @@ type MetaBuckets = {
 const buildMovieMeta = (selection: MediaQuickSelection): MetaBuckets => {
   const chips: MediaQuickChip[] = [];
   const detailParts: string[] = [];
+  pushRatingChips(chips, selection);
+  pushChip(chips, selection.certification, "warning");
   pushGenreChips(chips, selection.genres);
   pushRuntimeChip(chips, selection.runtimeMinutes);
   pushChip(chips, selection.networkOrStudio, "neutral");
@@ -182,6 +204,12 @@ const buildMovieMeta = (selection: MediaQuickSelection): MetaBuckets => {
   }
   const air = formatAirDate(selection.airDate);
   if (air) detailParts.push(t("mediaQuick.releaseDate", { date: air }));
+  if (selection.collectionTitle?.trim()) {
+    detailParts.push(selection.collectionTitle.trim());
+  }
+  if (selection.crewLine?.trim()) {
+    detailParts.push(selection.crewLine.trim());
+  }
   pushCastDetail(detailParts, selection.castNames);
   return { chips, detailParts };
 };
@@ -194,11 +222,16 @@ const buildSeriesMeta = (selection: MediaQuickSelection): MetaBuckets => {
     selection.episodeFileCount,
     selection.episodeCount,
   );
+  pushRatingChips(chips, selection);
+  pushChip(chips, selection.certification, "warning");
   pushGenreChips(chips, selection.genres);
   pushChip(chips, selection.networkOrStudio, "neutral");
   pushRuntimeChip(chips, selection.runtimeMinutes);
   const added = formatAddedDate(selection.added);
   if (added) detailParts.push(t("mediaQuick.addedOn", { date: added }));
+  if (selection.crewLine?.trim()) {
+    detailParts.push(selection.crewLine.trim());
+  }
   pushCastDetail(detailParts, selection.castNames);
   return { chips, detailParts };
 };

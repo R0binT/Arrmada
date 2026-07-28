@@ -195,6 +195,13 @@ export const frMessages = {
   "detail.expandA11y": "Déplier {{title}}",
   "detail.collapseA11y": "Replier {{title}}",
   "detail.cast": "Casting",
+  "detail.crew": "Équipe",
+  "detail.links": "Liens",
+  "detail.linkImdb": "IMDb",
+  "detail.linkTmdb": "TMDB",
+  "detail.linkTvdb": "TVDB",
+  "detail.firstAired": "Début {{date}}",
+  "detail.lastAired": "Fin {{date}}",
 
   // Retirer
   "retirer.title": "Retirer",
