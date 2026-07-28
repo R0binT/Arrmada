@@ -95,6 +95,11 @@ jobs:
           set -euo pipefail
           PROPS=./android/gradle.properties
           touch "${PROPS}"
+          # Expo prebuild may omit a trailing newline; appending without one
+          # corrupts the last property (e.g. buildToolsVersion=36.1.0org.gradle.caching=true).
+          if [ -s "${PROPS}" ] && [ -n "$(tail -c1 "${PROPS}")" ]; then
+            printf '\n' >> "${PROPS}"
+          fi
           grep -q '^org.gradle.caching=' "${PROPS}" || echo 'org.gradle.caching=true' >> "${PROPS}"
           grep -q '^org.gradle.parallel=' "${PROPS}" || echo 'org.gradle.parallel=true' >> "${PROPS}"
           grep -q '^org.gradle.jvmargs=' "${PROPS}" || echo 'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8' >> "${PROPS}"
