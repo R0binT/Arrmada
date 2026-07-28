@@ -12,6 +12,7 @@ export type {
   CalendarEpisode,
   CalendarEvent,
   CalendarMovie,
+  CastMember,
   Episode,
   Movie,
   MovieCandidate,

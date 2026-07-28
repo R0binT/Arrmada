@@ -2,6 +2,7 @@ export const queryKeys = {
   movies: {
     all: ["movies"] as const,
     detail: (id: number) => ["movies", id] as const,
+    cast: (id: number) => ["movies", id, "cast"] as const,
     lookup: (term: string) => ["movies", "lookup", term] as const,
     preview: (tmdbId: number) =>
       [...queryKeys.movies.all, "preview", tmdbId] as const,
@@ -11,6 +12,7 @@ export const queryKeys = {
   series: {
     all: ["series"] as const,
     detail: (id: number) => ["series", id] as const,
+    cast: (id: number) => ["series", id, "cast"] as const,
     seasons: (id: number) => ["series", id, "seasons"] as const,
     lookup: (term: string) => ["series", "lookup", term] as const,
     preview: (tvdbId: number) =>

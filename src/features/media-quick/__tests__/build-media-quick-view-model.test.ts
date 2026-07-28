@@ -81,6 +81,20 @@ it("dispo film shows glanceable chips and detail", () => {
   expect(vm.detailLine).toMatch(/Ajouté le/);
 });
 
+it("movie detail line includes cast names when present", () => {
+  const vm = buildMediaQuickViewModel({
+    kind: "movie",
+    key: "movie-1",
+    title: "Night Harbor",
+    year: 2024,
+    posterUrl: undefined,
+    movieId: 1,
+    availability: "dispo",
+    castNames: ["Ada", "Bea", "Cara"],
+  });
+  expect(vm.detailLine).toMatch(/Acteurs: Ada, Bea, Cara/);
+});
+
 it("episode shows series, code and air date", () => {
   const vm = buildMediaQuickViewModel({
     kind: "episode",

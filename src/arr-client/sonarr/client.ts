@@ -1,5 +1,6 @@
 import { createArrHttp } from "../http";
 import { mapCalendarEpisode } from "../mappers/calendar";
+import { mapTvMazeCast } from "../mappers/cast";
 import { mapHealth } from "../mappers/health";
 import {
   mapQualityProfileOption,
@@ -16,6 +17,7 @@ import {
 import type {
   ArrAddDefaults,
   CalendarEpisode,
+  CastMember,
   QueueItem,
   QueuePriority,
   ReleaseOffer,
@@ -60,6 +62,23 @@ export const createSonarrClient = (baseUrl: string, apiKey: string) => {
     getSeriesById: async (id: number): Promise<Series> => {
       const raw = await http.getJson<unknown>(`/api/v3/series/${id}`);
       return mapSonarrSeries(raw, baseUrl);
+    },
+    getSeriesCredits: async (
+      seriesId: number,
+    ): Promise<readonly CastMember[]> => {
+      const seriesRaw = await http.getJson<unknown>(
+        `/api/v3/series/${seriesId}`,
+      );
+      const series = mapSonarrSeries(seriesRaw, baseUrl);
+      if (series.tvMazeId === undefined) return [];
+      const response = await fetch(
+        `https://api.tvmaze.com/shows/${encodeURIComponent(String(series.tvMazeId))}/cast`,
+      );
+      if (!response.ok) {
+        throw new Error(`TVMaze cast request failed (${response.status}).`);
+      }
+      const raw: unknown = await response.json();
+      return mapTvMazeCast(raw);
     },
     getSeasons: async (seriesId: number): Promise<Season[]> => {
       const raw = await http.getJson<unknown[]>(

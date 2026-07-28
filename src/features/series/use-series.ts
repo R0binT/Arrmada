@@ -64,6 +64,19 @@ export const useSeries = (id: number) => {
   });
 };
 
+export const useSeriesCast = (id: number) => {
+  const { sonarr } = useArrClients();
+
+  return useQuery({
+    queryKey: queryKeys.series.cast(id),
+    queryFn: () => {
+      if (!sonarr) throw new Error("Sonarr is not configured.");
+      return sonarr.getSeriesCredits(id);
+    },
+    enabled: Boolean(sonarr) && Number.isFinite(id) && id > 0,
+  });
+};
+
 export const useSeriesSeasons = (id: number) => {
   const { sonarr } = useArrClients();
 

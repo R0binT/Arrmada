@@ -2,6 +2,11 @@ import type { Availability } from "./availability";
 
 export type ArrService = "radarr" | "sonarr";
 
+export type CastMember = {
+  readonly name: string;
+  readonly photoUrl: string | undefined;
+};
+
 export type QueueStatus =
   | "downloading"
   | "queued"
@@ -44,6 +49,8 @@ export type Series = {
   readonly genres: readonly string[];
   readonly runtimeMinutes: number | undefined;
   readonly network: string | undefined;
+  /** TVMaze id used to load cast when Sonarr has no credit API. */
+  readonly tvMazeId: number | undefined;
 };
 
 /** One Épisode of a Série, with domain availability already classified. */

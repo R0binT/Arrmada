@@ -12,6 +12,7 @@ import { availabilityChipTone } from "@/features/library/availability-chip-tone"
 import { availabilityLabel, t } from "@/i18n";
 import {
   AudioChoiceSheet,
+  CastSection,
   DetailImmersiveHeader,
   DetailLoadingSkeleton,
   ErrorBanner,
@@ -29,6 +30,7 @@ import {
   useDeleteMovie,
   useGrabMovieRelease,
   useMovie,
+  useMovieCast,
   useUpdateMovieMonitored,
 } from "@/features/movies/use-movies";
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
@@ -56,6 +58,7 @@ export default function MovieDetailScreen() {
   const movieId = Number(idParam);
   const { radarr } = useArrClients();
   const movieQuery = useMovie(movieId);
+  const castQuery = useMovieCast(movieId);
   const grabMutation = useGrabMovieRelease();
   const monitoredMutation = useUpdateMovieMonitored();
   const deleteMutation = useDeleteMovie();
@@ -258,6 +261,7 @@ export default function MovieDetailScreen() {
             {movie.overview}
           </Text>
         ) : null}
+        <CastSection members={castQuery.data ?? []} />
       </Animated.View>
 
       <Animated.View

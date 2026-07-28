@@ -1,6 +1,7 @@
 export { AppLogo } from "@/components/AppLogo";
 export { ArrServiceLogo } from "@/components/ArrServiceLogo";
 export { AudioChoiceSheet } from "@/components/AudioChoiceSheet";
+export { CastSection } from "@/components/CastSection";
 export {
   DetailImmersiveHeader,
   DetailLoadingSkeleton,

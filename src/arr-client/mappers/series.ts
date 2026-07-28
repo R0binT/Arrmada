@@ -36,6 +36,7 @@ export const mapSonarrSeries = (raw: unknown, baseUrl: string): Series => {
         ? obj.dateAdded
         : undefined;
 
+  const tvMazeRaw = mapOptionalNumber(obj.tvMazeId);
   return {
     id: Number(obj.id),
     title: String(obj.title ?? ""),
@@ -53,6 +54,8 @@ export const mapSonarrSeries = (raw: unknown, baseUrl: string): Series => {
     genres: mapStringArray(obj.genres),
     runtimeMinutes: mapOptionalNumber(obj.runtime),
     network: mapOptionalString(obj.network),
+    tvMazeId:
+      tvMazeRaw !== undefined && tvMazeRaw > 0 ? tvMazeRaw : undefined,
   };
 };
 

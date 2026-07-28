@@ -63,6 +63,19 @@ export const useMovie = (id: number) => {
   });
 };
 
+export const useMovieCast = (id: number) => {
+  const { radarr } = useArrClients();
+
+  return useQuery({
+    queryKey: queryKeys.movies.cast(id),
+    queryFn: () => {
+      if (!radarr) throw new Error("Radarr is not configured.");
+      return radarr.getMovieCredits(id);
+    },
+    enabled: Boolean(radarr) && Number.isFinite(id) && id > 0,
+  });
+};
+
 export const useMovieLookup = (term: string) => {
   const { radarr } = useArrClients();
   const trimmed = term.trim();

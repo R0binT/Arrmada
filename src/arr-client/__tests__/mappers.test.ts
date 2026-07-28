@@ -1,5 +1,6 @@
 import { mapHealth } from "../mappers/health";
 import { mapMovieCandidate, mapRadarrMovie } from "../mappers/movie";
+import { mapRadarrCredits, mapTvMazeCast } from "../mappers/cast";
 import { computeProgress, mapQueueItem } from "../mappers/queue";
 import {
     groupEpisodesIntoSeasons,
@@ -465,5 +466,95 @@ describe("mappers", () => {
       version: "4.0.0",
       message: undefined,
     });
+  });
+
+  it("maps sonarr series tvMazeId when present", () => {
+    const actual = mapSonarrSeries(
+      {
+        id: 5,
+        title: "Harbor Show",
+        year: 2022,
+        monitored: true,
+        status: "continuing",
+        overview: "",
+        tvMazeId: 169,
+        images: [],
+        statistics: { episodeFileCount: 0, episodeCount: 0 },
+      },
+      "http://192.168.1.10:8989",
+    );
+    expect(actual.tvMazeId).toBe(169);
+  });
+
+  it("maps radarr credits cast only limited to six", () => {
+    const actual = mapRadarrCredits(
+      [
+        {
+          type: "crew",
+          personName: "Director",
+          order: 0,
+          images: [],
+        },
+        {
+          type: "cast",
+          personName: "Ada",
+          order: 2,
+          images: [{ coverType: "headshot", remoteUrl: "https://cdn/ada.jpg" }],
+        },
+        {
+          type: "cast",
+          personName: "Bea",
+          order: 1,
+          images: [{ coverType: "headshot", url: "/MediaCover/1.jpg" }],
+        },
+        { type: "cast", personName: "Cara", order: 3, images: [] },
+        { type: "cast", personName: "Dora", order: 4, images: [] },
+        { type: "cast", personName: "Eve", order: 5, images: [] },
+        { type: "cast", personName: "Fay", order: 6, images: [] },
+        { type: "cast", personName: "Gina", order: 7, images: [] },
+        { type: "cast", personName: "  ", order: 8, images: [] },
+      ],
+      "http://192.168.1.10:7878",
+    );
+    expect(actual).toEqual([
+      {
+        name: "Bea",
+        photoUrl: "http://192.168.1.10:7878/MediaCover/1.jpg",
+      },
+      { name: "Ada", photoUrl: "https://cdn/ada.jpg" },
+      { name: "Cara", photoUrl: undefined },
+      { name: "Dora", photoUrl: undefined },
+      { name: "Eve", photoUrl: undefined },
+      { name: "Fay", photoUrl: undefined },
+    ]);
+  });
+
+  it("maps tvmaze cast limited to six with photos", () => {
+    const actual = mapTvMazeCast([
+      {
+        person: {
+          name: "Ada",
+          image: {
+            medium: "https://tvmaze/ada.jpg",
+            original: "https://tvmaze/ada-lg.jpg",
+          },
+        },
+      },
+      { person: { name: "Bea", image: null } },
+      { person: { name: "Ada", image: { medium: "https://dup.jpg" } } },
+      { person: { name: "Cara" } },
+      { person: { name: "Dora" } },
+      { person: { name: "Eve" } },
+      { person: { name: "Fay" } },
+      { person: { name: "Gina" } },
+    ]);
+    expect(actual).toEqual([
+      { name: "Ada", photoUrl: "https://tvmaze/ada.jpg" },
+      { name: "Bea", photoUrl: undefined },
+      { name: "Cara", photoUrl: undefined },
+      { name: "Dora", photoUrl: undefined },
+      { name: "Eve", photoUrl: undefined },
+      { name: "Fay", photoUrl: undefined },
+    ]);
   });
 });

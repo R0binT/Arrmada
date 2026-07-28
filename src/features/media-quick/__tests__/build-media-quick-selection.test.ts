@@ -46,6 +46,7 @@ const series = (overrides: Partial<Series> = {}): Series => ({
   genres: ["Crime"],
   runtimeMinutes: 45,
   network: "HBO",
+  tvMazeId: undefined,
   ...overrides,
 });
 
