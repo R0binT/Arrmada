@@ -16,6 +16,8 @@ import type {
   MediaQuickSelection,
   PrimaryDestination,
 } from "@/features/media-quick/types";
+import { useMovieCast } from "@/features/movies/use-movies";
+import { useSeriesCast } from "@/features/series/use-series";
 import { t } from "@/i18n";
 import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
@@ -36,6 +38,19 @@ const DISMISS_THRESHOLD = 80;
 const DISMISS_VELOCITY = 0.55;
 const SHEET_OFFSCREEN = 400;
 
+const resolveCastNames = (
+  selection: MediaQuickSelection,
+  movieCastNames: readonly string[] | undefined,
+  seriesCastNames: readonly string[] | undefined,
+): readonly string[] | undefined => {
+  if (selection.castNames && selection.castNames.length > 0) {
+    return selection.castNames;
+  }
+  if (selection.kind === "movie") return movieCastNames;
+  if (selection.kind === "series") return seriesCastNames;
+  return undefined;
+};
+
 export const MediaQuickSheet = ({
   selection,
   onDismiss,
@@ -52,10 +67,29 @@ export const MediaQuickSheet = ({
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
 
-  const viewModel = useMemo(
-    () => (selection ? buildMediaQuickViewModel(selection) : undefined),
-    [selection],
-  );
+  const movieId =
+    selection?.kind === "movie" && selection.movieId !== undefined
+      ? selection.movieId
+      : 0;
+  const seriesId =
+    selection?.kind === "series" && selection.seriesId !== undefined
+      ? selection.seriesId
+      : 0;
+  const movieCastQuery = useMovieCast(movieId);
+  const seriesCastQuery = useSeriesCast(seriesId);
+
+  const viewModel = useMemo(() => {
+    if (!selection) return undefined;
+    const castNames = resolveCastNames(
+      selection,
+      movieCastQuery.data?.map((member) => member.name),
+      seriesCastQuery.data?.map((member) => member.name),
+    );
+    return buildMediaQuickViewModel({
+      ...selection,
+      castNames,
+    });
+  }, [movieCastQuery.data, selection, seriesCastQuery.data]);
 
   useEffect(() => {
     if (!visible) {

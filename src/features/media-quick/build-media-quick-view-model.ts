@@ -146,6 +146,19 @@ const joinDetail = (parts: readonly string[]): string | undefined => {
   return cleaned.length > 0 ? cleaned.join(" · ") : undefined;
 };
 
+const pushCastDetail = (
+  detailParts: string[],
+  castNames: readonly string[] | undefined,
+): void => {
+  if (!castNames || castNames.length === 0) return;
+  const names = castNames
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0)
+    .slice(0, 6);
+  if (names.length === 0) return;
+  detailParts.push(`${t("mediaQuick.castLabel")}: ${names.join(", ")}`);
+};
+
 type MetaBuckets = {
   readonly chips: MediaQuickChip[];
   readonly detailParts: string[];
@@ -169,6 +182,7 @@ const buildMovieMeta = (selection: MediaQuickSelection): MetaBuckets => {
   }
   const air = formatAirDate(selection.airDate);
   if (air) detailParts.push(t("mediaQuick.releaseDate", { date: air }));
+  pushCastDetail(detailParts, selection.castNames);
   return { chips, detailParts };
 };
 
@@ -185,6 +199,7 @@ const buildSeriesMeta = (selection: MediaQuickSelection): MetaBuckets => {
   pushRuntimeChip(chips, selection.runtimeMinutes);
   const added = formatAddedDate(selection.added);
   if (added) detailParts.push(t("mediaQuick.addedOn", { date: added }));
+  pushCastDetail(detailParts, selection.castNames);
   return { chips, detailParts };
 };
 

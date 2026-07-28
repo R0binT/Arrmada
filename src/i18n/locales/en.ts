@@ -42,6 +42,7 @@ export const enMessages: Record<MessageKey, string> = {
   "mediaQuick.addedOn": "Added {{date}}",
   "mediaQuick.episodeCount": "{{have}}/{{total}} episodes",
   "mediaQuick.releaseDate": "Released {{date}}",
+  "mediaQuick.castLabel": "Cast",
 
   "onboarding.subtitle": "Connect Radarr and Sonarr",
   "onboarding.testConnection": "Test connection",
@@ -180,6 +181,7 @@ export const enMessages: Record<MessageKey, string> = {
   "detail.downloadsStarted": "{{count}} downloads started",
   "detail.expandA11y": "Expand {{title}}",
   "detail.collapseA11y": "Collapse {{title}}",
+  "detail.cast": "Cast",
 
   "retirer.title": "Remove",
   "retirer.message": "Remove “{{title}}” from the library?",

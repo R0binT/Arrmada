@@ -42,6 +42,8 @@ export type MediaQuickSelection = {
   readonly service?: ArrService;
   readonly glanceStatusLine?: string;
   readonly glanceStatusTone?: MediaQuickStatusTone;
+  /** Actor names for compact quick info (no photos). */
+  readonly castNames?: readonly string[];
 };
 
 export type MediaQuickAddActions = {

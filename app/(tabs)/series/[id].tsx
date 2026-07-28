@@ -11,6 +11,7 @@ import {
 } from "@/arr-client";
 import {
   AudioChoiceSheet,
+  CastSection,
   DetailImmersiveHeader,
   DetailLoadingSkeleton,
   ErrorBanner,
@@ -41,6 +42,7 @@ import {
   useDeleteSeries,
   useGrabSeriesRelease,
   useSeries,
+  useSeriesCast,
   useSeriesDefaults,
   useSeriesSeasons,
   useUpdateSeriesMonitored,
@@ -103,6 +105,7 @@ export default function SeriesDetailScreen() {
   const seriesId = Number(idParam);
   const { sonarr } = useArrClients();
   const seriesQuery = useSeries(seriesId);
+  const castQuery = useSeriesCast(seriesId);
   const seasonsQuery = useSeriesSeasons(seriesId);
   const defaultsQuery = useSeriesDefaults();
   const grabMutation = useGrabSeriesRelease();
@@ -410,6 +413,7 @@ export default function SeriesDetailScreen() {
             {series.overview}
           </Text>
         ) : null}
+        <CastSection members={castQuery.data ?? []} />
       </Animated.View>
 
       <Animated.View

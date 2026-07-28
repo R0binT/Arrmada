@@ -44,6 +44,7 @@ export const frMessages = {
   "mediaQuick.addedOn": "Ajouté le {{date}}",
   "mediaQuick.episodeCount": "{{have}}/{{total}} épisodes",
   "mediaQuick.releaseDate": "Sortie {{date}}",
+  "mediaQuick.castLabel": "Acteurs",
 
   // Onboarding / connection
   "onboarding.subtitle": "Connecte Radarr et Sonarr",
@@ -193,6 +194,7 @@ export const frMessages = {
   "detail.downloadsStarted": "{{count}} téléchargements lancés",
   "detail.expandA11y": "Déplier {{title}}",
   "detail.collapseA11y": "Replier {{title}}",
+  "detail.cast": "Casting",
 
   // Retirer
   "retirer.title": "Retirer",

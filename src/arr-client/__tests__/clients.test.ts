@@ -31,6 +31,33 @@ describe("createRadarrClient", () => {
     expect(movies[0]?.hasFile).toBe(true);
   });
 
+  it("maps movie credits from credit endpoint", async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [
+        {
+          type: "cast",
+          personName: "Ada",
+          order: 0,
+          images: [{ coverType: "headshot", remoteUrl: "https://cdn/ada.jpg" }],
+        },
+        {
+          type: "crew",
+          personName: "Director",
+          order: 0,
+          images: [],
+        },
+      ],
+    }) as unknown as typeof fetch;
+
+    const client = createRadarrClient("http://192.168.1.10:7878", "k");
+    const cast = await client.getMovieCredits(2);
+    expect(cast).toEqual([{ name: "Ada", photoUrl: "https://cdn/ada.jpg" }]);
+    const [url] = (globalThis.fetch as jest.Mock).mock.calls[0] as [string];
+    expect(url).toContain("/api/v3/credit?movieId=2");
+  });
+
   it("maps queue items from paged response", async () => {
     globalThis.fetch = jest.fn().mockResolvedValue({
       ok: true,
@@ -272,6 +299,66 @@ describe("createSonarrClient", () => {
       id: 5,
       monitored: false,
     });
+  });
+
+  it("loads series credits from TVMaze when tvMazeId is present", async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: 5,
+          title: "Harbor Show",
+          year: 2022,
+          monitored: true,
+          status: "continuing",
+          tvMazeId: 169,
+          images: [],
+          statistics: { episodeFileCount: 0, episodeCount: 0 },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            person: {
+              name: "Ada",
+              image: { medium: "https://tvmaze/ada.jpg" },
+            },
+          },
+        ],
+      });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = createSonarrClient("http://192.168.1.10:8989", "k");
+    const cast = await client.getSeriesCredits(5);
+    expect(cast).toEqual([{ name: "Ada", photoUrl: "https://tvmaze/ada.jpg" }]);
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(
+      "https://api.tvmaze.com/shows/169/cast",
+    );
+  });
+
+  it("returns empty series credits when tvMazeId is missing", async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        id: 5,
+        title: "Harbor Show",
+        year: 2022,
+        monitored: true,
+        status: "continuing",
+        images: [],
+        statistics: { episodeFileCount: 0, episodeCount: 0 },
+      }),
+    }) as unknown as typeof fetch;
+
+    const client = createSonarrClient("http://192.168.1.10:8989", "k");
+    const cast = await client.getSeriesCredits(5);
+    expect(cast).toEqual([]);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 
   it("deletes series with deleteFiles query flag", async () => {
