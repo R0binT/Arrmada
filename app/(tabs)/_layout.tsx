@@ -64,12 +64,11 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="movies"
-        listeners={({ navigation }) => ({
+        listeners={{
           tabPress: () => {
-            if (!navigation.isFocused()) return;
             navigateToTabRoot("/(tabs)/movies");
           },
-        })}
+        }}
         options={{
           title: t("tabs.movies"),
           tabBarIcon: ({ color, focused }) => (
@@ -88,12 +87,11 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="series"
-        listeners={({ navigation }) => ({
+        listeners={{
           tabPress: () => {
-            if (!navigation.isFocused()) return;
             navigateToTabRoot("/(tabs)/series");
           },
-        })}
+        }}
         options={{
           title: t("tabs.series"),
           tabBarIcon: ({ color, focused }) => (
@@ -148,12 +146,11 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="settings"
-        listeners={({ navigation }) => ({
+        listeners={{
           tabPress: () => {
-            if (!navigation.isFocused()) return;
             router.dismissTo("/(tabs)/settings");
           },
-        })}
+        }}
         options={{
           title: t("tabs.settings"),
           tabBarIcon: ({ color, focused }) => (
