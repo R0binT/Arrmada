@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { View } from "react-native";
 
 import { Screen } from "@/components";
+import { AboutCard } from "@/features/settings/AboutCard";
 import { InterfaceSizeCard } from "@/features/settings/InterfaceSizeCard";
 import { LanguagePreferenceCard } from "@/features/settings/LanguagePreferenceCard";
 import { SettingsBackRow } from "@/features/settings/SettingsNavRow";
@@ -50,6 +51,8 @@ export default function SettingsPreferencesScreen() {
           🔒
         </Text>
       </Surface>
+
+      <AboutCard />
     </Screen>
   );
 }
