@@ -11,3 +11,12 @@ export type LatestRelease = {
 export type FetchLatestReleaseResult =
   | { readonly ok: true; readonly release: LatestRelease }
   | { readonly ok: false };
+
+export type CheckAppUpdateResult =
+  | { readonly status: "upToDate"; readonly currentVersion: string }
+  | {
+      readonly status: "available";
+      readonly currentVersion: string;
+      readonly release: LatestRelease;
+    }
+  | { readonly status: "error"; readonly kind: "generic" };
