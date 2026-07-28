@@ -16,6 +16,9 @@
     "android": {
       "package": "com.arrmada.mobile",
       "versionCode": 6,
+      "permissions": [
+        "REQUEST_INSTALL_PACKAGES"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#0B0B0F",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

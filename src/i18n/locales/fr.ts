@@ -104,6 +104,33 @@ export const frMessages = {
   "settings.uiSizeNormal": "Normal",
   "settings.uiSizeComfortable": "Confortable",
   "settings.uiSizeA11y": "Taille de l’interface",
+  "settings.about": "À propos",
+  "settings.aboutAppName": "Arrmada",
+  "settings.aboutVersion": "Version {{version}}",
+  "settings.aboutAuthor": "Auteur",
+  "settings.aboutAuthorValue": "R0binT",
+  "settings.aboutAuthorA11y": "Ouvrir le profil GitHub de R0binT",
+  "settings.aboutLicense": "Licence",
+  "settings.aboutLicenseValue": "PolyForm Noncommercial 1.0.0",
+  "settings.aboutLicenseA11y": "Ouvrir la licence PolyForm Noncommercial",
+  "settings.aboutRepo": "Code source",
+  "settings.aboutRepoLink": "Voir sur GitHub",
+  "settings.aboutRepoA11y": "Ouvrir le dépôt Arrmada sur GitHub",
+  "settings.aboutCheckUpdate": "Vérifier les mises à jour",
+  "settings.aboutCheckUpdateA11y": "Vérifier les mises à jour de l’application",
+  "settings.aboutChecking": "Vérification…",
+  "settings.aboutDownloading": "Téléchargement…",
+  "settings.updateTitle": "Mise à jour",
+  "settings.updateUpToDate": "Vous êtes déjà à jour ({{version}}).",
+  "settings.updateAvailable":
+    "Version {{latest}} disponible (actuelle : {{current}}). Télécharger et installer ?",
+  "settings.updateInstall": "Installer",
+  "settings.updateCancel": "Annuler",
+  "settings.updateErrorGeneric":
+    "Impossible de vérifier ou d’appliquer la mise à jour.",
+  "settings.updateErrorDownload": "Échec du téléchargement.",
+  "settings.updateErrorInstall":
+    "Impossible d’ouvrir l’installeur. Active l’installation d’apps inconnues pour Arrmada.",
 
   // Home
   "home.downloadsInProgress": "Téléchargement • {{percent}}%",

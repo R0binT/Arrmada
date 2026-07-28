@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { View } from "react-native";
 
 import { Screen } from "@/components";
+import { AboutCard } from "@/features/settings/AboutCard";
 import { SettingsNavRow } from "@/features/settings/SettingsNavRow";
 import { useI18n } from "@/i18n";
 import { useUiSize } from "@/lib/UiSizeProvider";
@@ -31,6 +32,8 @@ export default function SettingsHubScreen() {
           title={t("settings.preferences")}
         />
       </View>
+
+      <AboutCard />
     </Screen>
   );
 }
