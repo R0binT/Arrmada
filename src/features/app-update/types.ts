@@ -20,3 +20,7 @@ export type CheckAppUpdateResult =
       readonly release: LatestRelease;
     }
   | { readonly status: "error"; readonly kind: "generic" };
+
+export type DownloadAndInstallResult =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly kind: "download" | "install" };
