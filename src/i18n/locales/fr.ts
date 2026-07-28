@@ -202,6 +202,12 @@ export const frMessages = {
   "detail.linkTvdb": "TVDB",
   "detail.firstAired": "Début {{date}}",
   "detail.lastAired": "Fin {{date}}",
+  "detail.crewJobDirector": "Réal.",
+  "detail.crewJobCreator": "Créat.",
+  "detail.crewJobWriter": "Scénario",
+  "detail.crewJobExecProducer": "Prod. exéc.",
+  "detail.crewJobShowrunner": "Showrunner",
+  "detail.linkOpenFailed": "Impossible d’ouvrir le lien (aucun navigateur).",
 
   // Retirer
   "retirer.title": "Retirer",

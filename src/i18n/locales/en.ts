@@ -189,6 +189,12 @@ export const enMessages: Record<MessageKey, string> = {
   "detail.linkTvdb": "TVDB",
   "detail.firstAired": "First aired {{date}}",
   "detail.lastAired": "Last aired {{date}}",
+  "detail.crewJobDirector": "Dir.",
+  "detail.crewJobCreator": "Creator",
+  "detail.crewJobWriter": "Writer",
+  "detail.crewJobExecProducer": "Exec. prod.",
+  "detail.crewJobShowrunner": "Showrunner",
+  "detail.linkOpenFailed": "Could not open the link (no browser available).",
 
   "retirer.title": "Remove",
   "retirer.message": "Remove “{{title}}” from the library?",

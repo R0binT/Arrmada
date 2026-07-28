@@ -1,7 +1,9 @@
 import { mapHealth } from "../mappers/health";
 import { mapMovieCandidate, mapRadarrMovie } from "../mappers/movie";
 import { mapRadarrCredits, mapTvMazeCast } from "../mappers/cast";
+import { formatCrewLine } from "../mappers/crew-line";
 import { mapRatings, formatRatingLabel } from "../mappers/ratings";
+import { setI18nLocale } from "@/i18n";
 import { computeProgress, mapQueueItem } from "../mappers/queue";
 import {
     groupEpisodesIntoSeasons,
@@ -586,5 +588,31 @@ describe("mappers", () => {
       { name: "Eve", photoUrl: undefined },
       { name: "Fay", photoUrl: undefined },
     ]);
+  });
+
+  it("formats a compact crew line with short jobs", () => {
+    setI18nLocale("en");
+    const actual = formatCrewLine([
+      { job: "Director", name: "Nolan" },
+      { job: "Writer", name: "Nolan" },
+    ]);
+    expect(actual).toBe("Dir. Nolan · Writer Nolan");
+  });
+
+  it("returns undefined for empty crew", () => {
+    expect(formatCrewLine([])).toBeUndefined();
+  });
+
+  it("respects max option for crew line", () => {
+    setI18nLocale("en");
+    const actual = formatCrewLine(
+      [
+        { job: "Director", name: "A" },
+        { job: "Writer", name: "B" },
+        { job: "Creator", name: "C" },
+      ],
+      { max: 2 },
+    );
+    expect(actual).toBe("Dir. A · Writer B");
   });
 });

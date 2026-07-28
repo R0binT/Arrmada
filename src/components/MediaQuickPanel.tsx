@@ -56,7 +56,7 @@ export const MediaQuickPanel = ({
       <ScrollView
         bounces={false}
         contentContainerStyle={{
-          gap: space.md,
+          gap: space.lg,
           paddingBottom: space.xs,
         }}
         keyboardShouldPersistTaps="handled"
@@ -104,20 +104,31 @@ export const MediaQuickPanel = ({
           </View>
         </View>
 
-        {viewModel.chips.length > 0 ? (
-          <View style={[styles.chipWrap, { gap: space.xs }]}>
-            {viewModel.chips.map((chip) => (
-              <Chip key={chip.label} tone={chip.tone}>
-                {chip.label}
-              </Chip>
+        {viewModel.chipRows.length > 0 ? (
+          <View style={{ gap: space.sm, marginTop: space.xs }}>
+            {viewModel.chipRows.map((row) => (
+              <View
+                key={row.map((chip) => chip.label).join("|")}
+                style={[styles.chipWrap, { gap: space.xs }]}
+              >
+                {row.map((chip) => (
+                  <Chip key={chip.label} tone={chip.tone}>
+                    {chip.label}
+                  </Chip>
+                ))}
+              </View>
             ))}
           </View>
         ) : null}
 
-        {viewModel.detailLine ? (
-          <Text role="body" tone="muted">
-            {viewModel.detailLine}
-          </Text>
+        {viewModel.detailLines.length > 0 ? (
+          <View style={{ gap: space.xs }}>
+            {viewModel.detailLines.map((line) => (
+              <Text key={line} role="body" tone="muted">
+                {line}
+              </Text>
+            ))}
+          </View>
         ) : null}
 
         {hasProgress && viewModel.progress !== undefined ? (

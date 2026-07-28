@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { formatCrewLine } from "@/arr-client";
 import { MediaQuickPanel } from "@/components/MediaQuickPanel";
 import { buildMediaQuickViewModel } from "@/features/media-quick/build-media-quick-view-model";
 import type {
@@ -80,12 +81,7 @@ export const MediaQuickSheet = ({
         : fetchedNames;
     const crewLine =
       selection.crewLine ??
-      (credits?.crew.length
-        ? credits.crew
-            .slice(0, 3)
-            .map((member) => `${member.job}: ${member.name}`)
-            .join(", ")
-        : undefined);
+      (credits?.crew.length ? formatCrewLine(credits.crew) : undefined);
     return buildMediaQuickViewModel({
       ...selection,
       castNames,

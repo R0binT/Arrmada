@@ -1,9 +1,11 @@
-import { Linking, Pressable, StyleSheet, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import { Alert, Linking, Pressable, StyleSheet, View } from "react-native";
 
 import type { ExternalIds } from "@/arr-client";
 import { t } from "@/i18n";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { pressScaleStyle, useReduceMotion } from "@/ui";
+import { Chip } from "@/ui/Chip";
 import { Text } from "@/ui/Text";
 
 type ExternalLinksRowProps = {
@@ -47,6 +49,24 @@ const buildLinks = (
   return links;
 };
 
+const openExternalUrl = async (url: string): Promise<void> => {
+  try {
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+      return;
+    }
+  } catch {
+    // Fall through to in-app browser.
+  }
+  try {
+    await WebBrowser.openBrowserAsync(url);
+    return;
+  } catch {
+    Alert.alert(t("detail.links"), t("detail.linkOpenFailed"));
+  }
+};
+
 export const ExternalLinksRow = ({ ids, kind }: ExternalLinksRowProps) => {
   const { space } = useUiSize();
   const reduceMotion = useReduceMotion();
@@ -54,7 +74,7 @@ export const ExternalLinksRow = ({ ids, kind }: ExternalLinksRowProps) => {
   if (links.length === 0) return null;
 
   const handleOpen = (url: string): void => {
-    void Linking.openURL(url);
+    void openExternalUrl(url);
   };
 
   return (
@@ -69,7 +89,7 @@ export const ExternalLinksRow = ({ ids, kind }: ExternalLinksRowProps) => {
             onPress={() => handleOpen(link.url)}
             style={({ pressed }) => pressScaleStyle(pressed, reduceMotion)}
           >
-            <Text role="label">{link.label}</Text>
+            <Chip tone="accent">{link.label}</Chip>
           </Pressable>
         ))}
       </View>
