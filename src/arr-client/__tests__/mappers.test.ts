@@ -1,6 +1,9 @@
 import { mapHealth } from "../mappers/health";
 import { mapMovieCandidate, mapRadarrMovie } from "../mappers/movie";
 import { mapRadarrCredits, mapTvMazeCast } from "../mappers/cast";
+import { formatCrewLine } from "../mappers/crew-line";
+import { mapRatings, formatRatingLabel } from "../mappers/ratings";
+import { setI18nLocale } from "@/i18n";
 import { computeProgress, mapQueueItem } from "../mappers/queue";
 import {
     groupEpisodesIntoSeasons,
@@ -41,6 +44,19 @@ describe("mappers", () => {
       genres: [],
       runtimeMinutes: undefined,
       studio: undefined,
+      ratings: [],
+      certification: undefined,
+      originalLanguage: undefined,
+      inCinemas: undefined,
+      digitalRelease: undefined,
+      physicalRelease: undefined,
+      collectionTitle: undefined,
+      externalIds: {
+        imdbId: undefined,
+        tmdbId: undefined,
+        tvdbId: undefined,
+        tvMazeId: undefined,
+      },
     });
   });
 
@@ -486,6 +502,22 @@ describe("mappers", () => {
     expect(actual.tvMazeId).toBe(169);
   });
 
+  it("maps provider ratings and formats labels", () => {
+    const scores = mapRatings({
+      tmdb: { value: 7.8, votes: 100 },
+      imdb: { value: 8.1, votes: 200 },
+      rottenTomatoes: { value: 92, votes: 50 },
+      crew: { value: 1 },
+    });
+    expect(scores).toEqual([
+      { source: "tmdb", value: 7.8, votes: 100 },
+      { source: "imdb", value: 8.1, votes: 200 },
+      { source: "rottenTomatoes", value: 92, votes: 50 },
+    ]);
+    expect(formatRatingLabel(scores[0]!)).toBe("TMDB 7.8");
+    expect(formatRatingLabel(scores[2]!)).toBe("RT 92%");
+  });
+
   it("maps radarr credits cast only limited to six", () => {
     const actual = mapRadarrCredits(
       [
@@ -556,5 +588,31 @@ describe("mappers", () => {
       { name: "Eve", photoUrl: undefined },
       { name: "Fay", photoUrl: undefined },
     ]);
+  });
+
+  it("formats a compact crew line with short jobs", () => {
+    setI18nLocale("en");
+    const actual = formatCrewLine([
+      { job: "Director", name: "Nolan" },
+      { job: "Writer", name: "Nolan" },
+    ]);
+    expect(actual).toBe("Dir. Nolan · Writer Nolan");
+  });
+
+  it("returns undefined for empty crew", () => {
+    expect(formatCrewLine([])).toBeUndefined();
+  });
+
+  it("respects max option for crew line", () => {
+    setI18nLocale("en");
+    const actual = formatCrewLine(
+      [
+        { job: "Director", name: "A" },
+        { job: "Writer", name: "B" },
+        { job: "Creator", name: "C" },
+      ],
+      { max: 2 },
+    );
+    expect(actual).toBe("Dir. A · Writer B");
   });
 });

@@ -18,6 +18,19 @@ const movie = (overrides: Partial<Movie>): Movie => ({
   genres: [],
   runtimeMinutes: undefined,
   studio: undefined,
+  ratings: [],
+  certification: undefined,
+  originalLanguage: undefined,
+  inCinemas: undefined,
+  digitalRelease: undefined,
+  physicalRelease: undefined,
+  collectionTitle: undefined,
+  externalIds: {
+    imdbId: undefined,
+    tmdbId: undefined,
+    tvdbId: undefined,
+    tvMazeId: undefined,
+  },
   ...overrides,
 });
 

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { formatCrewLine } from "@/arr-client";
 import { MediaQuickPanel } from "@/components/MediaQuickPanel";
 import { buildMediaQuickViewModel } from "@/features/media-quick/build-media-quick-view-model";
 import type {
@@ -37,19 +38,6 @@ type MediaQuickSheetProps = {
 const DISMISS_THRESHOLD = 80;
 const DISMISS_VELOCITY = 0.55;
 const SHEET_OFFSCREEN = 400;
-
-const resolveCastNames = (
-  selection: MediaQuickSelection,
-  movieCastNames: readonly string[] | undefined,
-  seriesCastNames: readonly string[] | undefined,
-): readonly string[] | undefined => {
-  if (selection.castNames && selection.castNames.length > 0) {
-    return selection.castNames;
-  }
-  if (selection.kind === "movie") return movieCastNames;
-  if (selection.kind === "series") return seriesCastNames;
-  return undefined;
-};
 
 export const MediaQuickSheet = ({
   selection,
@@ -80,14 +68,24 @@ export const MediaQuickSheet = ({
 
   const viewModel = useMemo(() => {
     if (!selection) return undefined;
-    const castNames = resolveCastNames(
-      selection,
-      movieCastQuery.data?.map((member) => member.name),
-      seriesCastQuery.data?.map((member) => member.name),
-    );
+    const credits =
+      selection.kind === "movie"
+        ? movieCastQuery.data
+        : selection.kind === "series"
+          ? seriesCastQuery.data
+          : undefined;
+    const fetchedNames = credits?.cast.map((member) => member.name);
+    const castNames =
+      selection.castNames && selection.castNames.length > 0
+        ? selection.castNames
+        : fetchedNames;
+    const crewLine =
+      selection.crewLine ??
+      (credits?.crew.length ? formatCrewLine(credits.crew) : undefined);
     return buildMediaQuickViewModel({
       ...selection,
       castNames,
+      crewLine,
     });
   }, [movieCastQuery.data, selection, seriesCastQuery.data]);
 

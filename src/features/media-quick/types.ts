@@ -1,4 +1,4 @@
-import type { ArrService, Availability, QueueStatus } from "@/arr-client";
+import type { ArrService, Availability, QueueStatus, RatingScore } from "@/arr-client";
 import type { ChipTone } from "@/ui/variant-styles";
 
 export type MediaQuickKind =
@@ -44,6 +44,10 @@ export type MediaQuickSelection = {
   readonly glanceStatusTone?: MediaQuickStatusTone;
   /** Actor names for compact quick info (no photos). */
   readonly castNames?: readonly string[];
+  readonly ratings?: readonly RatingScore[];
+  readonly certification?: string;
+  readonly collectionTitle?: string;
+  readonly crewLine?: string;
 };
 
 export type MediaQuickAddActions = {
@@ -89,10 +93,10 @@ export type MediaQuickViewModel = {
   readonly title: string;
   readonly subtitle: string | undefined;
   readonly posterUrl: string | undefined;
-  /** Short glanceable facts rendered as chips. */
-  readonly chips: readonly MediaQuickChip[];
-  /** Secondary facts on one compact line (added, quality, size…). */
-  readonly detailLine: string | undefined;
+  /** Short glanceable facts, grouped into tone-consistent rows. */
+  readonly chipRows: readonly (readonly MediaQuickChip[])[];
+  /** Secondary facts as separate muted lines (date, people…). */
+  readonly detailLines: readonly string[];
   readonly statusLine: string;
   readonly statusTone: MediaQuickStatusTone;
   readonly progress: number | undefined;

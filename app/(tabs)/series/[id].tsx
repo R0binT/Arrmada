@@ -12,12 +12,15 @@ import {
 import {
   AudioChoiceSheet,
   CastSection,
+  CrewSection,
   DetailImmersiveHeader,
   DetailLoadingSkeleton,
   ErrorBanner,
+  ExternalLinksRow,
   IconButton,
   MediaMetaBlock,
   MediaQuickSheet,
+  RatingsRow,
   Screen,
 } from "@/components";
 import {
@@ -402,18 +405,30 @@ export default function SeriesDetailScreen() {
         entering={createFadeSlideUp(reduceMotion, 0)}
         style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.md }}
       >
+        <RatingsRow ratings={series.ratings} />
         <MediaMetaBlock
           added={series.added}
+          certification={series.certification}
+          firstAired={series.firstAired}
           genres={series.genres}
+          lastAired={series.lastAired}
           networkOrStudio={series.network}
+          originalLanguage={series.originalLanguage}
           runtimeMinutes={series.runtimeMinutes}
+          statusLabel={
+            series.statusSummary.trim().length > 0
+              ? series.statusSummary
+              : undefined
+          }
         />
         {series.overview.trim().length > 0 ? (
           <Text role="body" tone="muted">
             {series.overview}
           </Text>
         ) : null}
-        <CastSection members={castQuery.data ?? []} />
+        <CrewSection members={castQuery.data?.crew ?? []} />
+        <CastSection members={castQuery.data?.cast ?? []} />
+        <ExternalLinksRow ids={series.externalIds} kind="series" />
       </Animated.View>
 
       <Animated.View

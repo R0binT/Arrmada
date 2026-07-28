@@ -53,7 +53,10 @@ describe("createRadarrClient", () => {
 
     const client = createRadarrClient("http://192.168.1.10:7878", "k");
     const cast = await client.getMovieCredits(2);
-    expect(cast).toEqual([{ name: "Ada", photoUrl: "https://cdn/ada.jpg" }]);
+    expect(cast).toEqual({
+      cast: [{ name: "Ada", photoUrl: "https://cdn/ada.jpg" }],
+      crew: [],
+    });
     const [url] = (globalThis.fetch as jest.Mock).mock.calls[0] as [string];
     expect(url).toContain("/api/v3/credit?movieId=2");
   });
@@ -329,14 +332,30 @@ describe("createSonarrClient", () => {
             },
           },
         ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            type: "Creator",
+            person: { name: "Bea" },
+          },
+        ],
       });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const client = createSonarrClient("http://192.168.1.10:8989", "k");
-    const cast = await client.getSeriesCredits(5);
-    expect(cast).toEqual([{ name: "Ada", photoUrl: "https://tvmaze/ada.jpg" }]);
+    const credits = await client.getSeriesCredits(5);
+    expect(credits).toEqual({
+      cast: [{ name: "Ada", photoUrl: "https://tvmaze/ada.jpg" }],
+      crew: [{ name: "Bea", job: "Creator" }],
+    });
     expect(fetchMock.mock.calls[1]?.[0]).toBe(
       "https://api.tvmaze.com/shows/169/cast",
+    );
+    expect(fetchMock.mock.calls[2]?.[0]).toBe(
+      "https://api.tvmaze.com/shows/169/crew",
     );
   });
 
@@ -356,8 +375,8 @@ describe("createSonarrClient", () => {
     }) as unknown as typeof fetch;
 
     const client = createSonarrClient("http://192.168.1.10:8989", "k");
-    const cast = await client.getSeriesCredits(5);
-    expect(cast).toEqual([]);
+    const credits = await client.getSeriesCredits(5);
+    expect(credits).toEqual({ cast: [], crew: [] });
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 

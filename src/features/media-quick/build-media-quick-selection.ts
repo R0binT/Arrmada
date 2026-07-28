@@ -54,6 +54,10 @@ export const selectionFromMovie = (movie: Movie): MediaQuickSelection => ({
   networkOrStudio: movie.studio,
   added: movie.added,
   sizeOnDisk: movie.sizeOnDisk,
+  ratings: movie.ratings,
+  certification: movie.certification,
+  collectionTitle: movie.collectionTitle,
+  airDate: movie.digitalRelease ?? movie.physicalRelease ?? movie.inCinemas,
 });
 
 export const selectionFromSeries = (series: Series): MediaQuickSelection => ({
@@ -70,6 +74,9 @@ export const selectionFromSeries = (series: Series): MediaQuickSelection => ({
   added: series.added,
   episodeCount: series.episodeCount,
   episodeFileCount: series.episodeFileCount,
+  ratings: series.ratings,
+  certification: series.certification,
+  airDate: series.firstAired,
 });
 
 export const selectionFromSeason = (

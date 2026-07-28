@@ -1,6 +1,13 @@
 import { classifyEpisode } from "../availability";
-import type { Episode, Season, Series, SeriesCandidate } from "../types";
+import type {
+  Episode,
+  ExternalIds,
+  Season,
+  Series,
+  SeriesCandidate,
+} from "../types";
 import { getPosterUrl } from "./movie";
+import { mapRatings } from "./ratings";
 
 const asRecord = (raw: unknown): Record<string, unknown> | null => {
   if (typeof raw !== "object" || raw === null) return null;
@@ -21,6 +28,28 @@ const mapOptionalNumber = (raw: unknown): number | undefined =>
 const mapOptionalString = (raw: unknown): string | undefined =>
   typeof raw === "string" ? raw : undefined;
 
+const mapOriginalLanguage = (raw: unknown): string | undefined => {
+  if (typeof raw === "string" && raw.trim().length > 0) return raw.trim();
+  const obj = asRecord(raw);
+  const name = mapOptionalString(obj?.name);
+  return name && name.trim().length > 0 ? name.trim() : undefined;
+};
+
+const mapSeriesExternalIds = (
+  obj: Record<string, unknown>,
+  tvMazeId: number | undefined,
+): ExternalIds => {
+  const imdbId = mapOptionalString(obj.imdbId);
+  const tmdbId = mapOptionalNumber(obj.tmdbId);
+  const tvdbId = mapOptionalNumber(obj.tvdbId);
+  return {
+    imdbId: imdbId && imdbId.trim().length > 0 ? imdbId.trim() : undefined,
+    tmdbId: tmdbId !== undefined && tmdbId > 0 ? tmdbId : undefined,
+    tvdbId: tvdbId !== undefined && tvdbId > 0 ? tvdbId : undefined,
+    tvMazeId,
+  };
+};
+
 export const mapSonarrSeries = (raw: unknown, baseUrl: string): Series => {
   const obj = asRecord(raw);
   if (!obj) {
@@ -37,6 +66,10 @@ export const mapSonarrSeries = (raw: unknown, baseUrl: string): Series => {
         : undefined;
 
   const tvMazeRaw = mapOptionalNumber(obj.tvMazeId);
+  const tvMazeId =
+    tvMazeRaw !== undefined && tvMazeRaw > 0 ? tvMazeRaw : undefined;
+  const certification = mapOptionalString(obj.certification);
+
   return {
     id: Number(obj.id),
     title: String(obj.title ?? ""),
@@ -54,8 +87,17 @@ export const mapSonarrSeries = (raw: unknown, baseUrl: string): Series => {
     genres: mapStringArray(obj.genres),
     runtimeMinutes: mapOptionalNumber(obj.runtime),
     network: mapOptionalString(obj.network),
-    tvMazeId:
-      tvMazeRaw !== undefined && tvMazeRaw > 0 ? tvMazeRaw : undefined,
+    tvMazeId,
+    ratings: mapRatings(obj.ratings),
+    certification:
+      certification && certification.trim().length > 0
+        ? certification.trim()
+        : undefined,
+    originalLanguage: mapOriginalLanguage(obj.originalLanguage),
+    ended: typeof obj.ended === "boolean" ? obj.ended : undefined,
+    firstAired: mapOptionalString(obj.firstAired),
+    lastAired: mapOptionalString(obj.lastAired),
+    externalIds: mapSeriesExternalIds(obj, tvMazeId),
   };
 };
 

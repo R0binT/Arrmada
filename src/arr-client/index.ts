@@ -13,13 +13,17 @@ export type {
   CalendarEvent,
   CalendarMovie,
   CastMember,
+  CrewMember,
   Episode,
+  ExternalIds,
+  MediaCredits,
   Movie,
   MovieCandidate,
   QualityProfileOption,
   QueueItem,
   QueuePriority,
   QueueStatus,
+  RatingScore,
   ReleaseOffer,
   RootFolderOption,
   Season,
@@ -56,3 +60,6 @@ export {
   seriesHasExpectedFiles,
 } from "./availability";
 export type { Availability, AvailabilityInput } from "./availability";
+
+export { formatCrewLine } from "./mappers/crew-line";
+export { formatRatingLabel, mapRatings } from "./mappers/ratings";

@@ -13,11 +13,14 @@ import { availabilityLabel, t } from "@/i18n";
 import {
   AudioChoiceSheet,
   CastSection,
+  CrewSection,
   DetailImmersiveHeader,
   DetailLoadingSkeleton,
   ErrorBanner,
+  ExternalLinksRow,
   IconButton,
   MediaMetaBlock,
+  RatingsRow,
   Screen,
 } from "@/components";
 import {
@@ -244,16 +247,28 @@ export default function MovieDetailScreen() {
         entering={createFadeSlideUp(reduceMotion, 0)}
         style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.md }}
       >
+        <RatingsRow ratings={movie.ratings} />
         <MediaMetaBlock
           added={movie.added}
+          certification={movie.certification}
+          collectionTitle={movie.collectionTitle}
           fileQuality={
             movieAvailability === "dispo" ? movie.fileQuality : undefined
           }
           genres={movie.genres}
           networkOrStudio={movie.studio}
+          originalLanguage={movie.originalLanguage}
+          releaseDate={
+            movie.digitalRelease ?? movie.physicalRelease ?? movie.inCinemas
+          }
           runtimeMinutes={movie.runtimeMinutes}
           sizeOnDisk={
             movieAvailability === "dispo" ? movie.sizeOnDisk : undefined
+          }
+          statusLabel={
+            movie.statusSummary.trim().length > 0
+              ? movie.statusSummary
+              : undefined
           }
         />
         {movie.overview.trim().length > 0 ? (
@@ -261,7 +276,9 @@ export default function MovieDetailScreen() {
             {movie.overview}
           </Text>
         ) : null}
-        <CastSection members={castQuery.data ?? []} />
+        <CrewSection members={castQuery.data?.crew ?? []} />
+        <CastSection members={castQuery.data?.cast ?? []} />
+        <ExternalLinksRow ids={movie.externalIds} kind="movie" />
       </Animated.View>
 
       <Animated.View

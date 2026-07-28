@@ -1,9 +1,11 @@
 import type {
+  ExternalIds,
   Movie,
   MovieCandidate,
   QualityProfileOption,
   RootFolderOption,
 } from "../types";
+import { mapRatings } from "./ratings";
 
 type ImageLike = {
   readonly coverType?: string;
@@ -63,6 +65,30 @@ const mapOptionalNumber = (raw: unknown): number | undefined =>
 const mapOptionalString = (raw: unknown): string | undefined =>
   typeof raw === "string" ? raw : undefined;
 
+const mapOriginalLanguage = (raw: unknown): string | undefined => {
+  if (typeof raw === "string" && raw.trim().length > 0) return raw.trim();
+  const obj = asRecord(raw);
+  const name = mapOptionalString(obj?.name);
+  return name && name.trim().length > 0 ? name.trim() : undefined;
+};
+
+const mapMovieExternalIds = (obj: Record<string, unknown>): ExternalIds => {
+  const imdbId = mapOptionalString(obj.imdbId);
+  const tmdbId = mapOptionalNumber(obj.tmdbId);
+  return {
+    imdbId: imdbId && imdbId.trim().length > 0 ? imdbId.trim() : undefined,
+    tmdbId: tmdbId !== undefined && tmdbId > 0 ? tmdbId : undefined,
+    tvdbId: undefined,
+    tvMazeId: undefined,
+  };
+};
+
+const mapCollectionTitle = (raw: unknown): string | undefined => {
+  const collection = asRecord(raw);
+  const title = mapOptionalString(collection?.title);
+  return title && title.trim().length > 0 ? title.trim() : undefined;
+};
+
 export const mapRadarrMovie = (raw: unknown, baseUrl: string): Movie => {
   const obj = asRecord(raw);
   if (!obj) {
@@ -75,6 +101,8 @@ export const mapRadarrMovie = (raw: unknown, baseUrl: string): Movie => {
       : typeof obj.dateAdded === "string"
         ? obj.dateAdded
         : undefined;
+
+  const certification = mapOptionalString(obj.certification);
 
   return {
     id: Number(obj.id),
@@ -92,6 +120,17 @@ export const mapRadarrMovie = (raw: unknown, baseUrl: string): Movie => {
     genres: mapStringArray(obj.genres),
     runtimeMinutes: mapOptionalNumber(obj.runtime),
     studio: mapOptionalString(obj.studio),
+    ratings: mapRatings(obj.ratings),
+    certification:
+      certification && certification.trim().length > 0
+        ? certification.trim()
+        : undefined,
+    originalLanguage: mapOriginalLanguage(obj.originalLanguage),
+    inCinemas: mapOptionalString(obj.inCinemas),
+    digitalRelease: mapOptionalString(obj.digitalRelease),
+    physicalRelease: mapOptionalString(obj.physicalRelease),
+    collectionTitle: mapCollectionTitle(obj.collection),
+    externalIds: mapMovieExternalIds(obj),
   };
 };
 

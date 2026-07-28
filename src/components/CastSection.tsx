@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 
 import type { CastMember } from "@/arr-client";
 import { t } from "@/i18n";
@@ -18,7 +18,7 @@ const initialForName = (name: string): string => {
 };
 
 /**
- * Renders up to six cast members as circular portraits with names.
+ * Renders up to six cast members as a horizontal rail of circular portraits.
  * Returns null when the list is empty.
  */
 export const CastSection = ({ members }: CastSectionProps) => {
@@ -30,7 +30,11 @@ export const CastSection = ({ members }: CastSectionProps) => {
   return (
     <View style={{ gap: space.sm }}>
       <Text role="headline">{t("detail.cast")}</Text>
-      <View style={[styles.row, { gap: space.sm }]}>
+      <ScrollView
+        contentContainerStyle={[styles.row, { gap: space.sm }]}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
         {members.map((member) => (
           <View
             key={member.name}
@@ -71,15 +75,15 @@ export const CastSection = ({ members }: CastSectionProps) => {
             </Text>
           </View>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   row: {
+    alignItems: "flex-start",
     flexDirection: "row",
-    flexWrap: "wrap",
   },
   item: {
     alignItems: "center",

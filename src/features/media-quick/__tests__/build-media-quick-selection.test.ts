@@ -9,8 +9,8 @@ import {
 import { buildMediaQuickViewModel } from "../build-media-quick-view-model";
 
 const chipLabels = (
-  chips: readonly { readonly label: string }[],
-): string[] => chips.map((chip) => chip.label);
+  rows: readonly (readonly { readonly label: string }[])[],
+): string[] => rows.flatMap((row) => row.map((chip) => chip.label));
 
 const movie = (overrides: Partial<Movie> = {}): Movie => ({
   id: 1,
@@ -28,6 +28,19 @@ const movie = (overrides: Partial<Movie> = {}): Movie => ({
   genres: ["Thriller", "Drama"],
   runtimeMinutes: 118,
   studio: "A24",
+  ratings: [],
+  certification: undefined,
+  originalLanguage: undefined,
+  inCinemas: undefined,
+  digitalRelease: undefined,
+  physicalRelease: undefined,
+  collectionTitle: undefined,
+  externalIds: {
+    imdbId: undefined,
+    tmdbId: undefined,
+    tvdbId: undefined,
+    tvMazeId: undefined,
+  },
   ...overrides,
 });
 
@@ -47,6 +60,18 @@ const series = (overrides: Partial<Series> = {}): Series => ({
   runtimeMinutes: 45,
   network: "HBO",
   tvMazeId: undefined,
+  ratings: [],
+  certification: undefined,
+  originalLanguage: undefined,
+  ended: undefined,
+  firstAired: undefined,
+  lastAired: undefined,
+  externalIds: {
+    imdbId: undefined,
+    tmdbId: undefined,
+    tvdbId: undefined,
+    tvMazeId: undefined,
+  },
   ...overrides,
 });
 
@@ -54,16 +79,15 @@ describe("build-media-quick-selection", () => {
   it("builds the same movie selection for home and library", () => {
     const selection = selectionFromMovie(movie());
     const vm = buildMediaQuickViewModel(selection);
-    expect(chipLabels(vm.chips)).toEqual(
-      expect.arrayContaining(["Thriller", "Drama", "1 h 58 min", "A24"]),
+    expect(chipLabels(vm.chipRows)).toEqual(
+      expect.arrayContaining(["Thriller", "Drama", "1 h 58 min", "A24", "Bluray-1080p"]),
     );
-    expect(vm.detailLine).toMatch(/Bluray-1080p/);
   });
 
   it("builds the same series selection for home and library", () => {
     const selection = selectionFromSeries(series());
     const vm = buildMediaQuickViewModel(selection);
-    expect(chipLabels(vm.chips)).toEqual(
+    expect(chipLabels(vm.chipRows)).toEqual(
       expect.arrayContaining(["20/20 épisodes", "Crime", "HBO", "45 min"]),
     );
   });
@@ -80,10 +104,10 @@ describe("build-media-quick-selection", () => {
     const selection = selectionFromUpcoming(upcoming, { movies: [movie()] });
     const vm = buildMediaQuickViewModel(selection);
     expect(vm.statusLine).toBe("À venir");
-    expect(chipLabels(vm.chips)).toEqual(
+    expect(chipLabels(vm.chipRows)).toEqual(
       expect.arrayContaining(["Thriller", "Drama", "A24"]),
     );
-    expect(vm.detailLine).toMatch(/Sortie/i);
+    expect(vm.detailLines.some((line) => /Sortie/i.test(line))).toBe(true);
   });
 
   it("enriches upcoming episode from series library", () => {
@@ -104,8 +128,8 @@ describe("build-media-quick-selection", () => {
     const vm = buildMediaQuickViewModel(selection);
     expect(vm.title).toBe("Pilot");
     expect(vm.subtitle).toBe("Night Harbor");
-    expect(chipLabels(vm.chips)[0]).toMatch(/S01E01/);
-    expect(chipLabels(vm.chips)).toEqual(
+    expect(chipLabels(vm.chipRows)[0]).toMatch(/S01E01/);
+    expect(chipLabels(vm.chipRows)).toEqual(
       expect.arrayContaining(["Crime", "HBO", "45 min"]),
     );
   });
