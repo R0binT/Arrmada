@@ -20,8 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Build APK and publish GitHub Release
     env:
-      # GitHub-hosted Ubuntu image default; keep stable for SDK cache paths.
+      # GitHub-hosted Ubuntu image default.
       ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout merge commit
         uses: actions/checkout@v7
@@ -57,21 +58,24 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
-
-      - name: Cache Android SDK packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.ANDROID_HOME }}/platforms
-            ${{ env.ANDROID_HOME }}/build-tools
-            ${{ env.ANDROID_HOME }}/ndk
-            ${{ env.ANDROID_HOME }}/cmake
-            ${{ env.ANDROID_HOME }}/licenses
-          key: android-sdk-${{ runner.os }}-${{ hashFiles('package-lock.json', 'app.json') }}
-          restore-keys: |
-            android-sdk-${{ runner.os }}-
+      # Use the runner's preinstalled SDK. Do not reinstall cmdline-tools/emulator
+      # or cache NDK — that cost ~12 min post-job per release with almost no gain.
+      - name: Ensure Android SDK packages
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -1 || true)"
+          if [ -z "${SDKMANAGER}" ]; then
+            echo "::error::sdkmanager not found under ${ANDROID_HOME}/cmdline-tools"
+            exit 1
+          fi
+          # Non-interactive license accept (runner image usually already licensed).
+          yes | "${SDKMANAGER}" --licenses >/dev/null || true
+          # build-tools must match app.json expo-build-properties.
+          "${SDKMANAGER}" --sdk_root="${ANDROID_HOME}" --install \
+            "platform-tools" \
+            "build-tools;36.1.0" \
+            "platforms;android-35" \
+            "platforms;android-36"
 
       # PR-closed jobs are read-only for Gradle cache by default; allow write so
       # each successful release warms the cache for the next one.
@@ -86,11 +90,20 @@ jobs:
       - name: Generate Android app
         run: npx expo prebuild --platform android --clean
 
+      - name: Tune Gradle for CI
+        run: |
+          set -euo pipefail
+          PROPS=./android/gradle.properties
+          touch "${PROPS}"
+          grep -q '^org.gradle.caching=' "${PROPS}" || echo 'org.gradle.caching=true' >> "${PROPS}"
+          grep -q '^org.gradle.parallel=' "${PROPS}" || echo 'org.gradle.parallel=true' >> "${PROPS}"
+          grep -q '^org.gradle.jvmargs=' "${PROPS}" || echo 'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8' >> "${PROPS}"
+
       - name: Build APK with Gradle
         working-directory: ./android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --build-cache
+          ./gradlew assembleRelease --build-cache --parallel
 
       - name: Package APK
         id: apk
