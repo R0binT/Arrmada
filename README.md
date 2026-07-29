@@ -29,13 +29,19 @@
 English UI on an Android emulator against live Radarr/Sonarr (language override: Settings → Preferences).
 
 <p align="center">
-  <img src="docs/screenshots/01-home.png" alt="Home — cinematic overview" width="220" />
-  <img src="docs/screenshots/02-movies.png" alt="Movies library" width="220" />
-  <img src="docs/screenshots/03-upcoming.png" alt="Upcoming releases" width="220" />
-  <img src="docs/screenshots/04-settings.png" alt="Settings hub" width="220" />
+  <img src="docs/screenshots/01-home.png" alt="Home — cinematic overview" width="180" />
+  <img src="docs/screenshots/02-movies.png" alt="Movies library" width="180" />
+  <img src="docs/screenshots/03-series.png" alt="Series library" width="180" />
+  <img src="docs/screenshots/04-upcoming.png" alt="Upcoming releases" width="180" />
 </p>
 <p align="center">
-  <sub>Home · Movies · Upcoming · Settings</sub>
+  <img src="docs/screenshots/05-settings.png" alt="Settings hub" width="180" />
+  <img src="docs/screenshots/06-movie-detail.png" alt="Movie detail" width="180" />
+  <img src="docs/screenshots/07-series-detail.png" alt="Series detail with episodes" width="180" />
+  <img src="docs/screenshots/08-mediaquick.png" alt="MediaQuick bottom sheet" width="180" />
+</p>
+<p align="center">
+  <sub>Home · Movies · Series · Upcoming · Settings · Movie detail · Series detail · MediaQuick</sub>
 </p>
 
 ---
@@ -45,7 +51,7 @@ English UI on an Android emulator against live Radarr/Sonarr (language override:
 - **Home** — cinematic overview: downloads in progress, recent library activity, health, and a short Upcoming preview
 - **Movies & Series** — poster grids with search and filters (Monitored, Upcoming, To download, Downloaded)
 - **MediaQuick** — glanceable bottom sheet from a poster; one tap to open the full detail
-- **Details** — metadata, synopsis, monitor toggle, Download / Remove; Series organized by season and episode
+- **Details** — metadata, synopsis, audio/subtitle language chips, monitor toggle, Download / Remove; series by season and episode (with dedicated episode pages)
 - **Add** — search and add with silent server defaults (no quality/folder pickers in the normal flow)
 - **Upcoming** — date-sorted list or calendar (same data, two layouts)
 - **Downloads** — Pause / Resume and Cancel
