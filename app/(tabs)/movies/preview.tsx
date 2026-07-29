@@ -55,15 +55,16 @@ export default function MoviePreviewScreen() {
   const addMutation = useAddMovie();
   const grabMutation = useGrabMovieRelease();
   const [feedback, setFeedback] = useState<string | undefined>();
+  const [searchBusy, setSearchBusy] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<
     PendingAudioChoice | undefined
   >();
 
   useEffect(() => {
-    if (!feedback) return;
-    const timer = setTimeout(() => setFeedback(undefined), 3000);
+    if (!feedback || searchBusy) return;
+    const timer = setTimeout(() => setFeedback(undefined), 4000);
     return () => clearTimeout(timer);
-  }, [feedback]);
+  }, [feedback, searchBusy]);
 
   const candidate = previewQuery.data ?? undefined;
   const qualityProfileId = defaultsQuery.data?.defaultQualityProfileId;
@@ -76,6 +77,7 @@ export default function MoviePreviewScreen() {
       qualityProfileId !== undefined &&
       rootFolderPath !== undefined &&
       !addMutation.isPending &&
+      !searchBusy &&
       !defaultsQuery.isLoading,
     [
       addMutation.isPending,
@@ -83,6 +85,7 @@ export default function MoviePreviewScreen() {
       defaultsQuery.isLoading,
       qualityProfileId,
       rootFolderPath,
+      searchBusy,
     ],
   );
 
@@ -130,6 +133,8 @@ export default function MoviePreviewScreen() {
     }
 
     try {
+      setSearchBusy(true);
+      setFeedback(t("action.adding"));
       const created = await addMutation.mutateAsync({
         tmdbId: candidate.tmdbId,
         qualityProfileId,
@@ -143,6 +148,7 @@ export default function MoviePreviewScreen() {
           ? (created as { id: number }).id
           : undefined;
       if (createdId && radarr) {
+        setFeedback(t("action.searching"));
         try {
           const releases = await radarr.getMovieReleases(createdId);
           const outcome = await smartGrabReleases(releases, (release) =>
@@ -150,15 +156,26 @@ export default function MoviePreviewScreen() {
           );
           if (outcome.type === "choose") {
             setPendingChoice(outcome.pending);
+            setFeedback(undefined);
             return;
           }
+          if (outcome.type === "empty") {
+            setFeedback(t("detail.noRelease"));
+            return;
+          }
+          setFeedback(t("detail.downloadStarted"));
+          setTimeout(() => router.back(), 1500);
+          return;
         } catch {
-          // Keep add success even if grab fails.
+          router.back();
+          return;
         }
       }
       router.back();
     } catch (error) {
       setFeedback(getErrorMessage(error));
+    } finally {
+      setSearchBusy(false);
     }
   }, [
     addMutation,
@@ -167,6 +184,7 @@ export default function MoviePreviewScreen() {
     qualityProfileId,
     radarr,
     rootFolderPath,
+    t,
   ]);
 
   if (previewQuery.isLoading) {
@@ -244,11 +262,15 @@ export default function MoviePreviewScreen() {
                 title: candidate.title,
               })}
               disabled={!canAdd}
-              loading={addMutation.isPending}
+              loading={searchBusy}
               onPress={() => void handleAdd()}
               style={styles.fullWidthButton}
             >
-              {addMutation.isPending ? t("action.adding") : t("action.add")}
+              {addMutation.isPending
+                ? t("action.adding")
+                : searchBusy
+                  ? t("action.searching")
+                  : t("action.add")}
             </Button>
           )
         }
@@ -296,7 +318,7 @@ export default function MoviePreviewScreen() {
         visible={pendingChoice !== undefined}
       />
 
-      {feedback ? (
+      {feedback && !searchBusy ? (
         <Surface
           radius="md"
           style={[

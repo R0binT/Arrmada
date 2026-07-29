@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
+  View,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
@@ -70,7 +71,15 @@ export const Button = ({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variantStyle.labelColor} />
+        <View style={[styles.loadingRow, { gap: space.xs }]}>
+          <ActivityIndicator color={variantStyle.labelColor} />
+          <Text
+            role={isCompact ? "caption" : "label"}
+            style={[styles.label, { color: variantStyle.labelColor }]}
+          >
+            {children}
+          </Text>
+        </View>
       ) : (
         <Text
           role={isCompact ? "caption" : "label"}
@@ -86,6 +95,11 @@ export const Button = ({
 const styles = StyleSheet.create({
   base: {
     alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingRow: {
+    alignItems: "center",
+    flexDirection: "row",
     justifyContent: "center",
   },
   label: {

@@ -1,7 +1,15 @@
 import { focusManager, QueryClient } from "@tanstack/react-query";
 import { AppState, Platform, type AppStateStatus } from "react-native";
 
-export const QUEUE_POLL_MS = 30000;
+import { LIBRARY_STALE_TIME_MS } from "@/features/queue/queue-poll-policy";
+
+export {
+  LIBRARY_STALE_TIME_MS,
+  QUEUE_BURST_MAX_MS,
+  QUEUE_BURST_POLL_MS,
+  QUEUE_POLL_MS,
+  startQueueBurstPoll,
+} from "@/features/queue/queue-poll-policy";
 
 export const setupAppStateFocusManager = (): (() => void) => {
   if (Platform.OS === "web") {
@@ -16,8 +24,6 @@ export const setupAppStateFocusManager = (): (() => void) => {
   const subscription = AppState.addEventListener("change", onAppStateChange);
   return () => subscription.remove();
 };
-
-const LIBRARY_STALE_TIME_MS = 30_000;
 
 export const createQueryClient = (): QueryClient =>
   new QueryClient({

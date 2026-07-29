@@ -54,6 +54,8 @@ export type MediaQuickAddActions = {
   readonly canAdd: boolean;
   readonly onAdd: () => void;
   readonly onSeeFiche: () => void;
+  readonly loading?: boolean;
+  readonly busyLabel?: string;
 };
 
 export type PrimaryDestination =
