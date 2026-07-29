@@ -573,25 +573,36 @@ export default function SeriesDetailScreen() {
                             }
                             style={({ pressed }) => [
                               styles.episodeCopy,
-                              { gap: scaledSpace.sm },
+                              { gap: scaledSpace.xs },
                               pressScaleStyle(pressed, reduceMotion),
                             ]}
                           >
-                            <Text
-                              numberOfLines={1}
-                              role="caption"
-                              style={styles.episodeTitle}
+                            <View
+                              style={[
+                                styles.episodeHeadingRow,
+                                { gap: scaledSpace.sm },
+                              ]}
                             >
-                              {episodeHeading(episode)}
-                            </Text>
-                            <Chip
-                              tone={availabilityChipTone(episode.availability)}
-                            >
-                              {availabilityLabel(episode.availability)}
-                            </Chip>
+                              <Text
+                                numberOfLines={1}
+                                role="caption"
+                                style={styles.episodeTitle}
+                              >
+                                {episodeHeading(episode)}
+                              </Text>
+                              <Chip
+                                tone={availabilityChipTone(
+                                  episode.availability,
+                                )}
+                              >
+                                {availabilityLabel(episode.availability)}
+                              </Chip>
+                            </View>
                             {episode.hasFile ? (
                               <MediaLanguageChipRows
-                                audioLanguageCodes={episode.audioLanguageCodes}
+                                audioLanguageCodes={
+                                  episode.audioLanguageCodes
+                                }
                                 compact
                                 subtitleLanguageCodes={
                                   episode.subtitleLanguageCodes
@@ -740,8 +751,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   episodeCopy: {
-    alignItems: "center",
     flex: 1,
+    minWidth: 0,
+  },
+  episodeHeadingRow: {
+    alignItems: "center",
     flexDirection: "row",
     minWidth: 0,
   },

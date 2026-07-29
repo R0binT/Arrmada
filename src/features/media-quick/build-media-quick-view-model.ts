@@ -32,6 +32,23 @@ export const resolvePrimaryDestination = (
     };
   }
 
+  if (
+    selection.kind === "episode" &&
+    selection.seriesId !== undefined &&
+    selection.episodeId !== undefined
+  ) {
+    return {
+      href: {
+        pathname: "/(tabs)/series/[id]/episode/[episodeId]",
+        params: {
+          id: String(selection.seriesId),
+          episodeId: String(selection.episodeId),
+        },
+      },
+      ctaKey: "mediaQuick.seeDetail",
+    };
+  }
+
   if (selection.seriesId !== undefined) {
     return {
       href: {

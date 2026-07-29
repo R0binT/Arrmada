@@ -192,7 +192,10 @@ describe("createSonarrClient", () => {
           status: 200,
           json: async () => [
             {
-              episodeId: 21,
+              id: 9001,
+              seriesId: 5,
+              size: 1_500_000_000,
+              quality: { quality: { name: "WEBDL-1080p" } },
               mediaInfo: {
                 audioLanguages: "English",
                 subtitles: "French",
@@ -212,6 +215,7 @@ describe("createSonarrClient", () => {
             title: "Pilot",
             airDateUtc: "2020-01-01T00:00:00Z",
             hasFile: true,
+            episodeFileId: 9001,
             monitored: true,
           },
           {
@@ -248,6 +252,8 @@ describe("createSonarrClient", () => {
     expect(seasons[0]?.episodes[0]?.availability).toBe("dispo");
     expect(seasons[0]?.episodes[0]?.audioLanguageCodes).toEqual(["EN"]);
     expect(seasons[0]?.episodes[0]?.subtitleLanguageCodes).toEqual(["FR"]);
+    expect(seasons[0]?.episodes[0]?.fileQuality).toBe("WEBDL-1080p");
+    expect(seasons[0]?.episodes[0]?.sizeOnDisk).toBe(1_500_000_000);
     expect(seasons[0]?.episodes[1]?.availability).toBe("aVenir");
     expect(seasons[0]?.episodes[1]?.audioLanguageCodes).toEqual([]);
   });

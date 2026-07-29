@@ -15,6 +15,7 @@ export default function SeriesLayout() {
       <Stack.Screen name="add" />
       <Stack.Screen name="preview" />
       <Stack.Screen name="[id]" />
+      <Stack.Screen name="[id]/episode/[episodeId]" />
     </Stack>
   );
 }

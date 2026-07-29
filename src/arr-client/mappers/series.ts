@@ -128,13 +128,24 @@ export const mapSeriesCandidate = (
   };
 };
 
+const mapEpisodeFileQuality = (episodeFile: unknown): string | undefined => {
+  const file = asRecord(episodeFile);
+  const quality = asRecord(file?.quality);
+  const qualityInner = asRecord(quality?.quality);
+  return typeof qualityInner?.name === "string" ? qualityInner.name : undefined;
+};
+
+export type EpisodeFileMeta = {
+  readonly audioLanguageCodes: readonly string[];
+  readonly subtitleLanguageCodes: readonly string[];
+  readonly fileQuality: string | undefined;
+  readonly sizeOnDisk: number | undefined;
+};
+
 export const mapSonarrEpisode = (
   raw: unknown,
   now: Date = new Date(),
-  fileLanguages?: {
-    readonly audioLanguageCodes: readonly string[];
-    readonly subtitleLanguageCodes: readonly string[];
-  },
+  fileMeta?: EpisodeFileMeta,
 ): Episode => {
   const obj = asRecord(raw);
   if (!obj) {
@@ -149,50 +160,62 @@ export const mapSonarrEpisode = (
     embeddedFile?.languages,
   );
   const audioLanguageCodes =
-    fileLanguages?.audioLanguageCodes ?? fromEmbedded.audioLanguageCodes;
+    fileMeta?.audioLanguageCodes ?? fromEmbedded.audioLanguageCodes;
   const subtitleLanguageCodes =
-    fileLanguages?.subtitleLanguageCodes ?? fromEmbedded.subtitleLanguageCodes;
+    fileMeta?.subtitleLanguageCodes ?? fromEmbedded.subtitleLanguageCodes;
+  const rawEpisodeFileId = Number(obj.episodeFileId);
+  const episodeFileId =
+    Number.isFinite(rawEpisodeFileId) && rawEpisodeFileId > 0
+      ? rawEpisodeFileId
+      : undefined;
+  const fileQuality =
+    fileMeta?.fileQuality ?? mapEpisodeFileQuality(embeddedFile);
+  const sizeFromEmbedded = mapOptionalNumber(embeddedFile?.size);
+  const sizeOnDisk = fileMeta?.sizeOnDisk ?? sizeFromEmbedded;
+  const overview =
+    typeof obj.overview === "string" ? obj.overview.trim() : "";
 
   return {
     id: Number(obj.id),
     seasonNumber: Number(obj.seasonNumber ?? 0),
     episodeNumber: Number(obj.episodeNumber ?? 0),
     title: String(obj.title ?? ""),
+    overview,
     airDateUtc,
     hasFile,
     monitored: Boolean(obj.monitored),
     availability: classifyEpisode({ hasFile, airDateUtc }, now),
+    episodeFileId: hasFile ? episodeFileId : undefined,
+    fileQuality: hasFile ? fileQuality : undefined,
+    sizeOnDisk: hasFile ? sizeOnDisk : undefined,
+    runtimeMinutes: mapOptionalNumber(obj.runtime),
     audioLanguageCodes: hasFile ? audioLanguageCodes : [],
     subtitleLanguageCodes: hasFile ? subtitleLanguageCodes : [],
   };
 };
 
-export type EpisodeFileLanguageIndex = ReadonlyMap<
-  number,
-  {
-    readonly audioLanguageCodes: readonly string[];
-    readonly subtitleLanguageCodes: readonly string[];
-  }
->;
+export type EpisodeFileLanguageIndex = ReadonlyMap<number, EpisodeFileMeta>;
 
-/** Build episodeId → language codes from `/api/v3/episodefile` payloads. */
+/**
+ * Build episodeFileId → file meta from `/api/v3/episodefile` payloads.
+ * Sonarr EpisodeFileResource has `id` (not `episodeId`); episodes link via `episodeFileId`.
+ */
 export const indexEpisodeFileLanguages = (
   rawFiles: readonly unknown[],
 ): EpisodeFileLanguageIndex => {
-  const index = new Map<
-    number,
-    {
-      readonly audioLanguageCodes: readonly string[];
-      readonly subtitleLanguageCodes: readonly string[];
-    }
-  >();
+  const index = new Map<number, EpisodeFileMeta>();
   for (const raw of rawFiles) {
     const obj = asRecord(raw);
     if (!obj) continue;
-    const episodeId = Number(obj.episodeId);
-    if (!Number.isFinite(episodeId) || episodeId <= 0) continue;
+    const episodeFileId = Number(obj.id);
+    if (!Number.isFinite(episodeFileId) || episodeFileId <= 0) continue;
     const codes = mapMediaInfoLanguageCodes(obj.mediaInfo, obj.languages);
-    index.set(episodeId, codes);
+    index.set(episodeFileId, {
+      audioLanguageCodes: codes.audioLanguageCodes,
+      subtitleLanguageCodes: codes.subtitleLanguageCodes,
+      fileQuality: mapEpisodeFileQuality(obj),
+      sizeOnDisk: mapOptionalNumber(obj.size),
+    });
   }
   return index;
 };

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import {
     classifySeries,
     type ArrAddDefaults,
+    type Episode,
     type QualityProfileOption,
     type ReleaseOffer,
     type RootFolderOption,
@@ -75,6 +76,31 @@ export const useSeriesCast = (id: number) => {
       return sonarr.getSeriesCredits(id);
     },
     enabled: Boolean(sonarr) && Number.isFinite(id) && id > 0,
+  });
+};
+
+export const useEpisodeGuestStars = (
+  seriesId: number,
+  episode: { readonly id: number; readonly seasonNumber: number; readonly episodeNumber: number } | undefined,
+) => {
+  const { sonarr } = useArrClients();
+  const enabled =
+    Boolean(sonarr) &&
+    episode !== undefined &&
+    Number.isFinite(seriesId) &&
+    seriesId > 0;
+
+  return useQuery({
+    queryKey: queryKeys.series.guestStars(seriesId, episode?.id ?? 0),
+    queryFn: () => {
+      if (!sonarr || !episode) throw new Error("Sonarr is not configured.");
+      return sonarr.getEpisodeGuestStars(
+        seriesId,
+        episode.seasonNumber,
+        episode.episodeNumber,
+      );
+    },
+    enabled,
   });
 };
 
@@ -231,6 +257,55 @@ export const useUpdateSeriesMonitored = () => {
     onSuccess: async (series) => {
       queryClient.setQueryData(queryKeys.series.detail(series.id), series);
       await queryClient.invalidateQueries({ queryKey: queryKeys.series.all });
+    },
+  });
+};
+
+export const useUpdateEpisodeMonitored = () => {
+  const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      seriesId: number;
+      episodeId: number;
+      monitored: boolean;
+    }): Promise<Episode> => {
+      if (!sonarr) throw new Error("Sonarr is not configured.");
+      return sonarr.updateEpisode(input.episodeId, {
+        monitored: input.monitored,
+      });
+    },
+    onSuccess: async (_episode, input) => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.series.seasons(input.seriesId),
+      });
+    },
+  });
+};
+
+export const useDeleteEpisodeFile = () => {
+  const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      seriesId: number;
+      episodeFileId: number;
+    }): Promise<void> => {
+      if (!sonarr) throw new Error("Sonarr is not configured.");
+      return sonarr.deleteEpisodeFile(input.episodeFileId);
+    },
+    onSuccess: async (_void, input) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.series.seasons(input.seriesId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.series.detail(input.seriesId),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.series.all }),
+      ]);
     },
   });
 };

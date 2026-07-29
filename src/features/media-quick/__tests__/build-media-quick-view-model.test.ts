@@ -62,6 +62,27 @@ it("queue-only download opens Téléchargements", () => {
   );
 });
 
+it("episode selection opens episode detail", () => {
+  const dest = resolvePrimaryDestination({
+    kind: "episode",
+    key: "episode-21",
+    title: "Pilot",
+    year: 2020,
+    posterUrl: undefined,
+    seriesId: 5,
+    episodeId: 21,
+    seasonNumber: 1,
+    episodeNumber: 1,
+  });
+  expect(dest).toEqual({
+    href: {
+      pathname: "/(tabs)/series/[id]/episode/[episodeId]",
+      params: { id: "5", episodeId: "21" },
+    },
+    ctaKey: "mediaQuick.seeDetail",
+  });
+});
+
 it("dispo film shows glanceable chips and detail", () => {
   const vm = buildMediaQuickViewModel({
     kind: "movie",

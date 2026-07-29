@@ -6,10 +6,11 @@ import { mapRatings, formatRatingLabel } from "../mappers/ratings";
 import { setI18nLocale } from "@/i18n";
 import { computeProgress, mapQueueItem } from "../mappers/queue";
 import {
-    groupEpisodesIntoSeasons,
-    mapSeriesCandidate,
-    mapSonarrEpisode,
-    mapSonarrSeries,
+  groupEpisodesIntoSeasons,
+  indexEpisodeFileLanguages,
+  mapSeriesCandidate,
+  mapSonarrEpisode,
+  mapSonarrSeries,
 } from "../mappers/series";
 
 describe("mappers", () => {
@@ -364,6 +365,39 @@ describe("mappers", () => {
     expect(missing.availability).toBe("aTelecharger");
     expect(available.availability).toBe("dispo");
     expect(available.title).toBe("Return");
+  });
+
+  it("indexes episodefile languages by file id for episodeFileId join", () => {
+    const index = indexEpisodeFileLanguages([
+      {
+        id: 9001,
+        seriesId: 5,
+        mediaInfo: { audioLanguages: "French", subtitles: "English" },
+      },
+      { id: 0, mediaInfo: { audioLanguages: "German" } },
+      { notAnObject: true },
+    ]);
+    expect(index.get(9001)).toEqual({
+      audioLanguageCodes: ["FR"],
+      subtitleLanguageCodes: ["EN"],
+      fileQuality: undefined,
+      sizeOnDisk: undefined,
+    });
+    expect(index.has(0)).toBe(false);
+    const episode = mapSonarrEpisode(
+      {
+        id: 21,
+        seasonNumber: 1,
+        episodeNumber: 1,
+        title: "Pilot",
+        hasFile: true,
+        monitored: true,
+      },
+      new Date("2026-07-15T12:00:00Z"),
+      index.get(9001),
+    );
+    expect(episode.audioLanguageCodes).toEqual(["FR"]);
+    expect(episode.subtitleLanguageCodes).toEqual(["EN"]);
   });
 
   it("groups episodes into sorted seasons", () => {
