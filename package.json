@@ -52,7 +52,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "commitlint": "commitlint --edit",
+    "lint:commits": "commitlint --edit",
     "expo:doctor": "npx expo-doctor",
     "test": "jest",
     "test:ci": "jest --ci --coverage=false",
