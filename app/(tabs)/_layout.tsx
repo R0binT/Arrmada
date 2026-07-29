@@ -1,7 +1,13 @@
 import { Tabs, router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import type { ComponentProps } from "react";
-import { Platform, StyleSheet, type ColorValue } from "react-native";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  type ColorValue,
+  type PressableProps,
+} from "react-native";
 
 import { useI18n } from "@/i18n";
 import { colors, fonts } from "@/lib/theme";
@@ -15,6 +21,27 @@ type TabIconProps = {
   readonly name: SymbolName;
   readonly size: number;
 };
+
+/** Contained Android ripple — Expo defaults to borderless, which overflows the tab bar. */
+const TAB_BAR_RIPPLE =
+  Platform.OS === "android"
+    ? { borderless: false as const, color: "rgba(244, 240, 232, 0.12)" }
+    : undefined;
+
+const TabBarButton = ({
+  android_ripple: _ignoredRipple,
+  style,
+  ...props
+}: PressableProps) => (
+  <Pressable
+    {...props}
+    android_ripple={TAB_BAR_RIPPLE}
+    style={(state) => [
+      styles.tabBarButton,
+      typeof style === "function" ? style(state) : style,
+    ]}
+  />
+);
 
 const TabIcon = ({ color, focused, name, size }: TabIconProps) => (
   <SymbolView
@@ -40,6 +67,8 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
+        tabBarButton: TabBarButton,
+        tabBarItemStyle: styles.tabBarItem,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: [styles.tabBarLabel, { fontSize: fontSize(11) }],
       }}
@@ -175,9 +204,16 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.bgElevated,
     borderTopColor: colors.borderSubtle,
+    overflow: "hidden",
     ...(Platform.OS === "ios"
       ? { borderTopWidth: StyleSheet.hairlineWidth }
       : {}),
+  },
+  tabBarItem: {
+    overflow: "hidden",
+  },
+  tabBarButton: {
+    flex: 1,
   },
   tabBarLabel: {
     fontFamily: fonts.uiMedium,
