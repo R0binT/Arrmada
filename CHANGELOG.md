@@ -5,6 +5,18 @@ All notable changes to Arrmada are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/R0binT/Arrmada/compare/v1.2.0...v1.3.0) (2026-07-29)
+
+
+### Added
+
+* episode detail page and media language chips ([#59](https://github.com/R0binT/Arrmada/issues/59)) ([ae4d2b1](https://github.com/R0binT/Arrmada/commit/ae4d2b1f423c510a7e805d178590b16ace02eadc))
+
+
+### Fixed
+
+* **ci:** chain APK publish after release-please and use v* tags ([#58](https://github.com/R0binT/Arrmada/issues/58)) ([a7226f0](https://github.com/R0binT/Arrmada/commit/a7226f01c127816cb929396e389c4ae9ed5bce97))
+
 ## [1.2.0](https://github.com/R0binT/Arrmada/compare/arrmada-v1.1.5...arrmada-v1.2.0) (2026-07-29)
 
 
