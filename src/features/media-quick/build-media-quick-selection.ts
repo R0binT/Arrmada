@@ -49,6 +49,10 @@ export const selectionFromMovie = (movie: Movie): MediaQuickSelection => ({
   movieId: movie.id,
   availability: classifyMovie(movie),
   fileQuality: movie.hasFile ? movie.fileQuality : undefined,
+  audioLanguageCodes: movie.hasFile ? movie.audioLanguageCodes : undefined,
+  subtitleLanguageCodes: movie.hasFile
+    ? movie.subtitleLanguageCodes
+    : undefined,
   genres: movie.genres,
   runtimeMinutes: movie.runtimeMinutes,
   networkOrStudio: movie.studio,
@@ -115,11 +119,18 @@ export const selectionFromEpisode = (
     year: series.year > 0 ? series.year : undefined,
     posterUrl: series.posterUrl,
     seriesId: series.id,
+    episodeId: episode.id,
     subtitle: series.title,
     seasonNumber: episode.seasonNumber,
     episodeNumber: episode.episodeNumber,
     airDate: episode.airDateUtc,
     availability: episode.availability,
+    audioLanguageCodes: episode.hasFile
+      ? episode.audioLanguageCodes
+      : undefined,
+    subtitleLanguageCodes: episode.hasFile
+      ? episode.subtitleLanguageCodes
+      : undefined,
     genres: series.genres,
     runtimeMinutes: series.runtimeMinutes,
     networkOrStudio: series.network,
@@ -184,6 +195,7 @@ export const selectionFromUpcoming = (
       year: series.year > 0 ? series.year : undefined,
       posterUrl: item.posterUrl ?? series.posterUrl,
       seriesId: item.seriesId,
+      episodeId: item.id,
       availability: "aVenir",
       subtitle: series.title,
       seasonNumber: item.seasonNumber,
@@ -203,6 +215,7 @@ export const selectionFromUpcoming = (
     year: undefined,
     posterUrl: item.posterUrl,
     seriesId: item.seriesId,
+    episodeId: item.id,
     availability: "aVenir",
     subtitle: item.seriesTitle.length > 0 ? item.seriesTitle : item.subtitle,
     seasonNumber: item.seasonNumber,

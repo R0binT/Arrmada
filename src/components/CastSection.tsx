@@ -9,6 +9,8 @@ import { Text } from "@/ui/Text";
 
 type CastSectionProps = {
   readonly members: readonly CastMember[];
+  /** Section heading; defaults to detail.cast. */
+  readonly title?: string;
 };
 
 const initialForName = (name: string): string => {
@@ -21,15 +23,16 @@ const initialForName = (name: string): string => {
  * Renders up to six cast members as a horizontal rail of circular portraits.
  * Returns null when the list is empty.
  */
-export const CastSection = ({ members }: CastSectionProps) => {
+export const CastSection = ({ members, title }: CastSectionProps) => {
   const { space, scale } = useUiSize();
   if (members.length === 0) return null;
 
   const avatarSize = Math.round(64 * scale);
+  const heading = title ?? t("detail.cast");
 
   return (
     <View style={{ gap: space.sm }}>
-      <Text role="headline">{t("detail.cast")}</Text>
+      <Text role="headline">{heading}</Text>
       <ScrollView
         contentContainerStyle={[styles.row, { gap: space.sm }]}
         horizontal

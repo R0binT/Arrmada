@@ -1,6 +1,6 @@
 import { createArrHttp } from "../http";
 import { mapCalendarEpisode } from "../mappers/calendar";
-import { mapTvMazeMediaCredits } from "../mappers/cast";
+import { mapTvMazeCast, mapTvMazeMediaCredits } from "../mappers/cast";
 import { mapHealth } from "../mappers/health";
 import {
   mapQualityProfileOption,
@@ -10,6 +10,7 @@ import { mapQueueItem } from "../mappers/queue";
 import { mapReleaseOffer } from "../mappers/release";
 import {
   groupEpisodesIntoSeasons,
+  indexEpisodeFileLanguages,
   mapSeriesCandidate,
   mapSonarrEpisode,
   mapSonarrSeries,
@@ -17,6 +18,8 @@ import {
 import type {
   ArrAddDefaults,
   CalendarEpisode,
+  CastMember,
+  Episode,
   MediaCredits,
   QueueItem,
   QueuePriority,
@@ -83,11 +86,51 @@ export const createSonarrClient = (baseUrl: string, apiKey: string) => {
         : [];
       return mapTvMazeMediaCredits(castRaw, crewRaw);
     },
-    getSeasons: async (seriesId: number): Promise<Season[]> => {
-      const raw = await http.getJson<unknown[]>(
-        `/api/v3/episode?seriesId=${encodeURIComponent(String(seriesId))}`,
+    getEpisodeGuestStars: async (
+      seriesId: number,
+      seasonNumber: number,
+      episodeNumber: number,
+    ): Promise<readonly CastMember[]> => {
+      const seriesRaw = await http.getJson<unknown>(
+        `/api/v3/series/${seriesId}`,
       );
-      const episodes = raw.map((item) => mapSonarrEpisode(item));
+      const series = mapSonarrSeries(seriesRaw, baseUrl);
+      if (series.tvMazeId === undefined) return [];
+      const showId = encodeURIComponent(String(series.tvMazeId));
+      const season = encodeURIComponent(String(seasonNumber));
+      const number = encodeURIComponent(String(episodeNumber));
+      const response = await fetch(
+        `https://api.tvmaze.com/shows/${showId}/episodebynumber?season=${season}&number=${number}&embed=guestcast`,
+      );
+      if (response.status === 404) return [];
+      if (!response.ok) {
+        throw new Error(
+          `TVMaze episode guest cast request failed (${response.status}).`,
+        );
+      }
+      const raw: unknown = await response.json();
+      const obj = asRecord(raw);
+      const embedded = asRecord(obj?._embedded);
+      return mapTvMazeCast(embedded?.guestcast ?? []);
+    },
+    getSeasons: async (seriesId: number): Promise<Season[]> => {
+      const [rawEpisodes, rawFiles] = await Promise.all([
+        http.getJson<unknown[]>(
+          `/api/v3/episode?seriesId=${encodeURIComponent(String(seriesId))}`,
+        ),
+        http.getJson<unknown[]>(
+          `/api/v3/episodefile?seriesId=${encodeURIComponent(String(seriesId))}`,
+        ),
+      ]);
+      const languageIndex = indexEpisodeFileLanguages(rawFiles);
+      const episodes = rawEpisodes.map((item) => {
+        const obj = asRecord(item);
+        const episodeFileId = obj ? Number(obj.episodeFileId) : NaN;
+        const langs = Number.isFinite(episodeFileId)
+          ? languageIndex.get(episodeFileId)
+          : undefined;
+        return mapSonarrEpisode(item, new Date(), langs);
+      });
       return groupEpisodesIntoSeasons(episodes);
     },
     lookup: async (term: string): Promise<Series[]> => {
@@ -194,6 +237,23 @@ export const createSonarrClient = (baseUrl: string, apiKey: string) => {
       });
       return mapSonarrSeries(updated, baseUrl);
     },
+    updateEpisode: async (
+      id: number,
+      changes: { readonly monitored: boolean },
+    ): Promise<Episode> => {
+      const raw = await http.getJson<unknown>(`/api/v3/episode/${id}`);
+      const payload = asRecord(raw);
+      if (!payload) {
+        throw new Error("Episode not found.");
+      }
+      const updated = await http.putJson<unknown>(`/api/v3/episode/${id}`, {
+        ...payload,
+        monitored: changes.monitored,
+      });
+      return mapSonarrEpisode(updated);
+    },
+    deleteEpisodeFile: (episodeFileId: number): Promise<void> =>
+      http.deleteJson<void>(`/api/v3/episodefile/${episodeFileId}`),
     deleteSeries: (
       id: number,
       options: { readonly deleteFiles: boolean },

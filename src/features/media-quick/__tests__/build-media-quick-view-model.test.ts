@@ -62,6 +62,27 @@ it("queue-only download opens Téléchargements", () => {
   );
 });
 
+it("episode selection opens episode detail", () => {
+  const dest = resolvePrimaryDestination({
+    kind: "episode",
+    key: "episode-21",
+    title: "Pilot",
+    year: 2020,
+    posterUrl: undefined,
+    seriesId: 5,
+    episodeId: 21,
+    seasonNumber: 1,
+    episodeNumber: 1,
+  });
+  expect(dest).toEqual({
+    href: {
+      pathname: "/(tabs)/series/[id]/episode/[episodeId]",
+      params: { id: "5", episodeId: "21" },
+    },
+    ctaKey: "mediaQuick.seeDetail",
+  });
+});
+
 it("dispo film shows glanceable chips and detail", () => {
   const vm = buildMediaQuickViewModel({
     kind: "movie",
@@ -204,5 +225,22 @@ it("series shows episode progress and network", () => {
   expect(vm.subtitle).toBe("2022");
   expect(chipLabels(vm.chipRows)).toEqual(
     expect.arrayContaining(["20/20 épisodes", "Crime", "HBO"]),
+  );
+});
+
+it("includes audio and subtitle codes for downloaded movies", () => {
+  const vm = buildMediaQuickViewModel({
+    kind: "movie",
+    key: "movie-1",
+    title: "Night Harbor",
+    year: 2024,
+    posterUrl: undefined,
+    availability: "dispo",
+    fileQuality: "Bluray-1080p",
+    audioLanguageCodes: ["FR", "EN"],
+    subtitleLanguageCodes: ["EN"],
+  });
+  expect(chipLabels(vm.chipRows)).toEqual(
+    expect.arrayContaining(["Bluray-1080p", "FR", "EN", "ST EN"]),
   );
 });

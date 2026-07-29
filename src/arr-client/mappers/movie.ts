@@ -5,6 +5,7 @@ import type {
   QualityProfileOption,
   RootFolderOption,
 } from "../types";
+import { mapMediaInfoLanguageCodes } from "./media-info-languages";
 import { mapRatings } from "./ratings";
 
 type ImageLike = {
@@ -103,6 +104,11 @@ export const mapRadarrMovie = (raw: unknown, baseUrl: string): Movie => {
         : undefined;
 
   const certification = mapOptionalString(obj.certification);
+  const movieFile = asRecord(obj.movieFile);
+  const languageCodes = mapMediaInfoLanguageCodes(
+    movieFile?.mediaInfo,
+    movieFile?.languages,
+  );
 
   return {
     id: Number(obj.id),
@@ -116,6 +122,8 @@ export const mapRadarrMovie = (raw: unknown, baseUrl: string): Movie => {
     overview: String(obj.overview ?? ""),
     qualityProfileId: mapQualityProfileId(obj.qualityProfileId),
     fileQuality: mapFileQuality(obj.movieFile),
+    audioLanguageCodes: languageCodes.audioLanguageCodes,
+    subtitleLanguageCodes: languageCodes.subtitleLanguageCodes,
     sizeOnDisk: mapOptionalNumber(obj.sizeOnDisk),
     genres: mapStringArray(obj.genres),
     runtimeMinutes: mapOptionalNumber(obj.runtime),

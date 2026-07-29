@@ -1,13 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { openSettingsServices } from "@/features/settings/open-settings";
-import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Switch, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, StyleSheet, Switch, View } from "react-native";
 import Animated from "react-native-reanimated";
 
-import {
-  canOfferDownload,
-  classifyMovie,
-} from "@/arr-client";
+import { canOfferDownload } from "@/arr-client";
 import { availabilityChipTone } from "@/features/library/availability-chip-tone";
 import { availabilityLabel, t } from "@/i18n";
 import {
@@ -21,28 +18,25 @@ import {
   IconButton,
   MediaLanguageChipRows,
   MediaMetaBlock,
-  RatingsRow,
   Screen,
 } from "@/components";
-import {
-  confirmRetirer,
-  deleteFilesForRetirerAction,
-  type RetirerAction,
-} from "@/features/library/retirer-action";
-import {
-  getErrorMessage,
-  useDeleteMovie,
-  useGrabMovieRelease,
-  useMovie,
-  useMovieCast,
-  useUpdateMovieMonitored,
-} from "@/features/movies/use-movies";
+import { formatEpisodeCode } from "@/features/media-quick/format-media-meta";
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
   finishPendingAudioChoice,
   smartGrabReleases,
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
+import {
+  getErrorMessage,
+  useDeleteEpisodeFile,
+  useEpisodeGuestStars,
+  useGrabSeriesRelease,
+  useSeries,
+  useSeriesCast,
+  useSeriesSeasons,
+  useUpdateEpisodeMonitored,
+} from "@/features/series/use-series";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
@@ -55,22 +49,36 @@ import {
   useReduceMotion,
 } from "@/ui";
 
-export default function MovieDetailScreen() {
+export default function EpisodeDetailScreen() {
   const { space: scaledSpace } = useUiSize();
   const reduceMotion = useReduceMotion();
-  const { id: idParam } = useLocalSearchParams<{ id: string }>();
-  const movieId = Number(idParam);
-  const { radarr } = useArrClients();
-  const movieQuery = useMovie(movieId);
-  const castQuery = useMovieCast(movieId);
-  const grabMutation = useGrabMovieRelease();
-  const monitoredMutation = useUpdateMovieMonitored();
-  const deleteMutation = useDeleteMovie();
+  const { id: idParam, episodeId: episodeIdParam } = useLocalSearchParams<{
+    id: string;
+    episodeId: string;
+  }>();
+  const seriesId = Number(idParam);
+  const episodeId = Number(episodeIdParam);
+  const { sonarr } = useArrClients();
+  const seriesQuery = useSeries(seriesId);
+  const castQuery = useSeriesCast(seriesId);
+  const seasonsQuery = useSeriesSeasons(seriesId);
+  const grabMutation = useGrabSeriesRelease();
+  const monitoredMutation = useUpdateEpisodeMonitored();
+  const deleteFileMutation = useDeleteEpisodeFile();
   const [toast, setToast] = useState<string | undefined>();
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<
     PendingAudioChoice | undefined
   >();
+
+  const episode = useMemo(() => {
+    if (!seasonsQuery.data) return undefined;
+    return seasonsQuery.data
+      .flatMap((season) => season.episodes)
+      .find((item) => item.id === episodeId);
+  }, [episodeId, seasonsQuery.data]);
+
+  const guestQuery = useEpisodeGuestStars(seriesId, episode);
 
   useEffect(() => {
     if (!toast) return;
@@ -87,13 +95,17 @@ export default function MovieDetailScreen() {
   }, []);
 
   const handleDownload = useCallback(async () => {
-    if (!radarr) {
-      setToast(t("detail.radarrMissing"));
+    if (!sonarr) {
+      setToast(t("detail.sonarrMissing"));
+      return;
+    }
+    if (!episode) {
+      setToast(t("detail.episodeMissing"));
       return;
     }
     setDownloadBusy(true);
     try {
-      const releases = await radarr.getMovieReleases(movieId);
+      const releases = await sonarr.getEpisodeReleases(episode.id);
       const outcome = await smartGrabReleases(releases, (release) =>
         grabMutation.mutateAsync(release),
       );
@@ -111,7 +123,7 @@ export default function MovieDetailScreen() {
     } finally {
       setDownloadBusy(false);
     }
-  }, [grabMutation, movieId, radarr]);
+  }, [episode, grabMutation, sonarr]);
 
   const handleAudioChoice = useCallback(
     async (preference: AudioPreference) => {
@@ -137,7 +149,8 @@ export default function MovieDetailScreen() {
     async (nextMonitored: boolean) => {
       try {
         await monitoredMutation.mutateAsync({
-          movieId,
+          seriesId,
+          episodeId,
           monitored: nextMonitored,
         });
         setToast(nextMonitored ? t("detail.suiviOn") : t("detail.suiviOff"));
@@ -145,32 +158,43 @@ export default function MovieDetailScreen() {
         setToast(getErrorMessage(error));
       }
     },
-    [movieId, monitoredMutation],
+    [episodeId, monitoredMutation, seriesId],
   );
 
-  const handleRetirerAction = useCallback(
-    async (action: RetirerAction) => {
-      try {
-        await deleteMutation.mutateAsync({
-          movieId,
-          deleteFiles: deleteFilesForRetirerAction(action),
-        });
-        router.replace("/(tabs)/movies");
-      } catch (error) {
-        setToast(getErrorMessage(error));
-      }
-    },
-    [deleteMutation, movieId],
-  );
+  const handleDeleteFile = useCallback(() => {
+    const fileId = episode?.episodeFileId;
+    if (fileId === undefined || !episode) return;
+    const title =
+      episode.title.trim().length > 0
+        ? episode.title
+        : t("detail.thisEpisode");
+    Alert.alert(
+      t("detail.deleteEpisodeFileTitle"),
+      t("detail.deleteEpisodeFileMessage", { title }),
+      [
+        { text: t("action.cancel"), style: "cancel" },
+        {
+          text: t("detail.deleteEpisodeFile"),
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              try {
+                await deleteFileMutation.mutateAsync({
+                  seriesId,
+                  episodeFileId: fileId,
+                });
+                setToast(t("detail.deleteEpisodeFileDone"));
+              } catch (error) {
+                setToast(getErrorMessage(error));
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }, [deleteFileMutation, episode, seriesId]);
 
-  const handleRetirer = useCallback(() => {
-    const title = movieQuery.data?.title ?? "ce film";
-    confirmRetirer(title, (action) => {
-      void handleRetirerAction(action);
-    });
-  }, [handleRetirerAction, movieQuery.data?.title]);
-
-  if (movieQuery.isLoading) {
+  if (seriesQuery.isLoading || seasonsQuery.isLoading) {
     return (
       <Screen>
         <DetailLoadingSkeleton
@@ -181,7 +205,7 @@ export default function MovieDetailScreen() {
     );
   }
 
-  if (movieQuery.isError || !movieQuery.data) {
+  if (seriesQuery.isError || !seriesQuery.data) {
     return (
       <Screen>
         <View style={{ marginBottom: scaledSpace.md }}>
@@ -192,23 +216,64 @@ export default function MovieDetailScreen() {
           />
         </View>
         <ErrorBanner
-          message={getErrorMessage(movieQuery.error)}
-          onRetry={() => void movieQuery.refetch()}
+          message={getErrorMessage(seriesQuery.error)}
+          onRetry={() => void seriesQuery.refetch()}
           onSettings={handleOpenSettings}
         />
       </Screen>
     );
   }
 
-  const movie = movieQuery.data;
-  const movieAvailability = classifyMovie(movie);
-  const statusLabel = availabilityLabel(movieAvailability);
-  const showDownload = canOfferDownload(movieAvailability);
+  if (seasonsQuery.isError) {
+    return (
+      <Screen>
+        <View style={{ marginBottom: scaledSpace.md }}>
+          <IconButton
+            accessibilityLabel={t("action.back")}
+            icon="←"
+            onPress={handleBack}
+          />
+        </View>
+        <ErrorBanner
+          message={getErrorMessage(seasonsQuery.error)}
+          onRetry={() => void seasonsQuery.refetch()}
+          onSettings={handleOpenSettings}
+        />
+      </Screen>
+    );
+  }
+
+  if (!episode) {
+    return (
+      <Screen>
+        <View style={{ marginBottom: scaledSpace.md }}>
+          <IconButton
+            accessibilityLabel={t("action.back")}
+            icon="←"
+            onPress={handleBack}
+          />
+        </View>
+        <ErrorBanner
+          message={t("detail.episodeMissing")}
+          onRetry={() => void seasonsQuery.refetch()}
+          onSettings={handleOpenSettings}
+        />
+      </Screen>
+    );
+  }
+
+  const series = seriesQuery.data;
+  const episodeCode =
+    formatEpisodeCode(episode.seasonNumber, episode.episodeNumber) ??
+    t("detail.fallbackEpisode");
+  const episodeTitle =
+    episode.title.trim().length > 0 ? episode.title : episodeCode;
+  const showDownload = canOfferDownload(episode.availability);
   const actionsBusy =
     downloadBusy ||
     grabMutation.isPending ||
     monitoredMutation.isPending ||
-    deleteMutation.isPending;
+    deleteFileMutation.isPending;
 
   return (
     <Screen scroll>
@@ -216,7 +281,7 @@ export default function MovieDetailScreen() {
         actions={
           showDownload ? (
             <Button
-              accessibilityLabel={t("detail.downloadMovieA11y")}
+              accessibilityLabel={t("detail.downloadEpisodeA11y")}
               disabled={actionsBusy}
               loading={downloadBusy}
               onPress={() => void handleDownload()}
@@ -229,63 +294,59 @@ export default function MovieDetailScreen() {
         backLabel={t("action.back")}
         meta={
           <View style={[styles.metaRow, { gap: scaledSpace.sm }]}>
-            {movie.year ? (
-              <Text role="label" tone="muted">
-                {movie.year}
-              </Text>
-            ) : null}
-            <Chip tone={availabilityChipTone(movieAvailability)}>
-              {statusLabel}
+            <Text role="label" tone="muted">
+              {episodeCode}
+            </Text>
+            <Chip tone={availabilityChipTone(episode.availability)}>
+              {availabilityLabel(episode.availability)}
             </Chip>
           </View>
         }
         onBack={handleBack}
-        posterUrl={movie.posterUrl}
-        title={movie.title}
+        posterUrl={series.posterUrl}
+        subtitle={
+          <Text role="label" tone="muted">
+            {series.title}
+          </Text>
+        }
+        title={episodeTitle}
       />
 
       <Animated.View
         entering={createFadeSlideUp(reduceMotion, 0)}
         style={{ gap: scaledSpace.sm, marginBottom: scaledSpace.md }}
       >
-        <RatingsRow ratings={movie.ratings} />
         <MediaMetaBlock
-          added={movie.added}
-          certification={movie.certification}
-          collectionTitle={movie.collectionTitle}
+          added={undefined}
           fileQuality={
-            movieAvailability === "dispo" ? movie.fileQuality : undefined
+            episode.availability === "dispo" ? episode.fileQuality : undefined
           }
-          genres={movie.genres}
-          networkOrStudio={movie.studio}
-          originalLanguage={movie.originalLanguage}
-          releaseDate={
-            movie.digitalRelease ?? movie.physicalRelease ?? movie.inCinemas
-          }
-          runtimeMinutes={movie.runtimeMinutes}
+          genres={series.genres}
+          networkOrStudio={series.network}
+          releaseDate={episode.airDateUtc}
+          runtimeMinutes={episode.runtimeMinutes ?? series.runtimeMinutes}
           sizeOnDisk={
-            movieAvailability === "dispo" ? movie.sizeOnDisk : undefined
-          }
-          statusLabel={
-            movie.statusSummary.trim().length > 0
-              ? movie.statusSummary
-              : undefined
+            episode.availability === "dispo" ? episode.sizeOnDisk : undefined
           }
         />
-        {movieAvailability === "dispo" ? (
+        {episode.hasFile ? (
           <MediaLanguageChipRows
-            audioLanguageCodes={movie.audioLanguageCodes}
-            subtitleLanguageCodes={movie.subtitleLanguageCodes}
+            audioLanguageCodes={episode.audioLanguageCodes}
+            subtitleLanguageCodes={episode.subtitleLanguageCodes}
           />
         ) : null}
-        {movie.overview.trim().length > 0 ? (
+        {episode.overview.trim().length > 0 ? (
           <Text role="body" tone="muted">
-            {movie.overview}
+            {episode.overview}
           </Text>
         ) : null}
+        <CastSection
+          members={guestQuery.data ?? []}
+          title={t("detail.guestStars")}
+        />
         <CrewSection members={castQuery.data?.crew ?? []} />
         <CastSection members={castQuery.data?.cast ?? []} />
-        <ExternalLinksRow ids={movie.externalIds} kind="movie" />
+        <ExternalLinksRow ids={series.externalIds} kind="series" />
       </Animated.View>
 
       <Animated.View
@@ -298,54 +359,50 @@ export default function MovieDetailScreen() {
           style={{ padding: scaledSpace.sm }}
           tone="raised"
         >
-          <View style={styles.suiviRow}>
+          <View style={[styles.suiviRow, { gap: scaledSpace.sm }]}>
             <Text role="label">{t("detail.suivi")}</Text>
             <Switch
               accessibilityLabel={
-                movie.monitored
+                episode.monitored
                   ? t("detail.disableSuivi")
                   : t("detail.enableSuivi")
               }
-              accessibilityRole="switch"
-              disabled={monitoredMutation.isPending || deleteMutation.isPending}
+              disabled={actionsBusy}
               onValueChange={(value) => void handleToggleSuivi(value)}
-              trackColor={{ false: colors.surface, true: colors.accent }}
-              value={movie.monitored}
+              value={episode.monitored}
             />
           </View>
         </Surface>
-
-        <Button
-          accessibilityLabel={t("detail.removeMovieA11y")}
-          disabled={actionsBusy}
-          loading={deleteMutation.isPending}
-          onPress={handleRetirer}
-          size="compact"
-          style={styles.fullWidthButton}
-          variant="danger"
-        >
-          {deleteMutation.isPending ? t("action.removing") : t("action.remove")}
-        </Button>
+        {episode.hasFile && episode.episodeFileId !== undefined ? (
+          <Button
+            accessibilityLabel={t("detail.deleteEpisodeFileA11y")}
+            disabled={actionsBusy}
+            loading={deleteFileMutation.isPending}
+            onPress={handleDeleteFile}
+            style={styles.fullWidthButton}
+            variant="danger"
+          >
+            {t("detail.deleteEpisodeFile")}
+          </Button>
+        ) : null}
       </Animated.View>
 
       {toast ? (
-        <Surface
-          radius="md"
+        <View
+          pointerEvents="none"
           style={[
             styles.toast,
             {
+              backgroundColor: colors.surfaceRaised,
               bottom: scaledSpace.lg,
-              marginTop: scaledSpace.lg,
-              paddingHorizontal: scaledSpace.lg,
-              paddingVertical: scaledSpace.md,
+              borderRadius: 12,
+              paddingHorizontal: scaledSpace.md,
+              paddingVertical: scaledSpace.sm,
             },
           ]}
-          tone="elevated"
         >
-          <View accessibilityLiveRegion="polite">
-            <Text role="label">{toast}</Text>
-          </View>
-        </Surface>
+          <Text role="caption">{toast}</Text>
+        </View>
       ) : null}
 
       <AudioChoiceSheet

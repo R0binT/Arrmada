@@ -185,29 +185,50 @@ describe("createSonarrClient", () => {
   });
 
   it("fetches seasons grouped from episode payloads", async () => {
-    globalThis.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [
-        {
-          id: 21,
-          seasonNumber: 1,
-          episodeNumber: 1,
-          title: "Pilot",
-          airDateUtc: "2020-01-01T00:00:00Z",
-          hasFile: true,
-          monitored: true,
-        },
-        {
-          id: 22,
-          seasonNumber: 1,
-          episodeNumber: 2,
-          title: "Next",
-          airDateUtc: "2099-01-01T00:00:00Z",
-          hasFile: false,
-          monitored: true,
-        },
-      ],
+    globalThis.fetch = jest.fn().mockImplementation(async (url: string) => {
+      if (String(url).includes("/episodefile?")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [
+            {
+              id: 9001,
+              seriesId: 5,
+              size: 1_500_000_000,
+              quality: { quality: { name: "WEBDL-1080p" } },
+              mediaInfo: {
+                audioLanguages: "English",
+                subtitles: "French",
+              },
+            },
+          ],
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: 21,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: "Pilot",
+            airDateUtc: "2020-01-01T00:00:00Z",
+            hasFile: true,
+            episodeFileId: 9001,
+            monitored: true,
+          },
+          {
+            id: 22,
+            seasonNumber: 1,
+            episodeNumber: 2,
+            title: "Next",
+            airDateUtc: "2099-01-01T00:00:00Z",
+            hasFile: false,
+            monitored: true,
+          },
+        ],
+      };
     }) as unknown as typeof fetch;
 
     const client = createSonarrClient("http://192.168.1.10:8989", "k");
@@ -219,11 +240,22 @@ describe("createSonarrClient", () => {
         headers: expect.objectContaining({ "X-Api-Key": "k" }),
       }),
     );
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://192.168.1.10:8989/api/v3/episodefile?seriesId=5",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "X-Api-Key": "k" }),
+      }),
+    );
     expect(seasons).toHaveLength(1);
     expect(seasons[0]?.seasonNumber).toBe(1);
     expect(seasons[0]?.episodes).toHaveLength(2);
     expect(seasons[0]?.episodes[0]?.availability).toBe("dispo");
+    expect(seasons[0]?.episodes[0]?.audioLanguageCodes).toEqual(["EN"]);
+    expect(seasons[0]?.episodes[0]?.subtitleLanguageCodes).toEqual(["FR"]);
+    expect(seasons[0]?.episodes[0]?.fileQuality).toBe("WEBDL-1080p");
+    expect(seasons[0]?.episodes[0]?.sizeOnDisk).toBe(1_500_000_000);
     expect(seasons[0]?.episodes[1]?.availability).toBe("aVenir");
+    expect(seasons[0]?.episodes[1]?.audioLanguageCodes).toEqual([]);
   });
 
   it("maps calendar episodes", async () => {

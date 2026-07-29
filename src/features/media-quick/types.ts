@@ -20,8 +20,11 @@ export type MediaQuickSelection = {
   readonly posterUrl: string | undefined;
   readonly movieId?: number;
   readonly seriesId?: number;
+  readonly episodeId?: number;
   readonly availability?: Availability;
   readonly fileQuality?: string;
+  readonly audioLanguageCodes?: readonly string[];
+  readonly subtitleLanguageCodes?: readonly string[];
   readonly progress?: number;
   readonly queueStatus?: QueueStatus;
   /** Secondary headline (e.g. series name under an episode). */
@@ -63,6 +66,13 @@ export type PrimaryDestination =
       readonly href: {
         readonly pathname: "/(tabs)/movies/[id]";
         readonly params: { readonly id: string };
+      };
+      readonly ctaKey: "mediaQuick.seeDetail";
+    }
+  | {
+      readonly href: {
+        readonly pathname: "/(tabs)/series/[id]/episode/[episodeId]";
+        readonly params: { readonly id: string; readonly episodeId: string };
       };
       readonly ctaKey: "mediaQuick.seeDetail";
     }

@@ -32,6 +32,23 @@ export const resolvePrimaryDestination = (
     };
   }
 
+  if (
+    selection.kind === "episode" &&
+    selection.seriesId !== undefined &&
+    selection.episodeId !== undefined
+  ) {
+    return {
+      href: {
+        pathname: "/(tabs)/series/[id]/episode/[episodeId]",
+        params: {
+          id: String(selection.seriesId),
+          episodeId: String(selection.episodeId),
+        },
+      },
+      ctaKey: "mediaQuick.seeDetail",
+    };
+  }
+
   if (selection.seriesId !== undefined) {
     return {
       href: {
@@ -213,6 +230,12 @@ const buildMovieMeta = (selection: MediaQuickSelection): MetaBuckets => {
   if (selection.availability === "dispo" && selection.fileQuality?.trim()) {
     pushChip(library, selection.fileQuality.trim(), "success");
   }
+  for (const code of selection.audioLanguageCodes ?? []) {
+    pushChip(library, code, "info");
+  }
+  for (const code of selection.subtitleLanguageCodes ?? []) {
+    pushChip(library, `ST ${code}`, "neutral");
+  }
   const air = formatAirDate(selection.airDate);
   if (air) detailParts.push(t("mediaQuick.releaseDate", { date: air }));
   pushPeopleDetail(detailParts, selection.crewLine, selection.castNames);
@@ -297,8 +320,15 @@ const buildEpisodeMeta = (selection: MediaQuickSelection): MetaBuckets => {
   pushChip(identity, selection.networkOrStudio, "neutral");
   pushRuntimeChip(identity, selection.runtimeMinutes);
   pushGenreChips(genres, selection.genres);
+  const library: MediaQuickChip[] = [];
+  for (const code of selection.audioLanguageCodes ?? []) {
+    pushChip(library, code, "info");
+  }
+  for (const code of selection.subtitleLanguageCodes ?? []) {
+    pushChip(library, `ST ${code}`, "neutral");
+  }
   return {
-    chipRows: nonEmptyRows([schedule, identity, genres]),
+    chipRows: nonEmptyRows([schedule, identity, genres, library]),
     detailParts,
   };
 };

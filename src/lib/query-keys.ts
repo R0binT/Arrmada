@@ -14,6 +14,8 @@ export const queryKeys = {
     detail: (id: number) => ["series", id] as const,
     cast: (id: number) => ["series", id, "cast"] as const,
     seasons: (id: number) => ["series", id, "seasons"] as const,
+    guestStars: (seriesId: number, episodeId: number) =>
+      ["series", seriesId, "episode", episodeId, "guests"] as const,
     lookup: (term: string) => ["series", "lookup", term] as const,
     preview: (tvdbId: number) =>
       [...queryKeys.series.all, "preview", tvdbId] as const,
