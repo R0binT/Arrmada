@@ -1,0 +1,14 @@
+---
+description: After app/UI code changes, reload Expo on the running emulator so the user can test immediately.
+alwaysApply: true
+---
+
+# Reload app after code changes
+
+When you change app or UI code the user needs to test (React Native / Expo screens, components, styles, navigation, etc.):
+
+1. Apply the code change.
+2. **Immediately reload** the running Expo app on the Android emulator (or device) without waiting to be asked.
+3. Prefer a quick reload (`adb shell input text "RR"`, reopen the Expo URL, or equivalent) when Metro is already running; restart Expo only if needed.
+
+Do not end a turn that includes testable UI changes without having triggered a reload.

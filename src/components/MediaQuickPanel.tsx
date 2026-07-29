@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { ProgressBar } from "@/components/ProgressBar";
 import type {
@@ -20,6 +20,14 @@ type MediaQuickPanelProps = {
   readonly viewModel: MediaQuickViewModel;
   readonly onOpenPrimary: (destination: PrimaryDestination) => void;
   readonly addActions?: MediaQuickAddActions;
+  /** When true, CTA buttons are omitted (rendered outside the dismiss pan). */
+  readonly omitActions?: boolean;
+};
+
+type MediaQuickActionsProps = {
+  readonly viewModel: MediaQuickViewModel;
+  readonly onOpenPrimary: (destination: PrimaryDestination) => void;
+  readonly addActions?: MediaQuickAddActions;
 };
 
 const STATUS_TONE: Record<MediaQuickStatusTone, ChipTone> = {
@@ -31,10 +39,55 @@ const STATUS_TONE: Record<MediaQuickStatusTone, ChipTone> = {
   danger: "danger",
 };
 
+export const MediaQuickActions = ({
+  viewModel,
+  onOpenPrimary,
+  addActions,
+}: MediaQuickActionsProps) => {
+  const { space } = useUiSize();
+
+  if (addActions) {
+    return (
+      <View style={{ gap: space.xs }}>
+        <Button
+          accessibilityLabel={t("add.seeFiche")}
+          onPress={addActions.onSeeFiche}
+          size="compact"
+          style={styles.fullWidth}
+          variant="secondary"
+        >
+          {t("add.seeFiche")}
+        </Button>
+        <Button
+          accessibilityLabel={t("action.add")}
+          disabled={!addActions.canAdd}
+          onPress={addActions.onAdd}
+          size="compact"
+          style={styles.fullWidth}
+        >
+          {t("action.add")}
+        </Button>
+      </View>
+    );
+  }
+
+  return (
+    <Button
+      accessibilityLabel={t(viewModel.destination.ctaKey)}
+      onPress={() => onOpenPrimary(viewModel.destination)}
+      size="compact"
+      style={styles.fullWidth}
+    >
+      {t(viewModel.destination.ctaKey)}
+    </Button>
+  );
+};
+
 export const MediaQuickPanel = ({
   viewModel,
   onOpenPrimary,
   addActions,
+  omitActions = false,
 }: MediaQuickPanelProps) => {
   const { space, scale } = useUiSize();
   const hasProgress =
@@ -48,24 +101,22 @@ export const MediaQuickPanel = ({
         backgroundColor: colors.surfaceRaised,
         gap: space.md,
         maxHeight: "100%",
-        paddingBottom: space.sm,
+        paddingBottom: omitActions ? 0 : space.sm,
         paddingHorizontal: space.lg,
         paddingTop: space.xs,
       }}
     >
-      <ScrollView
-        bounces={false}
-        contentContainerStyle={{
+      <View
+        style={{
           gap: space.lg,
           paddingBottom: space.xs,
         }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
       >
         <View style={[styles.header, { gap: space.md }]}>
           <View style={[styles.titleBlock, { gap: space.sm }]}>
             {viewModel.posterUrl ? (
               <View
+                pointerEvents="none"
                 style={[
                   styles.posterFrame,
                   elevation.low,
@@ -75,6 +126,7 @@ export const MediaQuickPanel = ({
                 <Image
                   accessibilityIgnoresInvertColors
                   contentFit="cover"
+                  pointerEvents="none"
                   source={{ uri: viewModel.posterUrl }}
                   style={StyleSheet.absoluteFill}
                   transition={180}
@@ -136,38 +188,14 @@ export const MediaQuickPanel = ({
             <ProgressBar progress={viewModel.progress} height={4} />
           </View>
         ) : null}
-      </ScrollView>
+      </View>
 
-      {addActions ? (
-        <View style={{ gap: space.xs }}>
-          <Button
-            accessibilityLabel={t("add.seeFiche")}
-            onPress={addActions.onSeeFiche}
-            size="compact"
-            style={styles.fullWidth}
-            variant="secondary"
-          >
-            {t("add.seeFiche")}
-          </Button>
-          <Button
-            accessibilityLabel={t("action.add")}
-            disabled={!addActions.canAdd}
-            onPress={addActions.onAdd}
-            size="compact"
-            style={styles.fullWidth}
-          >
-            {t("action.add")}
-          </Button>
-        </View>
-      ) : (
-        <Button
-          accessibilityLabel={t(viewModel.destination.ctaKey)}
-          onPress={() => onOpenPrimary(viewModel.destination)}
-          size="compact"
-          style={styles.fullWidth}
-        >
-          {t(viewModel.destination.ctaKey)}
-        </Button>
+      {omitActions ? null : (
+        <MediaQuickActions
+          addActions={addActions}
+          onOpenPrimary={onOpenPrimary}
+          viewModel={viewModel}
+        />
       )}
     </View>
   );

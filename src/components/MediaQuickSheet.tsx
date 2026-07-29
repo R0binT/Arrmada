@@ -10,7 +10,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { formatCrewLine } from "@/arr-client";
-import { MediaQuickPanel } from "@/components/MediaQuickPanel";
+import {
+  MediaQuickActions,
+  MediaQuickPanel,
+} from "@/components/MediaQuickPanel";
 import { buildMediaQuickViewModel } from "@/features/media-quick/build-media-quick-view-model";
 import type {
   MediaQuickAddActions,
@@ -169,15 +172,23 @@ export const MediaQuickSheet = ({
     });
   }, [reduceMotion, scrimOpacity, sheetOpacity, translateY]);
 
+  const isDownwardDismissGesture = useCallback(
+    (gestureState: { dx: number; dy: number }) =>
+      gestureState.dy > 2 &&
+      Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+    [],
+  );
+
   const panResponder = useMemo(
     () =>
       reduceMotion
         ? PanResponder.create({})
         : PanResponder.create({
+            // Claim immediately so native children cannot swallow the gesture.
+            // Action buttons stay outside this view so taps still work.
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: (_event, gestureState) =>
-              gestureState.dy > 2 &&
-              Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+              isDownwardDismissGesture(gestureState),
             onPanResponderTerminationRequest: () => false,
             onPanResponderMove: (_event, gestureState) => {
               if (gestureState.dy > 0) {
@@ -199,7 +210,7 @@ export const MediaQuickSheet = ({
               }).start();
             },
           }),
-    [dismiss, reduceMotion, translateY],
+    [dismiss, isDownwardDismissGesture, reduceMotion, translateY],
   );
 
   if (!visible || !viewModel) {
@@ -233,35 +244,50 @@ export const MediaQuickSheet = ({
               : { transform: [{ translateY }] },
           ]}
         >
-          <View
-            accessibilityHint={t("mediaQuick.handleHint")}
-            accessibilityLabel={t("mediaQuick.handle")}
-            accessibilityRole="adjustable"
-            hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
-            style={[
-              styles.dragHandle,
-              {
-                paddingBottom: space.xs,
-                paddingTop: space.sm,
-              },
-            ]}
-            {...panResponder.panHandlers}
-          >
+          <View {...panResponder.panHandlers}>
             <View
+              accessibilityHint={t("mediaQuick.handleHint")}
+              accessibilityLabel={t("mediaQuick.handle")}
+              accessibilityRole="adjustable"
+              hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
               style={[
-                styles.dragHandleBar,
+                styles.dragHandle,
                 {
-                  height: Math.max(4, Math.round(4 * scale)),
-                  width: Math.round(40 * scale),
+                  paddingBottom: space.xs,
+                  paddingTop: space.sm,
                 },
               ]}
+            >
+              <View
+                style={[
+                  styles.dragHandleBar,
+                  {
+                    height: Math.max(4, Math.round(4 * scale)),
+                    width: Math.round(40 * scale),
+                  },
+                ]}
+              />
+            </View>
+            <MediaQuickPanel
+              addActions={addActions}
+              omitActions
+              onOpenPrimary={onOpenPrimary}
+              viewModel={viewModel}
             />
           </View>
-          <MediaQuickPanel
-            addActions={addActions}
-            onOpenPrimary={onOpenPrimary}
-            viewModel={viewModel}
-          />
+          <View
+            style={{
+              paddingBottom: space.sm,
+              paddingHorizontal: space.lg,
+              paddingTop: space.xs,
+            }}
+          >
+            <MediaQuickActions
+              addActions={addActions}
+              onOpenPrimary={onOpenPrimary}
+              viewModel={viewModel}
+            />
+          </View>
         </Animated.View>
       </View>
     </Modal>
