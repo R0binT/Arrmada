@@ -22,13 +22,17 @@ concurrency:
 jobs:
   release-please:
     name: Open or update release PR
+    # Exact label "release", or merge of a release-please PR branch.
+    # Do not substring-match labels (e.g. "autorelease: …" contains "release").
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true &&
-       contains(join(github.event.pull_request.labels.*.name, ','), 'release'))
+       (contains(github.event.pull_request.labels.*.name, 'release') ||
+        startsWith(github.event.pull_request.head.ref, 'release-please--')))
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
       pr: ${{ steps.release.outputs.pr }}
     steps:
       - name: Ensure release label exists
@@ -124,3 +128,16 @@ jobs:
           git add app.json
           git commit -m "chore: bump android versionCode"
           git push
+
+  # Same-workflow call: GITHUB_TOKEN-created releases do not trigger
+  # `on: release` workflows, so Publish must run here when a release is created.
+  publish-apk:
+    name: Publish APK for new release
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/publish-release.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    secrets: inherit
+    permissions:
+      contents: write

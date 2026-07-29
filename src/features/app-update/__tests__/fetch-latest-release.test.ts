@@ -74,4 +74,32 @@ describe("fetchLatestRelease", () => {
     });
     expect(actual).toEqual({ ok: false });
   });
+
+  it("parses component-prefixed tags like arrmada-v1.2.0", async () => {
+    const mockFetch = jest.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        tag_name: "arrmada-v1.2.0",
+        assets: [
+          {
+            name: "Arrmada-1.2.0.apk",
+            browser_download_url:
+              "https://github.com/R0binT/Arrmada/releases/download/arrmada-v1.2.0/Arrmada-1.2.0.apk",
+          },
+        ],
+      }),
+    }));
+    const actual = await fetchLatestRelease({
+      fetchFn: mockFetch as unknown as typeof fetch,
+    });
+    expect(actual).toEqual({
+      ok: true,
+      release: {
+        version: "1.2.0",
+        tag: "arrmada-v1.2.0",
+        apkUrl:
+          "https://github.com/R0binT/Arrmada/releases/download/arrmada-v1.2.0/Arrmada-1.2.0.apk",
+      },
+    });
+  });
 });

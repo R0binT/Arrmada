@@ -15,7 +15,7 @@ type GitHubReleasePayload = {
   readonly assets?: unknown;
 };
 
-const SEMVER_TAG_RE = /^v?(\d+\.\d+\.\d+)$/;
+const SEMVER_TAG_RE = /^(?:[A-Za-z0-9._-]+-)?v?(\d+\.\d+\.\d+)$/;
 
 const parseVersionFromTag = (tag: string): string | null => {
   const match = SEMVER_TAG_RE.exec(tag.trim());

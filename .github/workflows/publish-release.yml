@@ -3,12 +3,24 @@ name: Publish release
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to build and upload (e.g. v1.2.0)"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        description: "Git tag to build and upload (e.g. v1.2.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 concurrency:
-  group: publish-release-${{ github.event.release.tag_name }}
+  group: publish-release-${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
   cancel-in-progress: false
 
 jobs:
@@ -19,18 +31,37 @@ jobs:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
+      - name: Resolve release tag
+        id: tag
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          if [ -z "${TAG}" ]; then
+            echo "::error::Missing release tag."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "Resolved tag ${TAG}"
+
       - name: Checkout release tag
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ steps.tag.outputs.tag }}
 
       - name: Resolve version from release tag
         id: version
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
         run: |
           set -euo pipefail
-          TAG="${{ github.event.release.tag_name }}"
-          VERSION="${TAG#v}"
-          if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          # Accept v1.2.0 and legacy arrmada-v1.2.0
+          if [[ "${TAG}" =~ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+          else
             echo "::error::Cannot parse semver from tag '${TAG}'."
             exit 1
           fi
