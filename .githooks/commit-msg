@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+# Lint commit message. Skip with SKIP_GIT_HOOKS=1
+if [ "$SKIP_GIT_HOOKS" = "1" ]; then
+  exit 0
+fi
+
+npx --no -- commitlint --edit "$1"

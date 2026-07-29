@@ -149,10 +149,36 @@ jobs:
       - name: Expo doctor
         run: npm run expo:doctor
 
+  commitlint:
+    name: commitlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint PR commits
+        run: >
+          npx commitlint
+          --from ${{ github.event.pull_request.base.sha }}
+          --to ${{ github.event.pull_request.head.sha }}
+          --verbose
+
   ci-gate:
     name: ci-gate
     if: always()
-    needs: [changes, lint, typecheck, test, expo-doctor]
+    needs: [changes, lint, typecheck, test, expo-doctor, commitlint]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -164,9 +190,14 @@ jobs:
           typecheck="${{ needs.typecheck.result }}"
           test="${{ needs.test.result }}"
           expo="${{ needs.expo-doctor.result }}"
-          echo "changes=$changes lint=$lint typecheck=$typecheck test=$test expo-doctor=$expo"
+          commitlint="${{ needs.commitlint.result }}"
+          echo "changes=$changes lint=$lint typecheck=$typecheck test=$test expo-doctor=$expo commitlint=$commitlint"
           if [ "$changes" != "success" ]; then
             echo "Path detection failed"
+            exit 1
+          fi
+          if [ "$commitlint" != "success" ]; then
+            echo "commitlint failed"
             exit 1
           fi
           for result in "$lint" "$typecheck" "$test" "$expo"; do

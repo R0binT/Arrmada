@@ -1,0 +1,126 @@
+name: Release please
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Optional semver override without v (e.g. 1.2.0). Leave empty for automatic bump."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Open or update release PR
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       contains(join(github.event.pull_request.labels.*.name, ','), 'release'))
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      pr: ${{ steps.release.outputs.pr }}
+    steps:
+      - name: Ensure release label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! gh label list --repo "${{ github.repository }}" --json name --jq '.[].name' | grep -qx 'release'; then
+            gh label create release \
+              --repo "${{ github.repository }}" \
+              --description "Merge opens or updates the release-please PR" \
+              --color BFD4F2 \
+              || true
+          fi
+
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Manifest mode (release-please-config.json + .release-please-manifest.json)
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          release-as: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '' }}
+
+  bump-version-code:
+    name: Bump Android versionCode on release PR
+    needs: release-please
+    if: needs.release-please.outputs.pr != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse release PR number
+        id: pr
+        env:
+          PR_JSON: ${{ needs.release-please.outputs.pr }}
+        run: |
+          set -euo pipefail
+          # release-please-action may output a JSON object or a number string
+          NUMBER="$(node -e '
+            const raw = process.env.PR_JSON || "";
+            if (!raw) process.exit(1);
+            try {
+              const parsed = JSON.parse(raw);
+              const n = typeof parsed === "number" ? parsed : parsed.number;
+              if (!n) process.exit(1);
+              process.stdout.write(String(n));
+            } catch {
+              if (/^\d+$/.test(raw.trim())) process.stdout.write(raw.trim());
+              else process.exit(1);
+            }
+          ')"
+          echo "number=${NUMBER}" >> "${GITHUB_OUTPUT}"
+          echo "Release PR #${NUMBER}"
+
+      - name: Checkout release PR branch
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Checkout PR head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          gh pr checkout "${PR_NUMBER}"
+
+      - name: Bump versionCode once past master
+        id: bump
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          MASTER_CODE="$(gh api "repos/${{ github.repository }}/contents/app.json?ref=master" --jq .content | base64 -d | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>console.log(JSON.parse(s).expo.android.versionCode))")"
+          BEFORE="$(node -p "require('./app.json').expo.android.versionCode")"
+          node ./scripts/bump-android-version-code.mjs "${MASTER_CODE}"
+          AFTER="$(node -p "require('./app.json').expo.android.versionCode")"
+          if [ "${BEFORE}" = "${AFTER}" ]; then
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Commit and push versionCode
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.json
+          git commit -m "chore: bump android versionCode"
+          git push
