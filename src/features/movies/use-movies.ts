@@ -12,9 +12,10 @@ import {
 } from "@/arr-client";
 import { getArrErrorMessage } from "@/features/library/arr-error-message";
 import {
-    filterLibraryItems,
-    type LibraryFilter,
+  filterLibraryItems,
+  type LibraryFilter,
 } from "@/features/library/filter-library-items";
+import { startQueueBurstFromCache } from "@/features/queue/start-queue-burst";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { t } from "@/i18n";
 import { queryKeys } from "@/lib/query-keys";
@@ -169,7 +170,7 @@ export const useGrabMovieRelease = () => {
       return radarr.grabRelease(release);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.queue.all });
+      startQueueBurstFromCache(queryClient);
     },
   });
 };

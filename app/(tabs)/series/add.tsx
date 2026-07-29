@@ -57,6 +57,7 @@ export default function AddSeriesScreen() {
   const [term, setTerm] = useState("");
   const [selected, setSelected] = useState<SeriesCandidate | undefined>();
   const [feedback, setFeedback] = useState<string | undefined>();
+  const [searchBusy, setSearchBusy] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<
     PendingAudioChoice | undefined
   >();
@@ -68,10 +69,10 @@ export default function AddSeriesScreen() {
   const grabMutation = useGrabSeriesRelease();
 
   useEffect(() => {
-    if (!feedback) return;
-    const timer = setTimeout(() => setFeedback(undefined), 3000);
+    if (!feedback || searchBusy) return;
+    const timer = setTimeout(() => setFeedback(undefined), 4000);
     return () => clearTimeout(timer);
-  }, [feedback]);
+  }, [feedback, searchBusy]);
 
   useFocusEffect(
     useCallback(() => {
@@ -92,12 +93,14 @@ export default function AddSeriesScreen() {
       qualityProfileId !== undefined &&
       rootFolderPath !== undefined &&
       !addMutation.isPending &&
+      !searchBusy &&
       !defaultsQuery.isLoading,
     [
       addMutation.isPending,
       defaultsQuery.isLoading,
       qualityProfileId,
       rootFolderPath,
+      searchBusy,
       selected,
     ],
   );
@@ -137,7 +140,10 @@ export default function AddSeriesScreen() {
       return;
     }
 
+    const title = selected.title;
     try {
+      setSearchBusy(true);
+      setFeedback(t("action.adding"));
       const created = await addMutation.mutateAsync({
         tvdbId: selected.tvdbId,
         qualityProfileId,
@@ -150,10 +156,9 @@ export default function AddSeriesScreen() {
         typeof (created as { id: unknown }).id === "number"
           ? (created as { id: number }).id
           : undefined;
-      setFeedback(t("add.seriesAdded", { title: selected.title }));
-      setSelected(undefined);
       await lookupQuery.refetch();
       if (createdId && sonarr) {
+        setFeedback(t("action.searching"));
         try {
           const seasons = await sonarr.getSeasons(createdId);
           const episodes = seasons.flatMap((season) =>
@@ -161,27 +166,45 @@ export default function AddSeriesScreen() {
               canOfferDownload(episode.availability),
             ),
           );
-          if (episodes.length > 0) {
-            const batches = await Promise.all(
-              episodes.map((episode) => sonarr.getEpisodeReleases(episode.id)),
-            );
-            const outcome = await smartGrabReleaseBatches(batches, (release) =>
-              grabMutation.mutateAsync(release),
-            );
-            if (outcome.type === "choose") {
-              setPendingChoice(outcome.pending);
-              return;
-            }
-            if (outcome.type === "grabbed") {
-              setFeedback(t("detail.downloadStarted"));
-            }
+          if (episodes.length === 0) {
+            setSelected(undefined);
+            setFeedback(t("detail.nothingToDownload"));
+            return;
           }
+          const batches = await Promise.all(
+            episodes.map((episode) => sonarr.getEpisodeReleases(episode.id)),
+          );
+          const outcome = await smartGrabReleaseBatches(batches, (release) =>
+            grabMutation.mutateAsync(release),
+          );
+          setSelected(undefined);
+          if (outcome.type === "choose") {
+            setPendingChoice(outcome.pending);
+            setFeedback(undefined);
+            return;
+          }
+          if (outcome.type === "empty") {
+            setFeedback(t("detail.noRelease"));
+            return;
+          }
+          setFeedback(
+            outcome.count > 1
+              ? t("detail.downloadsStarted", { count: outcome.count })
+              : t("detail.downloadStarted"),
+          );
+          return;
         } catch {
-          // Keep add success even if grab fails.
+          setSelected(undefined);
+          setFeedback(t("add.seriesAdded", { title }));
+          return;
         }
       }
+      setSelected(undefined);
+      setFeedback(t("add.seriesAdded", { title }));
     } catch (error) {
       setFeedback(getErrorMessage(error));
+    } finally {
+      setSearchBusy(false);
     }
   }, [
     addMutation,
@@ -362,7 +385,10 @@ export default function AddSeriesScreen() {
         selection={
           selected ? buildSeriesAddSelection(selected) : undefined
         }
-        onDismiss={() => setSelected(undefined)}
+        onDismiss={() => {
+          if (searchBusy) return;
+          setSelected(undefined);
+        }}
         onOpenPrimary={() => {
           /* unused in add mode */
         }}
@@ -370,8 +396,15 @@ export default function AddSeriesScreen() {
           selected
             ? {
                 canAdd,
+                loading: searchBusy,
+                busyLabel: addMutation.isPending
+                  ? t("action.adding")
+                  : searchBusy
+                    ? t("action.searching")
+                    : undefined,
                 onAdd: () => void handleAdd(),
                 onSeeFiche: () => {
+                  if (searchBusy) return;
                   const candidate = selected;
                   setSelected(undefined);
                   if (candidate.libraryId !== undefined) {
@@ -391,7 +424,7 @@ export default function AddSeriesScreen() {
         }
       />
 
-      {feedback ? (
+      {feedback && !searchBusy ? (
         <Surface
           radius="md"
           style={[

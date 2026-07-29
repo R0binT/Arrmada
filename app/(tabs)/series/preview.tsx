@@ -56,15 +56,16 @@ export default function SeriesPreviewScreen() {
   const addMutation = useAddSeries();
   const grabMutation = useGrabSeriesRelease();
   const [feedback, setFeedback] = useState<string | undefined>();
+  const [searchBusy, setSearchBusy] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<
     PendingAudioChoice | undefined
   >();
 
   useEffect(() => {
-    if (!feedback) return;
-    const timer = setTimeout(() => setFeedback(undefined), 3000);
+    if (!feedback || searchBusy) return;
+    const timer = setTimeout(() => setFeedback(undefined), 4000);
     return () => clearTimeout(timer);
-  }, [feedback]);
+  }, [feedback, searchBusy]);
 
   const candidate = previewQuery.data ?? undefined;
   const qualityProfileId = defaultsQuery.data?.defaultQualityProfileId;
@@ -77,6 +78,7 @@ export default function SeriesPreviewScreen() {
       qualityProfileId !== undefined &&
       rootFolderPath !== undefined &&
       !addMutation.isPending &&
+      !searchBusy &&
       !defaultsQuery.isLoading,
     [
       addMutation.isPending,
@@ -84,6 +86,7 @@ export default function SeriesPreviewScreen() {
       defaultsQuery.isLoading,
       qualityProfileId,
       rootFolderPath,
+      searchBusy,
     ],
   );
 
@@ -131,6 +134,8 @@ export default function SeriesPreviewScreen() {
     }
 
     try {
+      setSearchBusy(true);
+      setFeedback(t("action.adding"));
       const created = await addMutation.mutateAsync({
         tvdbId: candidate.tvdbId,
         qualityProfileId,
@@ -144,6 +149,7 @@ export default function SeriesPreviewScreen() {
           ? (created as { id: number }).id
           : undefined;
       if (createdId && sonarr) {
+        setFeedback(t("action.searching"));
         try {
           const seasons = await sonarr.getSeasons(createdId);
           const episodes = seasons.flatMap((season) =>
@@ -151,25 +157,42 @@ export default function SeriesPreviewScreen() {
               canOfferDownload(episode.availability),
             ),
           );
-          if (episodes.length > 0) {
-            const batches = await Promise.all(
-              episodes.map((episode) => sonarr.getEpisodeReleases(episode.id)),
-            );
-            const outcome = await smartGrabReleaseBatches(batches, (release) =>
-              grabMutation.mutateAsync(release),
-            );
-            if (outcome.type === "choose") {
-              setPendingChoice(outcome.pending);
-              return;
-            }
+          if (episodes.length === 0) {
+            setFeedback(t("detail.nothingToDownload"));
+            return;
           }
+          const batches = await Promise.all(
+            episodes.map((episode) => sonarr.getEpisodeReleases(episode.id)),
+          );
+          const outcome = await smartGrabReleaseBatches(batches, (release) =>
+            grabMutation.mutateAsync(release),
+          );
+          if (outcome.type === "choose") {
+            setPendingChoice(outcome.pending);
+            setFeedback(undefined);
+            return;
+          }
+          if (outcome.type === "empty") {
+            setFeedback(t("detail.noRelease"));
+            return;
+          }
+          setFeedback(
+            outcome.count > 1
+              ? t("detail.downloadsStarted", { count: outcome.count })
+              : t("detail.downloadStarted"),
+          );
+          setTimeout(() => router.back(), 1500);
+          return;
         } catch {
-          // Keep add success even if grab fails.
+          router.back();
+          return;
         }
       }
       router.back();
     } catch (error) {
       setFeedback(getErrorMessage(error));
+    } finally {
+      setSearchBusy(false);
     }
   }, [
     addMutation,
@@ -178,6 +201,7 @@ export default function SeriesPreviewScreen() {
     qualityProfileId,
     rootFolderPath,
     sonarr,
+    t,
   ]);
 
   if (previewQuery.isLoading) {
@@ -255,11 +279,15 @@ export default function SeriesPreviewScreen() {
                 title: candidate.title,
               })}
               disabled={!canAdd}
-              loading={addMutation.isPending}
+              loading={searchBusy}
               onPress={() => void handleAdd()}
               style={styles.fullWidthButton}
             >
-              {addMutation.isPending ? t("action.adding") : t("action.add")}
+              {addMutation.isPending
+                ? t("action.adding")
+                : searchBusy
+                  ? t("action.searching")
+                  : t("action.add")}
             </Button>
           )
         }
@@ -307,7 +335,7 @@ export default function SeriesPreviewScreen() {
         visible={pendingChoice !== undefined}
       />
 
-      {feedback ? (
+      {feedback && !searchBusy ? (
         <Surface
           radius="md"
           style={[

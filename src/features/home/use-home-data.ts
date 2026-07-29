@@ -1,18 +1,24 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 
 import {
-    ArrHttpError,
-    type ArrService,
-    type Movie,
-    type QueueItem,
-    type Series,
-    type ServiceHealth,
+  ArrHttpError,
+  type ArrService,
+  type Movie,
+  type QueueItem,
+  type Series,
+  type ServiceHealth,
 } from "@/arr-client";
+import {
+  getQueuePollPolicyVersion,
+  isQueueBurstActive,
+  noteQueueSnapshotForBurst,
+  resolveQueuePollInterval,
+  subscribeQueuePollPolicy,
+} from "@/features/queue/queue-poll-policy";
 import { getConnectionErrorMessage } from "@/features/settings/connection-messages";
 import { useAppIsActive } from "@/hooks/use-app-is-active";
 import { useArrClients } from "@/hooks/use-arr-clients";
-import { QUEUE_POLL_MS } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
 
 const RECENT_LIMIT = 12;
@@ -110,6 +116,11 @@ export const useHomeData = ({ isFocused }: UseHomeDataOptions) => {
   const queryClient = useQueryClient();
   const { radarr, sonarr } = useArrClients();
   const isAppActive = useAppIsActive();
+  useSyncExternalStore(
+    subscribeQueuePollPolicy,
+    getQueuePollPolicyVersion,
+    getQueuePollPolicyVersion,
+  );
 
   const queuePollInterval = (): number | false => {
     if (!isFocused || !isAppActive) return false;
@@ -117,7 +128,9 @@ export const useHomeData = ({ isFocused }: UseHomeDataOptions) => {
       queryClient.getQueryData<QueueItem[]>(queryKeys.queue.radarr) ?? [];
     const sonarrItems =
       queryClient.getQueryData<QueueItem[]>(queryKeys.queue.sonarr) ?? [];
-    return hasActiveDownloads(radarrItems, sonarrItems) ? QUEUE_POLL_MS : false;
+    const shouldPoll =
+      isQueueBurstActive() || hasActiveDownloads(radarrItems, sonarrItems);
+    return resolveQueuePollInterval(shouldPoll, isAppActive);
   };
 
   const moviesQuery = useQuery({
@@ -182,6 +195,10 @@ export const useHomeData = ({ isFocused }: UseHomeDataOptions) => {
     () => [...(radarrQueueQuery.data ?? []), ...(sonarrQueueQuery.data ?? [])],
     [radarrQueueQuery.data, sonarrQueueQuery.data],
   );
+
+  useEffect(() => {
+    noteQueueSnapshotForBurst(queueItems);
+  }, [queueItems]);
 
   const downloadingItems = useMemo(
     () => queueItems.filter((item) => ACTIVE_STATUSES.has(item.status)),

@@ -56,6 +56,7 @@ export default function AddMovieScreen() {
   const [term, setTerm] = useState("");
   const [selected, setSelected] = useState<MovieCandidate | undefined>();
   const [feedback, setFeedback] = useState<string | undefined>();
+  const [searchBusy, setSearchBusy] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<
     PendingAudioChoice | undefined
   >();
@@ -67,10 +68,10 @@ export default function AddMovieScreen() {
   const grabMutation = useGrabMovieRelease();
 
   useEffect(() => {
-    if (!feedback) return;
-    const timer = setTimeout(() => setFeedback(undefined), 3000);
+    if (!feedback || searchBusy) return;
+    const timer = setTimeout(() => setFeedback(undefined), 4000);
     return () => clearTimeout(timer);
-  }, [feedback]);
+  }, [feedback, searchBusy]);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,12 +92,14 @@ export default function AddMovieScreen() {
       qualityProfileId !== undefined &&
       rootFolderPath !== undefined &&
       !addMutation.isPending &&
+      !searchBusy &&
       !defaultsQuery.isLoading,
     [
       addMutation.isPending,
       defaultsQuery.isLoading,
       qualityProfileId,
       rootFolderPath,
+      searchBusy,
       selected,
     ],
   );
@@ -136,7 +139,10 @@ export default function AddMovieScreen() {
       return;
     }
 
+    const title = selected.title;
     try {
+      setSearchBusy(true);
+      setFeedback(t("action.adding"));
       const created = await addMutation.mutateAsync({
         tmdbId: selected.tmdbId,
         qualityProfileId,
@@ -149,28 +155,38 @@ export default function AddMovieScreen() {
         typeof (created as { id: unknown }).id === "number"
           ? (created as { id: number }).id
           : undefined;
-      setFeedback(t("add.movieAdded", { title: selected.title }));
-      setSelected(undefined);
       await lookupQuery.refetch();
       if (createdId && radarr) {
+        setFeedback(t("action.searching"));
         try {
           const releases = await radarr.getMovieReleases(createdId);
           const outcome = await smartGrabReleases(releases, (release) =>
             grabMutation.mutateAsync(release),
           );
+          setSelected(undefined);
           if (outcome.type === "choose") {
             setPendingChoice(outcome.pending);
+            setFeedback(undefined);
             return;
           }
-          if (outcome.type === "grabbed") {
-            setFeedback(t("detail.downloadStarted"));
+          if (outcome.type === "empty") {
+            setFeedback(t("detail.noRelease"));
+            return;
           }
+          setFeedback(t("detail.downloadStarted"));
+          return;
         } catch {
-          // Keep add success even if grab fails.
+          setSelected(undefined);
+          setFeedback(t("add.movieAdded", { title }));
+          return;
         }
       }
+      setSelected(undefined);
+      setFeedback(t("add.movieAdded", { title }));
     } catch (error) {
       setFeedback(getErrorMessage(error));
+    } finally {
+      setSearchBusy(false);
     }
   }, [
     addMutation,
@@ -337,7 +353,10 @@ export default function AddMovieScreen() {
         selection={
           selected ? buildMovieAddSelection(selected) : undefined
         }
-        onDismiss={() => setSelected(undefined)}
+        onDismiss={() => {
+          if (searchBusy) return;
+          setSelected(undefined);
+        }}
         onOpenPrimary={() => {
           /* unused in add mode */
         }}
@@ -345,8 +364,15 @@ export default function AddMovieScreen() {
           selected
             ? {
                 canAdd,
+                loading: searchBusy,
+                busyLabel: addMutation.isPending
+                  ? t("action.adding")
+                  : searchBusy
+                    ? t("action.searching")
+                    : undefined,
                 onAdd: () => void handleAdd(),
                 onSeeFiche: () => {
+                  if (searchBusy) return;
                   const candidate = selected;
                   setSelected(undefined);
                   if (candidate.libraryId !== undefined) {
@@ -366,7 +392,7 @@ export default function AddMovieScreen() {
         }
       />
 
-      {feedback ? (
+      {feedback && !searchBusy ? (
         <Surface
           radius="md"
           style={[

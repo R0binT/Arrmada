@@ -1,16 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 
 import {
-    ArrHttpError,
-    type QueueItem,
-    type RadarrClient,
-    type SonarrClient,
+  ArrHttpError,
+  type QueueItem,
+  type RadarrClient,
+  type SonarrClient,
 } from "@/arr-client";
+import {
+  getQueuePollPolicyVersion,
+  noteQueueSnapshotForBurst,
+  resolveQueuePollInterval,
+  subscribeQueuePollPolicy,
+} from "@/features/queue/queue-poll-policy";
 import { useAppIsActive } from "@/hooks/use-app-is-active";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { t } from "@/i18n";
-import { QUEUE_POLL_MS } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
 
 type ArrQueueClient = RadarrClient | SonarrClient;
@@ -67,7 +72,12 @@ const invalidateQueue = async (
 export const useQueue = ({ enabled, poll }: UseQueueOptions) => {
   const { radarr, sonarr } = useArrClients();
   const isAppActive = useAppIsActive();
-  const refetchInterval = poll && isAppActive ? QUEUE_POLL_MS : false;
+  useSyncExternalStore(
+    subscribeQueuePollPolicy,
+    getQueuePollPolicyVersion,
+    getQueuePollPolicyVersion,
+  );
+  const refetchInterval = resolveQueuePollInterval(poll, isAppActive);
 
   const radarrQuery = useQuery({
     queryKey: queryKeys.queue.radarr,
@@ -95,6 +105,10 @@ export const useQueue = ({ enabled, poll }: UseQueueOptions) => {
     () => [...(radarrQuery.data ?? []), ...(sonarrQuery.data ?? [])],
     [radarrQuery.data, sonarrQuery.data],
   );
+
+  useEffect(() => {
+    noteQueueSnapshotForBurst(items);
+  }, [items]);
 
   const radarrError = radarrQuery.isError ? radarrQuery.error : undefined;
   const sonarrError = sonarrQuery.isError ? sonarrQuery.error : undefined;

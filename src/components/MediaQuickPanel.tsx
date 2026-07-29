@@ -47,10 +47,12 @@ export const MediaQuickActions = ({
   const { space } = useUiSize();
 
   if (addActions) {
+    const isBusy = Boolean(addActions.loading);
     return (
       <View style={{ gap: space.xs }}>
         <Button
           accessibilityLabel={t("add.seeFiche")}
+          disabled={isBusy}
           onPress={addActions.onSeeFiche}
           size="compact"
           style={styles.fullWidth}
@@ -59,13 +61,14 @@ export const MediaQuickActions = ({
           {t("add.seeFiche")}
         </Button>
         <Button
-          accessibilityLabel={t("action.add")}
-          disabled={!addActions.canAdd}
+          accessibilityLabel={addActions.busyLabel ?? t("action.add")}
+          disabled={!addActions.canAdd && !isBusy}
+          loading={isBusy}
           onPress={addActions.onAdd}
           size="compact"
           style={styles.fullWidth}
         >
-          {t("action.add")}
+          {addActions.busyLabel ?? t("action.add")}
         </Button>
       </View>
     );
