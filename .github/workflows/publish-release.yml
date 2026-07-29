@@ -1,65 +1,60 @@
 name: Publish release
 
 on:
-  pull_request:
-    types: [closed]
-    branches: [master]
+  release:
+    types: [published]
 
 permissions:
   contents: write
 
 concurrency:
-  group: publish-release-${{ github.event.pull_request.head.ref }}
+  group: publish-release-${{ github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
   publish:
-    if: >
-      github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'release/v')
     runs-on: ubuntu-latest
-    name: Build APK and publish GitHub Release
+    name: Build APK and attach to GitHub Release
     env:
-      # GitHub-hosted Ubuntu image default.
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
-      - name: Checkout merge commit
+      - name: Checkout release tag
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
-      - name: Resolve version from release branch
+      - name: Resolve version from release tag
         id: version
         run: |
           set -euo pipefail
-          BRANCH="${{ github.event.pull_request.head.ref }}"
-          VERSION="${BRANCH#release/v}"
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
           if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Cannot parse semver from branch '${BRANCH}'."
+            echo "::error::Cannot parse semver from tag '${TAG}'."
             exit 1
           fi
           PKG_VERSION="$(node -p "require('./package.json').version")"
           if [ "${PKG_VERSION}" != "${VERSION}" ]; then
-            echo "::error::Branch version ${VERSION} does not match package.json ${PKG_VERSION}."
+            echo "::error::Tag version ${VERSION} does not match package.json ${PKG_VERSION}."
             exit 1
           fi
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "tag=v${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
           echo "✅ Version ${VERSION}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Setup JDK 17
         uses: actions/setup-java@v5
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: "17"
+          distribution: "temurin"
 
-      # Use the runner's preinstalled SDK. Do not reinstall cmdline-tools/emulator
-      # or cache NDK — that cost ~12 min post-job per release with almost no gain.
       - name: Ensure Android SDK packages
         run: |
           set -euo pipefail
@@ -68,17 +63,13 @@ jobs:
             echo "::error::sdkmanager not found under ${ANDROID_HOME}/cmdline-tools"
             exit 1
           fi
-          # Non-interactive license accept (runner image usually already licensed).
           yes | "${SDKMANAGER}" --licenses >/dev/null || true
-          # build-tools must match app.json expo-build-properties.
           "${SDKMANAGER}" --sdk_root="${ANDROID_HOME}" --install \
             "platform-tools" \
             "build-tools;36.1.0" \
             "platforms;android-35" \
             "platforms;android-36"
 
-      # PR-closed jobs are read-only for Gradle cache by default; allow write so
-      # each successful release warms the cache for the next one.
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -95,8 +86,6 @@ jobs:
           set -euo pipefail
           PROPS=./android/gradle.properties
           touch "${PROPS}"
-          # Expo prebuild may omit a trailing newline; appending without one
-          # corrupts the last property (e.g. buildToolsVersion=36.1.0org.gradle.caching=true).
           if [ -s "${PROPS}" ] && [ -n "$(tail -c1 "${PROPS}")" ]; then
             printf '\n' >> "${PROPS}"
           fi
@@ -126,23 +115,13 @@ jobs:
           echo "apk_path=${APK_NAME}" >> "${GITHUB_OUTPUT}"
           echo "✅ Packaged ${APK_NAME} from ${APK_PATH}"
 
-      - name: Create or update GitHub Release
+      - name: Upload APK to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}
           APK_PATH: ${{ steps.apk.outputs.apk_path }}
         run: |
           set -euo pipefail
-          if gh release view "${TAG}" >/dev/null 2>&1; then
-            echo "ℹ️ Release ${TAG} already exists — uploading APK"
-          else
-            echo "📝 Creating release ${TAG}"
-            gh release create "${TAG}" \
-              --title "Arrmada ${VERSION}" \
-              --generate-notes \
-              --target "${{ github.sha }}"
-          fi
           gh release upload "${TAG}" "${APK_PATH}" --clobber
           echo "✅ Published ${APK_PATH} on ${TAG}"
 

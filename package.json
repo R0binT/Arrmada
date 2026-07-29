@@ -35,6 +35,8 @@
     "react-native-worklets": "0.10.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
@@ -50,6 +52,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "lint:commits": "commitlint --edit",
     "expo:doctor": "npx expo-doctor",
     "test": "jest",
     "test:ci": "jest --ci --coverage=false",
