@@ -206,3 +206,20 @@ it("series shows episode progress and network", () => {
     expect.arrayContaining(["20/20 épisodes", "Crime", "HBO"]),
   );
 });
+
+it("includes audio and subtitle codes for downloaded movies", () => {
+  const vm = buildMediaQuickViewModel({
+    kind: "movie",
+    key: "movie-1",
+    title: "Night Harbor",
+    year: 2024,
+    posterUrl: undefined,
+    availability: "dispo",
+    fileQuality: "Bluray-1080p",
+    audioLanguageCodes: ["FR", "EN"],
+    subtitleLanguageCodes: ["EN"],
+  });
+  expect(chipLabels(vm.chipRows)).toEqual(
+    expect.arrayContaining(["Bluray-1080p", "FR", "EN", "ST EN"]),
+  );
+});

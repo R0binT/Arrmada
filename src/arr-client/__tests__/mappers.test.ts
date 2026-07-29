@@ -40,6 +40,8 @@ describe("mappers", () => {
       overview: "A foggy pier.",
       qualityProfileId: 4,
       fileQuality: undefined,
+      audioLanguageCodes: [],
+      subtitleLanguageCodes: [],
       sizeOnDisk: undefined,
       genres: [],
       runtimeMinutes: undefined,
@@ -77,12 +79,18 @@ describe("mappers", () => {
         genres: ["Drama", "Mystery"],
         movieFile: {
           quality: { quality: { name: "Bluray-1080p" } },
+          mediaInfo: {
+            audioLanguages: "French / English",
+            subtitles: "English",
+          },
         },
         images: [{ coverType: "poster", remoteUrl: "https://cdn/p.jpg" }],
       },
       "http://192.168.1.10:7878",
     );
     expect(actual.fileQuality).toBe("Bluray-1080p");
+    expect(actual.audioLanguageCodes).toEqual(["FR", "EN"]);
+    expect(actual.subtitleLanguageCodes).toEqual(["EN"]);
     expect(actual.sizeOnDisk).toBe(1_500_000_000);
     expect(actual.runtimeMinutes).toBe(118);
     expect(actual.studio).toBe("Harbor Films");

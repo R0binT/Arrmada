@@ -229,6 +229,8 @@ export const frMessages = {
   "detail.linkTvdb": "TVDB",
   "detail.firstAired": "Début {{date}}",
   "detail.lastAired": "Fin {{date}}",
+  "detail.audioLanguages": "Audio",
+  "detail.subtitleLanguages": "Sous-titres",
   "detail.crewJobDirector": "Réal.",
   "detail.crewJobCreator": "Créat.",
   "detail.crewJobWriter": "Scénario",

@@ -14,6 +14,8 @@ const movie = (overrides: Partial<Movie>): Movie => ({
   overview: "",
   qualityProfileId: undefined,
   fileQuality: undefined,
+  audioLanguageCodes: [],
+  subtitleLanguageCodes: [],
   sizeOnDisk: undefined,
   genres: [],
   runtimeMinutes: undefined,

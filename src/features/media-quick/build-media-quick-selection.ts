@@ -49,6 +49,10 @@ export const selectionFromMovie = (movie: Movie): MediaQuickSelection => ({
   movieId: movie.id,
   availability: classifyMovie(movie),
   fileQuality: movie.hasFile ? movie.fileQuality : undefined,
+  audioLanguageCodes: movie.hasFile ? movie.audioLanguageCodes : undefined,
+  subtitleLanguageCodes: movie.hasFile
+    ? movie.subtitleLanguageCodes
+    : undefined,
   genres: movie.genres,
   runtimeMinutes: movie.runtimeMinutes,
   networkOrStudio: movie.studio,
@@ -120,6 +124,12 @@ export const selectionFromEpisode = (
     episodeNumber: episode.episodeNumber,
     airDate: episode.airDateUtc,
     availability: episode.availability,
+    audioLanguageCodes: episode.hasFile
+      ? episode.audioLanguageCodes
+      : undefined,
+    subtitleLanguageCodes: episode.hasFile
+      ? episode.subtitleLanguageCodes
+      : undefined,
     genres: series.genres,
     runtimeMinutes: series.runtimeMinutes,
     networkOrStudio: series.network,

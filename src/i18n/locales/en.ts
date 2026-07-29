@@ -216,6 +216,8 @@ export const enMessages: Record<MessageKey, string> = {
   "detail.linkTvdb": "TVDB",
   "detail.firstAired": "First aired {{date}}",
   "detail.lastAired": "Last aired {{date}}",
+  "detail.audioLanguages": "Audio",
+  "detail.subtitleLanguages": "Subtitles",
   "detail.crewJobDirector": "Dir.",
   "detail.crewJobCreator": "Creator",
   "detail.crewJobWriter": "Writer",

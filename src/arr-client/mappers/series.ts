@@ -6,6 +6,7 @@ import type {
   Series,
   SeriesCandidate,
 } from "../types";
+import { mapMediaInfoLanguageCodes } from "./media-info-languages";
 import { getPosterUrl } from "./movie";
 import { mapRatings } from "./ratings";
 
@@ -130,6 +131,10 @@ export const mapSeriesCandidate = (
 export const mapSonarrEpisode = (
   raw: unknown,
   now: Date = new Date(),
+  fileLanguages?: {
+    readonly audioLanguageCodes: readonly string[];
+    readonly subtitleLanguageCodes: readonly string[];
+  },
 ): Episode => {
   const obj = asRecord(raw);
   if (!obj) {
@@ -138,6 +143,15 @@ export const mapSonarrEpisode = (
 
   const hasFile = Boolean(obj.hasFile);
   const airDateUtc = mapOptionalString(obj.airDateUtc);
+  const embeddedFile = asRecord(obj.episodeFile);
+  const fromEmbedded = mapMediaInfoLanguageCodes(
+    embeddedFile?.mediaInfo,
+    embeddedFile?.languages,
+  );
+  const audioLanguageCodes =
+    fileLanguages?.audioLanguageCodes ?? fromEmbedded.audioLanguageCodes;
+  const subtitleLanguageCodes =
+    fileLanguages?.subtitleLanguageCodes ?? fromEmbedded.subtitleLanguageCodes;
 
   return {
     id: Number(obj.id),
@@ -148,7 +162,39 @@ export const mapSonarrEpisode = (
     hasFile,
     monitored: Boolean(obj.monitored),
     availability: classifyEpisode({ hasFile, airDateUtc }, now),
+    audioLanguageCodes: hasFile ? audioLanguageCodes : [],
+    subtitleLanguageCodes: hasFile ? subtitleLanguageCodes : [],
   };
+};
+
+export type EpisodeFileLanguageIndex = ReadonlyMap<
+  number,
+  {
+    readonly audioLanguageCodes: readonly string[];
+    readonly subtitleLanguageCodes: readonly string[];
+  }
+>;
+
+/** Build episodeId → language codes from `/api/v3/episodefile` payloads. */
+export const indexEpisodeFileLanguages = (
+  rawFiles: readonly unknown[],
+): EpisodeFileLanguageIndex => {
+  const index = new Map<
+    number,
+    {
+      readonly audioLanguageCodes: readonly string[];
+      readonly subtitleLanguageCodes: readonly string[];
+    }
+  >();
+  for (const raw of rawFiles) {
+    const obj = asRecord(raw);
+    if (!obj) continue;
+    const episodeId = Number(obj.episodeId);
+    if (!Number.isFinite(episodeId) || episodeId <= 0) continue;
+    const codes = mapMediaInfoLanguageCodes(obj.mediaInfo, obj.languages);
+    index.set(episodeId, codes);
+  }
+  return index;
 };
 
 export const groupEpisodesIntoSeasons = (

@@ -19,6 +19,7 @@ import {
   ErrorBanner,
   ExternalLinksRow,
   IconButton,
+  MediaLanguageChipRows,
   MediaMetaBlock,
   RatingsRow,
   Screen,
@@ -271,6 +272,12 @@ export default function MovieDetailScreen() {
               : undefined
           }
         />
+        {movieAvailability === "dispo" ? (
+          <MediaLanguageChipRows
+            audioLanguageCodes={movie.audioLanguageCodes}
+            subtitleLanguageCodes={movie.subtitleLanguageCodes}
+          />
+        ) : null}
         {movie.overview.trim().length > 0 ? (
           <Text role="body" tone="muted">
             {movie.overview}

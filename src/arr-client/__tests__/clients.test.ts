@@ -185,29 +185,46 @@ describe("createSonarrClient", () => {
   });
 
   it("fetches seasons grouped from episode payloads", async () => {
-    globalThis.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [
-        {
-          id: 21,
-          seasonNumber: 1,
-          episodeNumber: 1,
-          title: "Pilot",
-          airDateUtc: "2020-01-01T00:00:00Z",
-          hasFile: true,
-          monitored: true,
-        },
-        {
-          id: 22,
-          seasonNumber: 1,
-          episodeNumber: 2,
-          title: "Next",
-          airDateUtc: "2099-01-01T00:00:00Z",
-          hasFile: false,
-          monitored: true,
-        },
-      ],
+    globalThis.fetch = jest.fn().mockImplementation(async (url: string) => {
+      if (String(url).includes("/episodefile?")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [
+            {
+              episodeId: 21,
+              mediaInfo: {
+                audioLanguages: "English",
+                subtitles: "French",
+              },
+            },
+          ],
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: 21,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: "Pilot",
+            airDateUtc: "2020-01-01T00:00:00Z",
+            hasFile: true,
+            monitored: true,
+          },
+          {
+            id: 22,
+            seasonNumber: 1,
+            episodeNumber: 2,
+            title: "Next",
+            airDateUtc: "2099-01-01T00:00:00Z",
+            hasFile: false,
+            monitored: true,
+          },
+        ],
+      };
     }) as unknown as typeof fetch;
 
     const client = createSonarrClient("http://192.168.1.10:8989", "k");
@@ -219,11 +236,20 @@ describe("createSonarrClient", () => {
         headers: expect.objectContaining({ "X-Api-Key": "k" }),
       }),
     );
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://192.168.1.10:8989/api/v3/episodefile?seriesId=5",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "X-Api-Key": "k" }),
+      }),
+    );
     expect(seasons).toHaveLength(1);
     expect(seasons[0]?.seasonNumber).toBe(1);
     expect(seasons[0]?.episodes).toHaveLength(2);
     expect(seasons[0]?.episodes[0]?.availability).toBe("dispo");
+    expect(seasons[0]?.episodes[0]?.audioLanguageCodes).toEqual(["EN"]);
+    expect(seasons[0]?.episodes[0]?.subtitleLanguageCodes).toEqual(["FR"]);
     expect(seasons[0]?.episodes[1]?.availability).toBe("aVenir");
+    expect(seasons[0]?.episodes[1]?.audioLanguageCodes).toEqual([]);
   });
 
   it("maps calendar episodes", async () => {

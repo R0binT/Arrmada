@@ -51,6 +51,8 @@ export type Movie = {
   readonly overview: string;
   readonly qualityProfileId: number | undefined;
   readonly fileQuality: string | undefined;
+  readonly audioLanguageCodes: readonly string[];
+  readonly subtitleLanguageCodes: readonly string[];
   readonly sizeOnDisk: number | undefined;
   readonly genres: readonly string[];
   readonly runtimeMinutes: number | undefined;
@@ -101,6 +103,8 @@ export type Episode = {
   readonly hasFile: boolean;
   readonly monitored: boolean;
   readonly availability: Availability;
+  readonly audioLanguageCodes: readonly string[];
+  readonly subtitleLanguageCodes: readonly string[];
 };
 
 /** A numbered Saison grouping Épisodes on the Série screen. */

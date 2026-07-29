@@ -24,6 +24,8 @@ const movie = (overrides: Partial<Movie> = {}): Movie => ({
   overview: "",
   qualityProfileId: undefined,
   fileQuality: "Bluray-1080p",
+  audioLanguageCodes: [],
+  subtitleLanguageCodes: [],
   sizeOnDisk: 8_000_000_000,
   genres: ["Thriller", "Drama"],
   runtimeMinutes: 118,
@@ -146,6 +148,8 @@ describe("seasonAvailability", () => {
     airDateUtc: undefined,
     hasFile: overrides.availability === "dispo",
     monitored: true,
+    audioLanguageCodes: [],
+    subtitleLanguageCodes: [],
     ...overrides,
   });
 

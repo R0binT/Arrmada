@@ -22,6 +22,8 @@ export type MediaQuickSelection = {
   readonly seriesId?: number;
   readonly availability?: Availability;
   readonly fileQuality?: string;
+  readonly audioLanguageCodes?: readonly string[];
+  readonly subtitleLanguageCodes?: readonly string[];
   readonly progress?: number;
   readonly queueStatus?: QueueStatus;
   /** Secondary headline (e.g. series name under an episode). */

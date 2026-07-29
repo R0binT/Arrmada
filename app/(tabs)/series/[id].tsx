@@ -18,6 +18,7 @@ import {
   ErrorBanner,
   ExternalLinksRow,
   IconButton,
+  MediaLanguageChipRows,
   MediaMetaBlock,
   MediaQuickSheet,
   RatingsRow,
@@ -588,6 +589,15 @@ export default function SeriesDetailScreen() {
                             >
                               {availabilityLabel(episode.availability)}
                             </Chip>
+                            {episode.hasFile ? (
+                              <MediaLanguageChipRows
+                                audioLanguageCodes={episode.audioLanguageCodes}
+                                compact
+                                subtitleLanguageCodes={
+                                  episode.subtitleLanguageCodes
+                                }
+                              />
+                            ) : null}
                           </Pressable>
                           {showEpisodeDownload ? (
                             <Button

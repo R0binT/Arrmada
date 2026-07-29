@@ -10,6 +10,7 @@ import { mapQueueItem } from "../mappers/queue";
 import { mapReleaseOffer } from "../mappers/release";
 import {
   groupEpisodesIntoSeasons,
+  indexEpisodeFileLanguages,
   mapSeriesCandidate,
   mapSonarrEpisode,
   mapSonarrSeries,
@@ -84,10 +85,21 @@ export const createSonarrClient = (baseUrl: string, apiKey: string) => {
       return mapTvMazeMediaCredits(castRaw, crewRaw);
     },
     getSeasons: async (seriesId: number): Promise<Season[]> => {
-      const raw = await http.getJson<unknown[]>(
-        `/api/v3/episode?seriesId=${encodeURIComponent(String(seriesId))}`,
-      );
-      const episodes = raw.map((item) => mapSonarrEpisode(item));
+      const [rawEpisodes, rawFiles] = await Promise.all([
+        http.getJson<unknown[]>(
+          `/api/v3/episode?seriesId=${encodeURIComponent(String(seriesId))}`,
+        ),
+        http.getJson<unknown[]>(
+          `/api/v3/episodefile?seriesId=${encodeURIComponent(String(seriesId))}`,
+        ),
+      ]);
+      const languageIndex = indexEpisodeFileLanguages(rawFiles);
+      const episodes = rawEpisodes.map((item) => {
+        const obj = asRecord(item);
+        const id = obj ? Number(obj.id) : NaN;
+        const langs = Number.isFinite(id) ? languageIndex.get(id) : undefined;
+        return mapSonarrEpisode(item, new Date(), langs);
+      });
       return groupEpisodesIntoSeasons(episodes);
     },
     lookup: async (term: string): Promise<Series[]> => {
