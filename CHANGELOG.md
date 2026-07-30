@@ -5,6 +5,18 @@ All notable changes to Arrmada are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1](https://github.com/R0binT/Arrmada/compare/v1.3.0...v1.3.1) (2026-07-30)
+
+
+### Fixed
+
+* validate Arr app on connection test and correct Sonarr port placeholder ([#62](https://github.com/R0binT/Arrmada/issues/62)) ([a6543bd](https://github.com/R0binT/Arrmada/commit/a6543bd850a46b1fe883f3921d10a1314b529526))
+
+
+### Maintenance
+
+* refresh README and GitHub Pages screenshot gallery ([#61](https://github.com/R0binT/Arrmada/issues/61)) ([e9e2bc3](https://github.com/R0binT/Arrmada/commit/e9e2bc338c729671e40d9e8601a8fab772640ef9))
+
 ## [1.3.0](https://github.com/R0binT/Arrmada/compare/v1.2.0...v1.3.0) (2026-07-29)
 
 
