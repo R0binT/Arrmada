@@ -15,7 +15,7 @@
     },
     "android": {
       "package": "com.arrmada.mobile",
-      "versionCode": 11,
+      "versionCode": 12,
       "permissions": [
         "REQUEST_INSTALL_PACKAGES"
       ],
