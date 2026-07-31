@@ -23,9 +23,9 @@ import {
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
   finishPendingAudioChoice,
-  smartGrabReleases,
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
+import { startMovieDownloadAfterAdd } from "@/features/releases/start-download-after-add";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { useI18n } from "@/i18n";
 import { colors } from "@/lib/theme";
@@ -149,27 +149,21 @@ export default function MoviePreviewScreen() {
           : undefined;
       if (createdId && radarr) {
         setFeedback(t("action.searching"));
-        try {
-          const releases = await radarr.getMovieReleases(createdId);
-          const outcome = await smartGrabReleases(releases, (release) =>
-            grabMutation.mutateAsync(release),
-          );
-          if (outcome.type === "choose") {
-            setPendingChoice(outcome.pending);
-            setFeedback(undefined);
-            return;
-          }
-          if (outcome.type === "empty") {
-            setFeedback(t("detail.noRelease"));
-            return;
-          }
-          setFeedback(t("detail.downloadStarted"));
-          setTimeout(() => router.back(), 1500);
-          return;
-        } catch {
-          router.back();
+        const outcome = await startMovieDownloadAfterAdd({
+          movieId: createdId,
+          getMovieReleases: (movieId) => radarr.getMovieReleases(movieId),
+          moviesSearch: (movieId) =>
+            radarr.command("MoviesSearch", { movieIds: [movieId] }),
+          grab: (release) => grabMutation.mutateAsync(release),
+        });
+        if (outcome.type === "choose") {
+          setPendingChoice(outcome.pending);
+          setFeedback(undefined);
           return;
         }
+        setFeedback(t("detail.downloadStarted"));
+        setTimeout(() => router.back(), 1500);
+        return;
       }
       router.back();
     } catch (error) {

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 
-import { canOfferDownload } from "@/arr-client";
 import {
   AudioChoiceSheet,
   DetailImmersiveHeader,
@@ -17,9 +16,9 @@ import {
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
   finishPendingAudioChoice,
-  smartGrabReleaseBatches,
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
+import { startSeriesDownloadAfterAdd } from "@/features/releases/start-download-after-add";
 import {
   getErrorMessage,
   useAddSeries,
@@ -150,43 +149,14 @@ export default function SeriesPreviewScreen() {
           : undefined;
       if (createdId && sonarr) {
         setFeedback(t("action.searching"));
-        try {
-          const seasons = await sonarr.getSeasons(createdId);
-          const episodes = seasons.flatMap((season) =>
-            season.episodes.filter((episode) =>
-              canOfferDownload(episode.availability),
-            ),
-          );
-          if (episodes.length === 0) {
-            setFeedback(t("detail.nothingToDownload"));
-            return;
-          }
-          const batches = await Promise.all(
-            episodes.map((episode) => sonarr.getEpisodeReleases(episode.id)),
-          );
-          const outcome = await smartGrabReleaseBatches(batches, (release) =>
-            grabMutation.mutateAsync(release),
-          );
-          if (outcome.type === "choose") {
-            setPendingChoice(outcome.pending);
-            setFeedback(undefined);
-            return;
-          }
-          if (outcome.type === "empty") {
-            setFeedback(t("detail.noRelease"));
-            return;
-          }
-          setFeedback(
-            outcome.count > 1
-              ? t("detail.downloadsStarted", { count: outcome.count })
-              : t("detail.downloadStarted"),
-          );
-          setTimeout(() => router.back(), 1500);
-          return;
-        } catch {
-          router.back();
-          return;
-        }
+        await startSeriesDownloadAfterAdd({
+          seriesId: createdId,
+          seriesSearch: (seriesId) =>
+            sonarr.command("SeriesSearch", { seriesId }),
+        });
+        setFeedback(t("detail.downloadStarted"));
+        setTimeout(() => router.back(), 1500);
+        return;
       }
       router.back();
     } catch (error) {

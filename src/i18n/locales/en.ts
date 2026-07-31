@@ -67,6 +67,10 @@ export const enMessages: Record<MessageKey, string> = {
   "connection.lanSonarr": "Could not reach Sonarr — are you on home Wi‑Fi?",
   "connection.lanGeneric":
     "Could not reach the server — are you on home Wi‑Fi?",
+  "connection.timeoutRadarr":
+    "Radarr is taking too long to respond. Try again in a moment.",
+  "connection.timeoutSonarr":
+    "Sonarr is taking too long to respond. Try again in a moment.",
   "connection.unauthorizedService": "{{service}} rejected the access key.",
   "connection.notFoundService":
     "Not found on {{service}} ({{detail}}). Check the address (no /api) and that {{entity}} exists.",

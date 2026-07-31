@@ -72,6 +72,10 @@ export const frMessages = {
     "Impossible de joindre Sonarr — es-tu sur le Wi‑Fi maison ?",
   "connection.lanGeneric":
     "Impossible de joindre le serveur — es-tu sur le Wi‑Fi maison ?",
+  "connection.timeoutRadarr":
+    "Radarr met trop longtemps à répondre. Réessaie dans un instant.",
+  "connection.timeoutSonarr":
+    "Sonarr met trop longtemps à répondre. Réessaie dans un instant.",
   "connection.unauthorizedService": "{{service}} a refusé la clé d’accès.",
   "connection.notFoundService":
     "Introuvable côté {{service}} ({{detail}}). Vérifie l’adresse (sans /api) et que {{entity}} existe.",

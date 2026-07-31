@@ -12,6 +12,11 @@ export const getArrErrorMessage = (
   labels: ArrErrorLabels,
 ): string => {
   if (error instanceof ArrHttpError) {
+    if (error.kind === "timeout") {
+      return labels.serviceLabel === "Radarr"
+        ? t("connection.timeoutRadarr")
+        : t("connection.timeoutSonarr");
+    }
     if (error.kind === "network") {
       return labels.serviceLabel === "Radarr"
         ? t("connection.lanRadarr")
