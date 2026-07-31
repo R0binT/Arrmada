@@ -1,13 +1,24 @@
 import type { ReleaseOffer } from "@/arr-client";
 
 export const isSeasonPack = (offer: ReleaseOffer): boolean =>
-  offer.episodeId === undefined;
+  offer.isFullSeason || offer.episodeId === undefined;
 
 export const filterSeasonReleases = (
   offers: readonly ReleaseOffer[],
   seasonNumber: number,
+  seriesId?: number,
 ): ReleaseOffer[] =>
-  offers.filter((offer) => offer.seasonNumber === seasonNumber);
+  offers.filter((offer) => {
+    if (offer.seasonNumber !== seasonNumber) return false;
+    if (
+      seriesId !== undefined &&
+      offer.seriesId !== undefined &&
+      offer.seriesId !== seriesId
+    ) {
+      return false;
+    }
+    return true;
+  });
 
 export const sortReleaseOffers = (
   offers: readonly ReleaseOffer[],

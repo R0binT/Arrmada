@@ -201,9 +201,18 @@ export const createSonarrClient = (baseUrl: string, apiKey: string) => {
         },
       });
     },
-    getSeriesReleases: async (seriesId: number): Promise<ReleaseOffer[]> => {
+    getSeriesReleases: async (
+      seriesId: number,
+      options?: { readonly seasonNumber?: number },
+    ): Promise<ReleaseOffer[]> => {
+      const params = new URLSearchParams({
+        seriesId: String(seriesId),
+      });
+      if (options?.seasonNumber !== undefined) {
+        params.set("seasonNumber", String(options.seasonNumber));
+      }
       const raw = await http.getJson<unknown[]>(
-        `/api/v3/release?seriesId=${encodeURIComponent(String(seriesId))}`,
+        `/api/v3/release?${params.toString()}`,
       );
       return raw
         .map(mapReleaseOffer)

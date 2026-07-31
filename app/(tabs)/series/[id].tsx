@@ -275,9 +275,11 @@ export default function SeriesDetailScreen() {
       }
       setDownloadBusy(true);
       try {
-        const raw = await sonarr.getSeriesReleases(seriesId);
+        const raw = await sonarr.getSeriesReleases(seriesId, {
+          seasonNumber,
+        });
         const releases = sortReleaseOffers(
-          filterSeasonReleases(raw, seasonNumber),
+          filterSeasonReleases(raw, seasonNumber, seriesId),
         );
         const outcome = await startSmartOrPickDownload({
           releases,
@@ -312,9 +314,11 @@ export default function SeriesDetailScreen() {
       setPickerLoading(true);
       setPickerError(undefined);
       try {
-        const raw = await sonarr.getSeriesReleases(seriesId);
+        const raw = await sonarr.getSeriesReleases(seriesId, {
+          seasonNumber,
+        });
         const releases = sortReleaseOffers(
-          filterSeasonReleases(raw, seasonNumber),
+          filterSeasonReleases(raw, seasonNumber, seriesId),
         );
         setPickerReleases(releases);
       } catch (error) {

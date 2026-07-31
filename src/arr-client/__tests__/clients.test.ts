@@ -430,6 +430,39 @@ describe("createSonarrClient", () => {
     expect(url).toContain("addImportExclusion=false");
     expect(init.method).toBe("DELETE");
   });
+
+  it("searches season releases with seriesId and seasonNumber", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [
+        {
+          guid: "pack-1",
+          indexerId: 2,
+          title: "Show.S01.COMPLETE",
+          indexer: "Idx",
+          size: 10,
+          seriesId: 7,
+          seasonNumber: 1,
+          fullSeason: true,
+          languages: [],
+          quality: { quality: { name: "WEBDL-1080p", resolution: 1080 } },
+        },
+      ],
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = createSonarrClient("http://192.168.1.10:8989", "k");
+    const releases = await client.getSeriesReleases(7, { seasonNumber: 1 });
+
+    expect(releases).toHaveLength(1);
+    expect(releases[0]?.seriesId).toBe(7);
+    expect(releases[0]?.isFullSeason).toBe(true);
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("/api/v3/release?");
+    expect(url).toContain("seriesId=7");
+    expect(url).toContain("seasonNumber=1");
+  });
 });
 
 describe("createRadarrClient calendar", () => {

@@ -18,8 +18,10 @@ const base = (partial: Partial<ReleaseOffer>): ReleaseOffer => ({
   qualityName: "WEBDL-1080p",
   qualityWeight: 1080,
   languageNames: ["English"],
+  seriesId: 42,
   episodeId: undefined,
   seasonNumber: 1,
+  isFullSeason: true,
   ...partial,
 });
 
@@ -31,14 +33,32 @@ describe("filterSeasonReleases", () => {
     );
     expect(actual.map((r) => r.guid)).toEqual(["g"]);
   });
+
+  it("drops releases from another series when seriesId is provided", () => {
+    const actual = filterSeasonReleases(
+      [
+        base({ guid: "mine", seriesId: 42 }),
+        base({ guid: "other", seriesId: 99, title: "Star.Wars.S01" }),
+      ],
+      1,
+      42,
+    );
+    expect(actual.map((r) => r.guid)).toEqual(["mine"]);
+  });
 });
 
 describe("isSeasonPack / sortReleaseOffers", () => {
   it("sorts packs before episode releases, then quality", () => {
-    const pack = base({ guid: "pack", episodeId: undefined, qualityWeight: 720 });
+    const pack = base({
+      guid: "pack",
+      episodeId: undefined,
+      isFullSeason: true,
+      qualityWeight: 720,
+    });
     const ep = base({
       guid: "ep",
       episodeId: 9,
+      isFullSeason: false,
       qualityWeight: 1080,
       title: "Show.S01E01",
     });

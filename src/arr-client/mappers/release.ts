@@ -70,6 +70,10 @@ export const mapReleaseOffer = (raw: unknown): ReleaseOffer | null => {
         : undefined;
   const seasonNumber =
     typeof obj.seasonNumber === "number" ? obj.seasonNumber : undefined;
+  const seriesId =
+    typeof obj.seriesId === "number" && Number.isFinite(obj.seriesId)
+      ? obj.seriesId
+      : undefined;
 
   return {
     guid: obj.guid,
@@ -89,7 +93,9 @@ export const mapReleaseOffer = (raw: unknown): ReleaseOffer | null => {
     qualityName: quality.name,
     qualityWeight: quality.weight,
     languageNames: mapLanguageNames(obj.languages),
+    seriesId,
     episodeId,
     seasonNumber,
+    isFullSeason: Boolean(obj.fullSeason),
   };
 };

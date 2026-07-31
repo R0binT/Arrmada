@@ -175,8 +175,10 @@ export type ReleaseOffer = {
   readonly qualityName: string;
   readonly qualityWeight: number;
   readonly languageNames: readonly string[];
+  readonly seriesId: number | undefined;
   readonly episodeId: number | undefined;
   readonly seasonNumber: number | undefined;
+  readonly isFullSeason: boolean;
 };
 
 export type QueueItem = {
