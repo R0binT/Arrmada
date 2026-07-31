@@ -1,7 +1,7 @@
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, RefreshControl, StyleSheet, View } from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
@@ -75,6 +75,14 @@ export default function HomeScreen() {
 
   const home = useHomeData({ isFocused });
   const upcoming = useUpcoming();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    void Promise.all([home.refetchAll(), upcoming.refetch()]).finally(() => {
+      setIsRefreshing(false);
+    });
+  }, [home.refetchAll, upcoming.refetch]);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -158,6 +166,14 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         onScroll={scrollHandler}
+        refreshControl={
+          <RefreshControl
+            colors={[colors.text]}
+            onRefresh={handleRefresh}
+            refreshing={isRefreshing}
+            tintColor={colors.text}
+          />
+        }
         scrollEventThrottle={16}
         style={styles.scroll}
       >

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import {
     ArrHttpError,
@@ -107,6 +107,26 @@ export const useUpcoming = (options: UseUpcomingOptions = {}) => {
     (Boolean(radarr) && radarrQuery.isError && !radarrQuery.data) ||
     (Boolean(sonarr) && sonarrQuery.isError && !sonarrQuery.data);
 
+  const isRefetching = radarrQuery.isRefetching || sonarrQuery.isRefetching;
+
+  const refetch = useCallback(async (): Promise<void> => {
+    const tasks: Promise<unknown>[] = [];
+    if (radarr) tasks.push(radarrQuery.refetch());
+    if (sonarr) tasks.push(sonarrQuery.refetch());
+    await Promise.all(tasks);
+  }, [radarr, radarrQuery.refetch, sonarr, sonarrQuery.refetch]);
+
+  const refetchService = useCallback(
+    (service: ArrService) => {
+      if (service === "radarr") {
+        void radarrQuery.refetch();
+        return;
+      }
+      void sonarrQuery.refetch();
+    },
+    [radarrQuery.refetch, sonarrQuery.refetch],
+  );
+
   return {
     items,
     calendarEvents,
@@ -114,18 +134,10 @@ export const useUpcoming = (options: UseUpcomingOptions = {}) => {
     networkErrors,
     isLoading,
     isError,
+    isRefetching,
     radarrError: radarrQuery.error,
     sonarrError: sonarrQuery.error,
-    refetch: () => {
-      void radarrQuery.refetch();
-      void sonarrQuery.refetch();
-    },
-    refetchService: (service: ArrService) => {
-      if (service === "radarr") {
-        void radarrQuery.refetch();
-        return;
-      }
-      void sonarrQuery.refetch();
-    },
+    refetch,
+    refetchService,
   };
 };

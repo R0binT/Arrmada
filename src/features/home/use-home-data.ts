@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 
 import {
   ArrHttpError,
@@ -310,17 +310,44 @@ export const useHomeData = ({ isFocused }: UseHomeDataOptions) => {
           sonarrQueueQuery.isLoading ||
           sonarrHealthQuery.isLoading)));
 
-  return {
-    hero,
-    downloadingItems,
-    recentMovies,
-    recentSeries,
-    movies: moviesQuery.data ?? [],
-    series: seriesQuery.data ?? [],
-    health,
-    networkErrors,
-    isLoading,
-    refetchService: (service: ArrService) => {
+  const isRefetching =
+    moviesQuery.isRefetching ||
+    seriesQuery.isRefetching ||
+    radarrQueueQuery.isRefetching ||
+    sonarrQueueQuery.isRefetching ||
+    radarrHealthQuery.isRefetching ||
+    sonarrHealthQuery.isRefetching;
+
+  const refetchAll = useCallback(async (): Promise<void> => {
+    const tasks: Promise<unknown>[] = [];
+    if (radarr) {
+      tasks.push(
+        moviesQuery.refetch(),
+        radarrQueueQuery.refetch(),
+        radarrHealthQuery.refetch(),
+      );
+    }
+    if (sonarr) {
+      tasks.push(
+        seriesQuery.refetch(),
+        sonarrQueueQuery.refetch(),
+        sonarrHealthQuery.refetch(),
+      );
+    }
+    await Promise.all(tasks);
+  }, [
+    moviesQuery.refetch,
+    radarr,
+    radarrHealthQuery.refetch,
+    radarrQueueQuery.refetch,
+    seriesQuery.refetch,
+    sonarr,
+    sonarrHealthQuery.refetch,
+    sonarrQueueQuery.refetch,
+  ]);
+
+  const refetchService = useCallback(
+    (service: ArrService) => {
       if (service === "radarr") {
         void moviesQuery.refetch();
         void radarrQueueQuery.refetch();
@@ -331,5 +358,28 @@ export const useHomeData = ({ isFocused }: UseHomeDataOptions) => {
       void sonarrQueueQuery.refetch();
       void sonarrHealthQuery.refetch();
     },
+    [
+      moviesQuery.refetch,
+      radarrHealthQuery.refetch,
+      radarrQueueQuery.refetch,
+      seriesQuery.refetch,
+      sonarrHealthQuery.refetch,
+      sonarrQueueQuery.refetch,
+    ],
+  );
+
+  return {
+    hero,
+    downloadingItems,
+    recentMovies,
+    recentSeries,
+    movies: moviesQuery.data ?? [],
+    series: seriesQuery.data ?? [],
+    health,
+    networkErrors,
+    isLoading,
+    isRefetching,
+    refetchAll,
+    refetchService,
   };
 };

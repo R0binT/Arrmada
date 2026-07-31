@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 
 import {
   ArrHttpError,
@@ -128,25 +128,35 @@ export const useQueue = ({ enabled, poll }: UseQueueOptions) => {
 
   const isError = configuredServicesFailed && items.length === 0;
   const error = radarrError ?? sonarrError;
+  const isRefetching = radarrQuery.isRefetching || sonarrQuery.isRefetching;
+
+  const refetch = useCallback(async (): Promise<void> => {
+    const tasks: Promise<unknown>[] = [];
+    if (radarr) tasks.push(radarrQuery.refetch());
+    if (sonarr) tasks.push(sonarrQuery.refetch());
+    await Promise.all(tasks);
+  }, [radarr, radarrQuery.refetch, sonarr, sonarrQuery.refetch]);
+
+  const refetchRadarr = useCallback(() => {
+    if (radarr) void radarrQuery.refetch();
+  }, [radarr, radarrQuery.refetch]);
+
+  const refetchSonarr = useCallback(() => {
+    if (sonarr) void sonarrQuery.refetch();
+  }, [sonarr, sonarrQuery.refetch]);
 
   return {
     items,
     isLoading,
     isError,
+    isRefetching,
     error,
     radarrError,
     sonarrError,
     hasPartialError,
-    refetch: () => {
-      if (radarr) void radarrQuery.refetch();
-      if (sonarr) void sonarrQuery.refetch();
-    },
-    refetchRadarr: () => {
-      if (radarr) void radarrQuery.refetch();
-    },
-    refetchSonarr: () => {
-      if (sonarr) void sonarrQuery.refetch();
-    },
+    refetch,
+    refetchRadarr,
+    refetchSonarr,
   };
 };
 
