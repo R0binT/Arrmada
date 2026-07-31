@@ -5,6 +5,18 @@ All notable changes to Arrmada are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0](https://github.com/R0binT/Arrmada/compare/v1.3.2...v1.4.0) (2026-07-31)
+
+
+### Added
+
+* add pull-to-refresh on home, library, and queue ([#67](https://github.com/R0binT/Arrmada/issues/67)) ([c0f00a3](https://github.com/R0binT/Arrmada/commit/c0f00a38cac572b07b4264984057d8fd99e2d76e))
+
+
+### Fixed
+
+* scope season releases and refresh Downloads after search ([#66](https://github.com/R0binT/Arrmada/issues/66)) ([99f587c](https://github.com/R0binT/Arrmada/commit/99f587ca83dc42a8c78ac344b72abdb4ffbaef7b))
+
 ## [1.3.2](https://github.com/R0binT/Arrmada/compare/v1.3.1...v1.3.2) (2026-07-31)
 
 
