@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { openSettingsServices } from "@/features/settings/open-settings";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Switch, View } from "react-native";
 import Animated from "react-native-reanimated";
@@ -38,6 +39,7 @@ import {
   useMovieCast,
   useUpdateMovieMonitored,
 } from "@/features/movies/use-movies";
+import { startQueueBurstFromCache } from "@/features/queue/start-queue-burst";
 import { startSmartOrPickDownload } from "@/features/releases/start-smart-or-pick-download";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { colors } from "@/lib/theme";
@@ -57,6 +59,7 @@ export default function MovieDetailScreen() {
   const { id: idParam } = useLocalSearchParams<{ id: string }>();
   const movieId = Number(idParam);
   const { radarr } = useArrClients();
+  const queryClient = useQueryClient();
   const movieQuery = useMovie(movieId);
   const castQuery = useMovieCast(movieId);
   const grabMutation = useGrabMovieRelease();
@@ -104,6 +107,7 @@ export default function MovieDetailScreen() {
       });
       if (outcome.type === "empty") {
         await radarr.command("MoviesSearch", { movieIds: [movieId] });
+        startQueueBurstFromCache(queryClient);
         setToast(t("detail.downloadStarted"));
         return;
       }
@@ -115,6 +119,7 @@ export default function MovieDetailScreen() {
     } catch (error) {
       try {
         await radarr.command("MoviesSearch", { movieIds: [movieId] });
+        startQueueBurstFromCache(queryClient);
         setToast(t("detail.downloadStarted"));
       } catch {
         setToast(getErrorMessage(error));
@@ -122,7 +127,7 @@ export default function MovieDetailScreen() {
     } finally {
       setDownloadBusy(false);
     }
-  }, [grabMutation, movieId, openPicker, radarr]);
+  }, [grabMutation, movieId, openPicker, queryClient, radarr]);
 
   const handleChooseFile = useCallback(async () => {
     if (!radarr) {

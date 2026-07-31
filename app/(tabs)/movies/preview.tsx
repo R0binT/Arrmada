@@ -26,7 +26,9 @@ import {
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
 import { startMovieDownloadAfterAdd } from "@/features/releases/start-download-after-add";
+import { startQueueBurstFromCache } from "@/features/queue/start-queue-burst";
 import { useArrClients } from "@/hooks/use-arr-clients";
+import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
 import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
@@ -50,6 +52,7 @@ export default function MoviePreviewScreen() {
   const { tmdbId: tmdbIdParam } = useLocalSearchParams<{ tmdbId: string }>();
   const tmdbId = parseTmdbId(tmdbIdParam);
   const { radarr } = useArrClients();
+  const queryClient = useQueryClient();
   const previewQuery = useMovieCandidatePreview(tmdbId);
   const defaultsQuery = useMovieDefaults();
   const addMutation = useAddMovie();
@@ -161,6 +164,9 @@ export default function MoviePreviewScreen() {
           setFeedback(undefined);
           return;
         }
+        if (outcome.type === "arrSearchStarted") {
+          startQueueBurstFromCache(queryClient);
+        }
         setFeedback(t("detail.downloadStarted"));
         setTimeout(() => router.back(), 1500);
         return;
@@ -176,6 +182,7 @@ export default function MoviePreviewScreen() {
     candidate,
     grabMutation,
     qualityProfileId,
+    queryClient,
     radarr,
     rootFolderPath,
     t,

@@ -14,8 +14,10 @@ const offer = (
   rejectionReasons: [],
   qualityName: "Bluray-1080p",
   languageNames: [],
+  seriesId: undefined,
   episodeId: undefined,
   seasonNumber: undefined,
+  isFullSeason: false,
   ...partial,
 });
 

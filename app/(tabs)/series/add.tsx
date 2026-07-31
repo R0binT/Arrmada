@@ -26,6 +26,7 @@ import {
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
 import { startSeriesDownloadAfterAdd } from "@/features/releases/start-download-after-add";
+import { startQueueBurstFromCache } from "@/features/queue/start-queue-burst";
 import {
   getErrorMessage,
   useAddSeries,
@@ -36,6 +37,7 @@ import {
 } from "@/features/series/use-series";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useArrClients } from "@/hooks/use-arr-clients";
+import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
 import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
@@ -61,6 +63,7 @@ export default function AddSeriesScreen() {
     PendingAudioChoice | undefined
   >();
   const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
 
   const lookupQuery = useSeriesLookup(term);
   const defaultsQuery = useSeriesDefaults();
@@ -162,6 +165,7 @@ export default function AddSeriesScreen() {
           seriesSearch: (seriesId) =>
             sonarr.command("SeriesSearch", { seriesId }),
         });
+        startQueueBurstFromCache(queryClient);
         setSelected(undefined);
         setFeedback(t("detail.downloadStarted"));
         return;
@@ -178,6 +182,7 @@ export default function AddSeriesScreen() {
     grabMutation,
     lookupQuery.refetch,
     qualityProfileId,
+    queryClient,
     rootFolderPath,
     selected,
     sonarr,

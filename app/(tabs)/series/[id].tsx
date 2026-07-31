@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Switch, View } from "react-native";
@@ -47,6 +48,7 @@ import {
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
 import { startSmartOrPickDownload } from "@/features/releases/start-smart-or-pick-download";
+import { startQueueBurstFromCache } from "@/features/queue/start-queue-burst";
 import {
   getErrorMessage,
   useDeleteSeries,
@@ -114,6 +116,7 @@ export default function SeriesDetailScreen() {
   const { id: idParam } = useLocalSearchParams<{ id: string }>();
   const seriesId = Number(idParam);
   const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
   const seriesQuery = useSeries(seriesId);
   const castQuery = useSeriesCast(seriesId);
   const seasonsQuery = useSeriesSeasons(seriesId);
@@ -200,6 +203,7 @@ export default function SeriesDetailScreen() {
           await sonarr.command("EpisodeSearch", {
             episodeIds: episodes.map((episode) => episode.id),
           });
+          startQueueBurstFromCache(queryClient);
           setToast(t("detail.downloadStarted"));
           return;
         }
@@ -217,6 +221,7 @@ export default function SeriesDetailScreen() {
           await sonarr.command("EpisodeSearch", {
             episodeIds: episodes.map((episode) => episode.id),
           });
+          startQueueBurstFromCache(queryClient);
           setToast(t("detail.downloadStarted"));
         } catch {
           setToast(getErrorMessage(error));
@@ -225,7 +230,7 @@ export default function SeriesDetailScreen() {
         setDownloadBusy(false);
       }
     },
-    [grabMutation, sonarr, t],
+    [grabMutation, queryClient, sonarr, t],
   );
 
   const handleDownloadSeries = useCallback(async () => {
@@ -233,21 +238,24 @@ export default function SeriesDetailScreen() {
       setToast(t("detail.sonarrMissing"));
       return;
     }
-    const episodes = episodesNeedingDownload(seasonsQuery.data ?? []);
-    if (episodes.length === 0) {
+    // Match the Download button: series stats, not per-episode air dates
+    // (missing airDateUtc / unloaded seasons used to block SeriesSearch).
+    const series = seriesQuery.data;
+    if (!series || !canOfferDownload(classifySeries(series))) {
       setToast(t("detail.nothingToDownload"));
       return;
     }
     setDownloadBusy(true);
     try {
       await sonarr.command("SeriesSearch", { seriesId });
+      startQueueBurstFromCache(queryClient);
       setToast(t("detail.downloadStarted"));
     } catch (error) {
       setToast(getErrorMessage(error));
     } finally {
       setDownloadBusy(false);
     }
-  }, [seasonsQuery.data, seriesId, sonarr, t]);
+  }, [queryClient, seriesId, seriesQuery.data, sonarr, t]);
 
   const openSeasonPicker = useCallback(
     (seasonNumber: number, releases: readonly ReleaseOffer[]) => {
@@ -275,16 +283,23 @@ export default function SeriesDetailScreen() {
       }
       setDownloadBusy(true);
       try {
-        const raw = await sonarr.getSeriesReleases(seriesId);
+        const raw = await sonarr.getSeriesReleases(seriesId, {
+          seasonNumber,
+        });
         const releases = sortReleaseOffers(
-          filterSeasonReleases(raw, seasonNumber),
+          filterSeasonReleases(raw, seasonNumber, seriesId),
         );
         const outcome = await startSmartOrPickDownload({
           releases,
           grab: (release) => grabMutation.mutateAsync(release),
         });
         if (outcome.type === "empty") {
-          setToast(t("detail.noRelease"));
+          await sonarr.command("SeasonSearch", {
+            seriesId,
+            seasonNumber,
+          });
+          startQueueBurstFromCache(queryClient);
+          setToast(t("detail.downloadStarted"));
           return;
         }
         if (outcome.type === "needPick") {
@@ -293,12 +308,29 @@ export default function SeriesDetailScreen() {
         }
         setToast(t("detail.downloadStarted"));
       } catch (error) {
-        setToast(getErrorMessage(error));
+        try {
+          await sonarr.command("SeasonSearch", {
+            seriesId,
+            seasonNumber,
+          });
+          startQueueBurstFromCache(queryClient);
+          setToast(t("detail.downloadStarted"));
+        } catch {
+          setToast(getErrorMessage(error));
+        }
       } finally {
         setDownloadBusy(false);
       }
     },
-    [grabMutation, openSeasonPicker, seasonsQuery.data, seriesId, sonarr],
+    [
+      grabMutation,
+      openSeasonPicker,
+      queryClient,
+      seasonsQuery.data,
+      seriesId,
+      sonarr,
+      t,
+    ],
   );
 
   const handleChooseSeasonFile = useCallback(
@@ -312,9 +344,11 @@ export default function SeriesDetailScreen() {
       setPickerLoading(true);
       setPickerError(undefined);
       try {
-        const raw = await sonarr.getSeriesReleases(seriesId);
+        const raw = await sonarr.getSeriesReleases(seriesId, {
+          seasonNumber,
+        });
         const releases = sortReleaseOffers(
-          filterSeasonReleases(raw, seasonNumber),
+          filterSeasonReleases(raw, seasonNumber, seriesId),
         );
         setPickerReleases(releases);
       } catch (error) {
