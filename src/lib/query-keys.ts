@@ -21,6 +21,8 @@ export const queryKeys = {
       [...queryKeys.series.all, "preview", tvdbId] as const,
     defaults: ["series", "defaults"] as const,
     releases: (id: number) => ["series", id, "releases"] as const,
+    episodeReleases: (episodeId: number) =>
+      ["series", "episode", episodeId, "releases"] as const,
   },
   queue: {
     all: ["queue"] as const,

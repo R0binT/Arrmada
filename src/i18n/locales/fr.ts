@@ -25,6 +25,8 @@ export const frMessages = {
   "action.add": "Ajouter",
   "action.addNamedA11y": "Ajouter {{title}}",
   "action.download": "Télécharger",
+  "action.chooseFile": "Choisir un fichier",
+  "action.chooseFileA11y": "Choisir un fichier à télécharger",
   "action.remove": "Retirer",
   "action.pause": "Pause",
   "action.resume": "Reprendre",
@@ -70,6 +72,10 @@ export const frMessages = {
     "Impossible de joindre Sonarr — es-tu sur le Wi‑Fi maison ?",
   "connection.lanGeneric":
     "Impossible de joindre le serveur — es-tu sur le Wi‑Fi maison ?",
+  "connection.timeoutRadarr":
+    "Radarr met trop longtemps à répondre. Réessaie dans un instant.",
+  "connection.timeoutSonarr":
+    "Sonarr met trop longtemps à répondre. Réessaie dans un instant.",
   "connection.unauthorizedService": "{{service}} a refusé la clé d’accès.",
   "connection.notFoundService":
     "Introuvable côté {{service}} ({{detail}}). Vérifie l’adresse (sans /api) et que {{entity}} existe.",
@@ -199,6 +205,11 @@ export const frMessages = {
   "detail.nothingToDownload": "Rien à télécharger",
   "detail.nothingToDownloadSeason": "Rien à télécharger pour cette saison",
   "detail.noRelease": "Aucune release trouvée",
+  "release.pickerTitle": "Choisir un fichier",
+  "release.noOffers": "Aucun fichier trouvé",
+  "release.rejected": "Rejeté",
+  "release.seeders": "{{count}} seeders",
+  "release.loading": "Recherche des fichiers…",
   "detail.episodeMissing": "Épisode introuvable",
   "detail.movieMissing": "Film introuvable",
   "detail.seriesMissing": "Série introuvable",

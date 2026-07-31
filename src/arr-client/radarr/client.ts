@@ -113,7 +113,7 @@ export const createRadarrClient = (baseUrl: string, apiKey: string) => {
         qualityProfileId: input.qualityProfileId,
         rootFolderPath: input.rootFolderPath,
         monitored: true,
-        addOptions: { searchForMovie: false },
+        addOptions: { searchForMovie: true },
       });
     },
     getMovieReleases: async (movieId: number): Promise<ReleaseOffer[]> => {

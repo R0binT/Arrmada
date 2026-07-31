@@ -1,4 +1,4 @@
-export { ArrHttpError, kindFromStatus } from "./errors";
+export { ArrHttpError, isAbortError, kindFromStatus } from "./errors";
 export type { ArrErrorKind } from "./errors";
 export { createArrHttp } from "./http";
 export type { ArrHttp } from "./http";

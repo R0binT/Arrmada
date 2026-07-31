@@ -25,6 +25,7 @@ export { ProgressBar } from "@/components/ProgressBar";
 export { QueueRow } from "@/components/QueueRow";
 export { QueueSkeleton } from "@/components/QueueSkeleton";
 export { RatingsRow } from "@/components/RatingsRow";
+export { ReleasePickerSheet } from "@/components/ReleasePickerSheet";
 export { Screen } from "@/components/Screen";
 export { ServiceHealthDot } from "@/components/ServiceHealthDot";
 export { SkeletonBlock } from "@/components/SkeletonBlock";

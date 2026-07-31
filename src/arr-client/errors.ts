@@ -1,5 +1,6 @@
 export type ArrErrorKind =
   | "network"
+  | "timeout"
   | "unauthorized"
   | "not_found"
   | "server"
@@ -22,4 +23,17 @@ export const kindFromStatus = (status: number): ArrErrorKind => {
   if (status === 404) return "not_found";
   if (status >= 500) return "server";
   return "unknown";
+};
+
+/** True when fetch was aborted by our request timeout. */
+export const isAbortError = (error: unknown): boolean => {
+  if (error instanceof Error && error.name === "AbortError") return true;
+  if (
+    typeof DOMException !== "undefined" &&
+    error instanceof DOMException &&
+    error.name === "AbortError"
+  ) {
+    return true;
+  }
+  return false;
 };

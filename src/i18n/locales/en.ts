@@ -24,6 +24,8 @@ export const enMessages: Record<MessageKey, string> = {
   "action.add": "Add",
   "action.addNamedA11y": "Add {{title}}",
   "action.download": "Download",
+  "action.chooseFile": "Choose a file",
+  "action.chooseFileA11y": "Choose a file to download",
   "action.remove": "Remove",
   "action.pause": "Pause",
   "action.resume": "Resume",
@@ -65,6 +67,10 @@ export const enMessages: Record<MessageKey, string> = {
   "connection.lanSonarr": "Could not reach Sonarr — are you on home Wi‑Fi?",
   "connection.lanGeneric":
     "Could not reach the server — are you on home Wi‑Fi?",
+  "connection.timeoutRadarr":
+    "Radarr is taking too long to respond. Try again in a moment.",
+  "connection.timeoutSonarr":
+    "Sonarr is taking too long to respond. Try again in a moment.",
   "connection.unauthorizedService": "{{service}} rejected the access key.",
   "connection.notFoundService":
     "Not found on {{service}} ({{detail}}). Check the address (no /api) and that {{entity}} exists.",
@@ -186,6 +192,11 @@ export const enMessages: Record<MessageKey, string> = {
   "detail.nothingToDownload": "Nothing to download",
   "detail.nothingToDownloadSeason": "Nothing to download for this season",
   "detail.noRelease": "No release found",
+  "release.pickerTitle": "Choose a file",
+  "release.noOffers": "No files found",
+  "release.rejected": "Rejected",
+  "release.seeders": "{{count}} seeders",
+  "release.loading": "Looking up files…",
   "detail.episodeMissing": "Episode not found",
   "detail.movieMissing": "Movie not found",
   "detail.seriesMissing": "Series not found",

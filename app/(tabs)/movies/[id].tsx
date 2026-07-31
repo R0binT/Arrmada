@@ -7,11 +7,11 @@ import Animated from "react-native-reanimated";
 import {
   canOfferDownload,
   classifyMovie,
+  type ReleaseOffer,
 } from "@/arr-client";
 import { availabilityChipTone } from "@/features/library/availability-chip-tone";
 import { availabilityLabel, t } from "@/i18n";
 import {
-  AudioChoiceSheet,
   CastSection,
   CrewSection,
   DetailImmersiveHeader,
@@ -22,6 +22,7 @@ import {
   MediaLanguageChipRows,
   MediaMetaBlock,
   RatingsRow,
+  ReleasePickerSheet,
   Screen,
 } from "@/components";
 import {
@@ -37,12 +38,7 @@ import {
   useMovieCast,
   useUpdateMovieMonitored,
 } from "@/features/movies/use-movies";
-import type { AudioPreference } from "@/features/releases/resolve-release-decision";
-import {
-  finishPendingAudioChoice,
-  smartGrabReleases,
-  type PendingAudioChoice,
-} from "@/features/releases/smart-grab";
+import { startSmartOrPickDownload } from "@/features/releases/start-smart-or-pick-download";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
@@ -68,9 +64,11 @@ export default function MovieDetailScreen() {
   const deleteMutation = useDeleteMovie();
   const [toast, setToast] = useState<string | undefined>();
   const [downloadBusy, setDownloadBusy] = useState(false);
-  const [pendingChoice, setPendingChoice] = useState<
-    PendingAudioChoice | undefined
-  >();
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerReleases, setPickerReleases] = useState<ReleaseOffer[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerError, setPickerError] = useState<string | undefined>();
+  const [grabbingGuid, setGrabbingGuid] = useState<string | undefined>();
 
   useEffect(() => {
     if (!toast) return;
@@ -86,6 +84,12 @@ export default function MovieDetailScreen() {
     openSettingsServices();
   }, []);
 
+  const openPicker = useCallback((releases: readonly ReleaseOffer[]) => {
+    setPickerReleases([...releases]);
+    setPickerError(undefined);
+    setPickerVisible(true);
+  }, []);
+
   const handleDownload = useCallback(async () => {
     if (!radarr) {
       setToast(t("detail.radarrMissing"));
@@ -94,43 +98,64 @@ export default function MovieDetailScreen() {
     setDownloadBusy(true);
     try {
       const releases = await radarr.getMovieReleases(movieId);
-      const outcome = await smartGrabReleases(releases, (release) =>
-        grabMutation.mutateAsync(release),
-      );
+      const outcome = await startSmartOrPickDownload({
+        releases,
+        grab: (release) => grabMutation.mutateAsync(release),
+      });
       if (outcome.type === "empty") {
-        setToast(t("detail.noRelease"));
-        return;
-      }
-      if (outcome.type === "grabbed") {
+        await radarr.command("MoviesSearch", { movieIds: [movieId] });
         setToast(t("detail.downloadStarted"));
         return;
       }
-      setPendingChoice(outcome.pending);
+      if (outcome.type === "needPick") {
+        openPicker(outcome.releases);
+        return;
+      }
+      setToast(t("detail.downloadStarted"));
     } catch (error) {
-      setToast(getErrorMessage(error));
+      try {
+        await radarr.command("MoviesSearch", { movieIds: [movieId] });
+        setToast(t("detail.downloadStarted"));
+      } catch {
+        setToast(getErrorMessage(error));
+      }
     } finally {
       setDownloadBusy(false);
     }
-  }, [grabMutation, movieId, radarr]);
+  }, [grabMutation, movieId, openPicker, radarr]);
 
-  const handleAudioChoice = useCallback(
-    async (preference: AudioPreference) => {
-      if (!pendingChoice) return;
-      const pending = pendingChoice;
-      setPendingChoice(undefined);
-      setDownloadBusy(true);
+  const handleChooseFile = useCallback(async () => {
+    if (!radarr) {
+      setToast(t("detail.radarrMissing"));
+      return;
+    }
+    setPickerVisible(true);
+    setPickerLoading(true);
+    setPickerError(undefined);
+    try {
+      const releases = await radarr.getMovieReleases(movieId);
+      setPickerReleases(releases);
+    } catch (error) {
+      setPickerError(getErrorMessage(error));
+    } finally {
+      setPickerLoading(false);
+    }
+  }, [movieId, radarr]);
+
+  const handlePickRelease = useCallback(
+    async (release: ReleaseOffer) => {
+      setGrabbingGuid(release.guid);
       try {
-        await finishPendingAudioChoice(pending, preference, (release) =>
-          grabMutation.mutateAsync(release),
-        );
+        await grabMutation.mutateAsync(release);
+        setPickerVisible(false);
         setToast(t("detail.downloadStarted"));
       } catch (error) {
         setToast(getErrorMessage(error));
       } finally {
-        setDownloadBusy(false);
+        setGrabbingGuid(undefined);
       }
     },
-    [grabMutation, pendingChoice],
+    [grabMutation],
   );
 
   const handleToggleSuivi = useCallback(
@@ -215,15 +240,26 @@ export default function MovieDetailScreen() {
       <DetailImmersiveHeader
         actions={
           showDownload ? (
-            <Button
-              accessibilityLabel={t("detail.downloadMovieA11y")}
-              disabled={actionsBusy}
-              loading={downloadBusy}
-              onPress={() => void handleDownload()}
-              style={styles.fullWidthButton}
-            >
-              {downloadBusy ? t("action.searching") : t("action.download")}
-            </Button>
+            <View style={{ gap: scaledSpace.sm, width: "100%" }}>
+              <Button
+                accessibilityLabel={t("detail.downloadMovieA11y")}
+                disabled={actionsBusy}
+                loading={downloadBusy}
+                onPress={() => void handleDownload()}
+                style={styles.fullWidthButton}
+              >
+                {downloadBusy ? t("action.searching") : t("action.download")}
+              </Button>
+              <Button
+                accessibilityLabel={t("action.chooseFileA11y")}
+                disabled={actionsBusy}
+                onPress={() => void handleChooseFile()}
+                style={styles.fullWidthButton}
+                variant="secondary"
+              >
+                {t("action.chooseFile")}
+              </Button>
+            </View>
           ) : null
         }
         backLabel={t("action.back")}
@@ -348,12 +384,15 @@ export default function MovieDetailScreen() {
         </Surface>
       ) : null}
 
-      <AudioChoiceSheet
-        onChooseVf={() => void handleAudioChoice("vf")}
-        onChooseVo={() => void handleAudioChoice("vo")}
-        onDismiss={() => setPendingChoice(undefined)}
-        qualityName={pendingChoice?.qualityName ?? ""}
-        visible={pendingChoice !== undefined}
+      <ReleasePickerSheet
+        errorMessage={pickerError}
+        grabbingGuid={grabbingGuid}
+        loading={pickerLoading}
+        onDismiss={() => setPickerVisible(false)}
+        onRetry={() => void handleChooseFile()}
+        onSelect={(release) => void handlePickRelease(release)}
+        releases={pickerReleases}
+        visible={pickerVisible}
       />
     </Screen>
   );

@@ -50,4 +50,17 @@ describe("createArrHttp", () => {
       kind: "network",
     });
   });
+
+  it("maps AbortError to timeout ArrHttpError", async () => {
+    const abortError = new Error("Aborted");
+    abortError.name = "AbortError";
+    globalThis.fetch = jest.fn().mockRejectedValue(abortError);
+
+    const http = createArrHttp("http://192.168.1.10:7878", "secret");
+    await expect(http.getJson("/api/v3/movie")).rejects.toMatchObject({
+      kind: "timeout",
+      status: 0,
+    });
+    await expect(http.getJson("/api/v3/movie")).rejects.toBeInstanceOf(ArrHttpError);
+  });
 });

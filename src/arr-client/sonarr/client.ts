@@ -196,7 +196,7 @@ export const createSonarrClient = (baseUrl: string, apiKey: string) => {
         monitored: true,
         seasonFolder: true,
         addOptions: {
-          searchForMissingEpisodes: false,
+          searchForMissingEpisodes: true,
           monitor: "all",
         },
       });

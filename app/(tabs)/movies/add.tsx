@@ -32,9 +32,9 @@ import {
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
   finishPendingAudioChoice,
-  smartGrabReleases,
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
+import { startMovieDownloadAfterAdd } from "@/features/releases/start-download-after-add";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { useI18n } from "@/i18n";
 import { colors, radii } from "@/lib/theme";
@@ -139,7 +139,6 @@ export default function AddMovieScreen() {
       return;
     }
 
-    const title = selected.title;
     try {
       setSearchBusy(true);
       setFeedback(t("action.adding"));
@@ -158,31 +157,24 @@ export default function AddMovieScreen() {
       await lookupQuery.refetch();
       if (createdId && radarr) {
         setFeedback(t("action.searching"));
-        try {
-          const releases = await radarr.getMovieReleases(createdId);
-          const outcome = await smartGrabReleases(releases, (release) =>
-            grabMutation.mutateAsync(release),
-          );
-          setSelected(undefined);
-          if (outcome.type === "choose") {
-            setPendingChoice(outcome.pending);
-            setFeedback(undefined);
-            return;
-          }
-          if (outcome.type === "empty") {
-            setFeedback(t("detail.noRelease"));
-            return;
-          }
-          setFeedback(t("detail.downloadStarted"));
-          return;
-        } catch {
-          setSelected(undefined);
-          setFeedback(t("add.movieAdded", { title }));
+        const outcome = await startMovieDownloadAfterAdd({
+          movieId: createdId,
+          getMovieReleases: (movieId) => radarr.getMovieReleases(movieId),
+          moviesSearch: (movieId) =>
+            radarr.command("MoviesSearch", { movieIds: [movieId] }),
+          grab: (release) => grabMutation.mutateAsync(release),
+        });
+        setSelected(undefined);
+        if (outcome.type === "choose") {
+          setPendingChoice(outcome.pending);
+          setFeedback(undefined);
           return;
         }
+        setFeedback(t("detail.downloadStarted"));
+        return;
       }
       setSelected(undefined);
-      setFeedback(t("add.movieAdded", { title }));
+      setFeedback(t("detail.downloadStarted"));
     } catch (error) {
       setFeedback(getErrorMessage(error));
     } finally {

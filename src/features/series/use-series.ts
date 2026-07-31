@@ -225,6 +225,22 @@ export const useSeriesReleases = (seriesId: number, enabled: boolean) => {
   });
 };
 
+export const useEpisodeReleases = (episodeId: number, enabled: boolean) => {
+  const { sonarr } = useArrClients();
+  return useQuery({
+    queryKey: queryKeys.series.episodeReleases(episodeId),
+    queryFn: (): Promise<ReleaseOffer[]> => {
+      if (!sonarr) throw new Error("Sonarr is not configured.");
+      return sonarr.getEpisodeReleases(episodeId);
+    },
+    enabled:
+      enabled &&
+      Boolean(sonarr) &&
+      Number.isFinite(episodeId) &&
+      episodeId > 0,
+  });
+};
+
 export const useGrabSeriesRelease = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();

@@ -1,6 +1,7 @@
-import { ArrHttpError, kindFromStatus } from "./errors";
+import { ArrHttpError, isAbortError, kindFromStatus } from "./errors";
 
-const TIMEOUT_MS = 10_000;
+/** Sonarr/Radarr add + indexer search often need more than a few seconds. */
+const TIMEOUT_MS = 60_000;
 
 export type ArrHttp = {
   readonly getJson: <T>(path: string) => Promise<T>;
@@ -57,6 +58,13 @@ export const createArrHttp = (baseUrl: string, apiKey: string): ArrHttp => {
       return (await response.json()) as T;
     } catch (err) {
       if (err instanceof ArrHttpError) throw err;
+      if (isAbortError(err)) {
+        throw new ArrHttpError(
+          `Timed out after ${TIMEOUT_MS}ms · ${method} ${path}`,
+          0,
+          "timeout",
+        );
+      }
       throw new ArrHttpError(
         err instanceof Error ? err.message : "Network error",
         0,

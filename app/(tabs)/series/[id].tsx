@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Switch, View } from "react-native";
 import Animated from "react-native-reanimated";
 
-import type { Episode, Season } from "@/arr-client";
+import type { Episode, ReleaseOffer, Season } from "@/arr-client";
 import {
   canOfferDownload,
   classifySeries,
@@ -22,6 +22,7 @@ import {
   MediaMetaBlock,
   MediaQuickSheet,
   RatingsRow,
+  ReleasePickerSheet,
   Screen,
 } from "@/components";
 import {
@@ -34,6 +35,10 @@ import {
   selectionFromSeason,
 } from "@/features/media-quick/build-media-quick-selection";
 import { useMediaQuickController } from "@/features/media-quick/use-media-quick-controller";
+import {
+  filterSeasonReleases,
+  sortReleaseOffers,
+} from "@/features/releases/filter-season-releases";
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
   finishPendingAudioChoice,
@@ -41,6 +46,7 @@ import {
   smartGrabReleases,
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
+import { startSmartOrPickDownload } from "@/features/releases/start-smart-or-pick-download";
 import {
   getErrorMessage,
   useDeleteSeries,
@@ -132,6 +138,14 @@ export default function SeriesDetailScreen() {
   const [pendingChoice, setPendingChoice] = useState<
     PendingAudioChoice | undefined
   >();
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerReleases, setPickerReleases] = useState<ReleaseOffer[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerError, setPickerError] = useState<string | undefined>();
+  const [pickerSeasonNumber, setPickerSeasonNumber] = useState<
+    number | undefined
+  >();
+  const [grabbingGuid, setGrabbingGuid] = useState<string | undefined>();
   const [expandedSeasons, setExpandedSeasons] = useState<ReadonlySet<number>>(
     () => new Set(),
   );
@@ -183,7 +197,10 @@ export default function SeriesDetailScreen() {
                 grabMutation.mutateAsync(release),
               );
         if (outcome.type === "empty") {
-          setToast(t("detail.noRelease"));
+          await sonarr.command("EpisodeSearch", {
+            episodeIds: episodes.map((episode) => episode.id),
+          });
+          setToast(t("detail.downloadStarted"));
           return;
         }
         if (outcome.type === "grabbed") {
@@ -196,31 +213,133 @@ export default function SeriesDetailScreen() {
         }
         setPendingChoice(outcome.pending);
       } catch (error) {
+        try {
+          await sonarr.command("EpisodeSearch", {
+            episodeIds: episodes.map((episode) => episode.id),
+          });
+          setToast(t("detail.downloadStarted"));
+        } catch {
+          setToast(getErrorMessage(error));
+        }
+      } finally {
+        setDownloadBusy(false);
+      }
+    },
+    [grabMutation, sonarr, t],
+  );
+
+  const handleDownloadSeries = useCallback(async () => {
+    if (!sonarr) {
+      setToast(t("detail.sonarrMissing"));
+      return;
+    }
+    const episodes = episodesNeedingDownload(seasonsQuery.data ?? []);
+    if (episodes.length === 0) {
+      setToast(t("detail.nothingToDownload"));
+      return;
+    }
+    setDownloadBusy(true);
+    try {
+      await sonarr.command("SeriesSearch", { seriesId });
+      setToast(t("detail.downloadStarted"));
+    } catch (error) {
+      setToast(getErrorMessage(error));
+    } finally {
+      setDownloadBusy(false);
+    }
+  }, [seasonsQuery.data, seriesId, sonarr, t]);
+
+  const openSeasonPicker = useCallback(
+    (seasonNumber: number, releases: readonly ReleaseOffer[]) => {
+      setPickerSeasonNumber(seasonNumber);
+      setPickerReleases([...releases]);
+      setPickerError(undefined);
+      setPickerVisible(true);
+    },
+    [],
+  );
+
+  const handleDownloadSeason = useCallback(
+    async (seasonNumber: number) => {
+      if (!sonarr) {
+        setToast(t("detail.sonarrMissing"));
+        return;
+      }
+      const episodes = episodesNeedingDownload(
+        seasonsQuery.data ?? [],
+        seasonNumber,
+      );
+      if (episodes.length === 0) {
+        setToast(t("detail.nothingToDownloadSeason"));
+        return;
+      }
+      setDownloadBusy(true);
+      try {
+        const raw = await sonarr.getSeriesReleases(seriesId);
+        const releases = sortReleaseOffers(
+          filterSeasonReleases(raw, seasonNumber),
+        );
+        const outcome = await startSmartOrPickDownload({
+          releases,
+          grab: (release) => grabMutation.mutateAsync(release),
+        });
+        if (outcome.type === "empty") {
+          setToast(t("detail.noRelease"));
+          return;
+        }
+        if (outcome.type === "needPick") {
+          openSeasonPicker(seasonNumber, outcome.releases);
+          return;
+        }
+        setToast(t("detail.downloadStarted"));
+      } catch (error) {
         setToast(getErrorMessage(error));
       } finally {
         setDownloadBusy(false);
       }
     },
-    [grabMutation, sonarr],
+    [grabMutation, openSeasonPicker, seasonsQuery.data, seriesId, sonarr],
   );
 
-  const handleDownloadSeries = useCallback(async () => {
-    const episodes = episodesNeedingDownload(seasonsQuery.data ?? []);
-    await handleDownloadEpisodes(episodes, t("detail.nothingToDownload"));
-  }, [handleDownloadEpisodes, seasonsQuery.data]);
-
-  const handleDownloadSeason = useCallback(
+  const handleChooseSeasonFile = useCallback(
     async (seasonNumber: number) => {
-      const episodes = episodesNeedingDownload(
-        seasonsQuery.data ?? [],
-        seasonNumber,
-      );
-      await handleDownloadEpisodes(
-        episodes,
-        t("detail.nothingToDownloadSeason"),
-      );
+      if (!sonarr) {
+        setToast(t("detail.sonarrMissing"));
+        return;
+      }
+      setPickerSeasonNumber(seasonNumber);
+      setPickerVisible(true);
+      setPickerLoading(true);
+      setPickerError(undefined);
+      try {
+        const raw = await sonarr.getSeriesReleases(seriesId);
+        const releases = sortReleaseOffers(
+          filterSeasonReleases(raw, seasonNumber),
+        );
+        setPickerReleases(releases);
+      } catch (error) {
+        setPickerError(getErrorMessage(error));
+      } finally {
+        setPickerLoading(false);
+      }
     },
-    [handleDownloadEpisodes, seasonsQuery.data],
+    [seriesId, sonarr],
+  );
+
+  const handlePickSeasonRelease = useCallback(
+    async (release: ReleaseOffer) => {
+      setGrabbingGuid(release.guid);
+      try {
+        await grabMutation.mutateAsync(release);
+        setPickerVisible(false);
+        setToast(t("detail.downloadStarted"));
+      } catch (error) {
+        setToast(getErrorMessage(error));
+      } finally {
+        setGrabbingGuid(undefined);
+      }
+    },
+    [grabMutation],
   );
 
   const handleDownloadEpisode = useCallback(
@@ -512,23 +631,46 @@ export default function SeriesDetailScreen() {
                     </Text>
                   </Pressable>
                   <View
-                    style={[styles.seasonActions, { gap: scaledSpace["2xs"] }]}
+                    style={[
+                      styles.seasonActions,
+                      { gap: scaledSpace["2xs"] },
+                    ]}
                   >
                     {showSeasonDownload ? (
-                      <Button
-                        accessibilityLabel={t("detail.downloadNamedA11y", {
-                          title: heading,
-                        })}
-                        disabled={actionsBusy}
-                        loading={seasonBusy}
-                        onPress={() =>
-                          void handleDownloadSeason(season.seasonNumber)
-                        }
-                        size="compact"
-                        variant="primary"
-                      >
-                        {seasonBusy ? "…" : t("action.download")}
-                      </Button>
+                      <>
+                        <Button
+                          accessibilityLabel={t("detail.downloadNamedA11y", {
+                            title: heading,
+                          })}
+                          disabled={actionsBusy}
+                          loading={seasonBusy}
+                          onPress={() =>
+                            void handleDownloadSeason(season.seasonNumber)
+                          }
+                          size="compact"
+                          variant="primary"
+                        >
+                          {seasonBusy ? "…" : t("action.download")}
+                        </Button>
+                        <Button
+                          accessibilityLabel={t("action.chooseFileA11y")}
+                          disabled={actionsBusy || pickerLoading}
+                          loading={
+                            pickerLoading &&
+                            pickerSeasonNumber === season.seasonNumber
+                          }
+                          onPress={() =>
+                            void handleChooseSeasonFile(season.seasonNumber)
+                          }
+                          size="compact"
+                          variant="secondary"
+                        >
+                          {pickerLoading &&
+                          pickerSeasonNumber === season.seasonNumber
+                            ? "…"
+                            : t("action.chooseFile")}
+                        </Button>
+                      </>
                     ) : null}
                     <IconButton
                       accessibilityLabel={
@@ -709,6 +851,21 @@ export default function SeriesDetailScreen() {
         visible={pendingChoice !== undefined}
       />
 
+      <ReleasePickerSheet
+        errorMessage={pickerError}
+        grabbingGuid={grabbingGuid}
+        loading={pickerLoading}
+        onDismiss={() => setPickerVisible(false)}
+        onRetry={
+          pickerSeasonNumber === undefined
+            ? undefined
+            : () => void handleChooseSeasonFile(pickerSeasonNumber)
+        }
+        onSelect={(release) => void handlePickSeasonRelease(release)}
+        releases={pickerReleases}
+        visible={pickerVisible}
+      />
+
       <MediaQuickSheet {...quick.sheetProps} />
     </Screen>
   );
@@ -743,7 +900,10 @@ const styles = StyleSheet.create({
   seasonActions: {
     alignItems: "center",
     flexDirection: "row",
-    flexShrink: 0,
+    flexShrink: 1,
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    maxWidth: "55%",
   },
   episodeRow: {
     alignItems: "center",

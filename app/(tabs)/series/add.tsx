@@ -9,7 +9,6 @@ import {
   View,
 } from "react-native";
 
-import { canOfferDownload } from "@/arr-client";
 import {
   AudioChoiceSheet,
   EmptyState,
@@ -24,9 +23,9 @@ import { buildSeriesAddSelection } from "@/features/media-quick/build-add-candid
 import type { AudioPreference } from "@/features/releases/resolve-release-decision";
 import {
   finishPendingAudioChoice,
-  smartGrabReleaseBatches,
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
+import { startSeriesDownloadAfterAdd } from "@/features/releases/start-download-after-add";
 import {
   getErrorMessage,
   useAddSeries,
@@ -140,7 +139,6 @@ export default function AddSeriesScreen() {
       return;
     }
 
-    const title = selected.title;
     try {
       setSearchBusy(true);
       setFeedback(t("action.adding"));
@@ -159,48 +157,17 @@ export default function AddSeriesScreen() {
       await lookupQuery.refetch();
       if (createdId && sonarr) {
         setFeedback(t("action.searching"));
-        try {
-          const seasons = await sonarr.getSeasons(createdId);
-          const episodes = seasons.flatMap((season) =>
-            season.episodes.filter((episode) =>
-              canOfferDownload(episode.availability),
-            ),
-          );
-          if (episodes.length === 0) {
-            setSelected(undefined);
-            setFeedback(t("detail.nothingToDownload"));
-            return;
-          }
-          const batches = await Promise.all(
-            episodes.map((episode) => sonarr.getEpisodeReleases(episode.id)),
-          );
-          const outcome = await smartGrabReleaseBatches(batches, (release) =>
-            grabMutation.mutateAsync(release),
-          );
-          setSelected(undefined);
-          if (outcome.type === "choose") {
-            setPendingChoice(outcome.pending);
-            setFeedback(undefined);
-            return;
-          }
-          if (outcome.type === "empty") {
-            setFeedback(t("detail.noRelease"));
-            return;
-          }
-          setFeedback(
-            outcome.count > 1
-              ? t("detail.downloadsStarted", { count: outcome.count })
-              : t("detail.downloadStarted"),
-          );
-          return;
-        } catch {
-          setSelected(undefined);
-          setFeedback(t("add.seriesAdded", { title }));
-          return;
-        }
+        await startSeriesDownloadAfterAdd({
+          seriesId: createdId,
+          seriesSearch: (seriesId) =>
+            sonarr.command("SeriesSearch", { seriesId }),
+        });
+        setSelected(undefined);
+        setFeedback(t("detail.downloadStarted"));
+        return;
       }
       setSelected(undefined);
-      setFeedback(t("add.seriesAdded", { title }));
+      setFeedback(t("detail.downloadStarted"));
     } catch (error) {
       setFeedback(getErrorMessage(error));
     } finally {
