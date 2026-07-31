@@ -19,6 +19,7 @@ import {
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
 import { startSeriesDownloadAfterAdd } from "@/features/releases/start-download-after-add";
+import { startQueueBurstFromCache } from "@/features/queue/start-queue-burst";
 import {
   getErrorMessage,
   useAddSeries,
@@ -27,6 +28,7 @@ import {
   useSeriesDefaults,
 } from "@/features/series/use-series";
 import { useArrClients } from "@/hooks/use-arr-clients";
+import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
 import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
@@ -50,6 +52,7 @@ export default function SeriesPreviewScreen() {
   const { tvdbId: tvdbIdParam } = useLocalSearchParams<{ tvdbId: string }>();
   const tvdbId = parseTvdbId(tvdbIdParam);
   const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
   const previewQuery = useSeriesCandidatePreview(tvdbId);
   const defaultsQuery = useSeriesDefaults();
   const addMutation = useAddSeries();
@@ -154,6 +157,7 @@ export default function SeriesPreviewScreen() {
           seriesSearch: (seriesId) =>
             sonarr.command("SeriesSearch", { seriesId }),
         });
+        startQueueBurstFromCache(queryClient);
         setFeedback(t("detail.downloadStarted"));
         setTimeout(() => router.back(), 1500);
         return;
@@ -169,6 +173,7 @@ export default function SeriesPreviewScreen() {
     candidate,
     grabMutation,
     qualityProfileId,
+    queryClient,
     rootFolderPath,
     sonarr,
     t,

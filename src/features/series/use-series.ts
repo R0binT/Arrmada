@@ -177,17 +177,22 @@ export const useAddSeries = () => {
 
 export const useSeriesSearch = () => {
   const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (seriesId: number) => {
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.command("SeriesSearch", { seriesId });
     },
+    onSuccess: () => {
+      startQueueBurstFromCache(queryClient);
+    },
   });
 };
 
 export const useSeasonSearch = () => {
   const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: { seriesId: number; seasonNumber: number }) => {
@@ -197,16 +202,23 @@ export const useSeasonSearch = () => {
         seasonNumber: input.seasonNumber,
       });
     },
+    onSuccess: () => {
+      startQueueBurstFromCache(queryClient);
+    },
   });
 };
 
 export const useEpisodeSearch = () => {
   const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (episodeId: number) => {
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.command("EpisodeSearch", { episodeIds: [episodeId] });
+    },
+    onSuccess: () => {
+      startQueueBurstFromCache(queryClient);
     },
   });
 };

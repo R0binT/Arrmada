@@ -137,11 +137,15 @@ export const useAddMovie = () => {
 
 export const useMovieSearch = () => {
   const { radarr } = useArrClients();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (movieId: number) => {
       if (!radarr) throw new Error("Radarr is not configured.");
       return radarr.command("MoviesSearch", { movieIds: [movieId] });
+    },
+    onSuccess: () => {
+      startQueueBurstFromCache(queryClient);
     },
   });
 };

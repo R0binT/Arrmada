@@ -18,25 +18,28 @@ import {
 } from "@/features/queue/use-queue";
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useI18n } from "@/i18n";
+import { queryKeys } from "@/lib/query-keys";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { createFadeSlideUp, Surface, Text, useReduceMotion } from "@/ui";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function QueueScreen() {
   const { t } = useI18n();
   const { space: scaledSpace } = useUiSize();
   const reduceMotion = useReduceMotion();
+  const queryClient = useQueryClient();
   const [isFocused, setIsFocused] = useState(false);
+  const queueQuery = useQueue({ enabled: true, poll: isFocused });
+  const mutations = useQueueMutations();
+  const [toast, setToast] = useState<string | undefined>();
 
   useFocusEffect(
     useCallback(() => {
       setIsFocused(true);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.queue.all });
       return () => setIsFocused(false);
-    }, []),
+    }, [queryClient]),
   );
-
-  const queueQuery = useQueue({ enabled: true, poll: isFocused });
-  const mutations = useQueueMutations();
-  const [toast, setToast] = useState<string | undefined>();
 
   useEffect(() => {
     if (!toast) return;

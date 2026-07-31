@@ -35,7 +35,9 @@ import {
   type PendingAudioChoice,
 } from "@/features/releases/smart-grab";
 import { startMovieDownloadAfterAdd } from "@/features/releases/start-download-after-add";
+import { startQueueBurstFromCache } from "@/features/queue/start-queue-burst";
 import { useArrClients } from "@/hooks/use-arr-clients";
+import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
 import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
@@ -61,6 +63,7 @@ export default function AddMovieScreen() {
     PendingAudioChoice | undefined
   >();
   const { radarr } = useArrClients();
+  const queryClient = useQueryClient();
 
   const lookupQuery = useMovieLookup(term);
   const defaultsQuery = useMovieDefaults();
@@ -170,6 +173,9 @@ export default function AddMovieScreen() {
           setFeedback(undefined);
           return;
         }
+        if (outcome.type === "arrSearchStarted") {
+          startQueueBurstFromCache(queryClient);
+        }
         setFeedback(t("detail.downloadStarted"));
         return;
       }
@@ -185,6 +191,7 @@ export default function AddMovieScreen() {
     grabMutation,
     lookupQuery.refetch,
     qualityProfileId,
+    queryClient,
     radarr,
     rootFolderPath,
     selected,
