@@ -74,6 +74,10 @@ export const enMessages: Record<MessageKey, string> = {
   "connection.unauthorizedService": "{{service}} rejected the access key.",
   "connection.notFoundService":
     "Not found on {{service}} ({{detail}}). Check the address (no /api) and that {{entity}} exists.",
+  "connection.wrongService":
+    "This server is “{{actual}}”, not {{expected}}. Check the address and key.",
+  "connection.unknownApp": "unknown",
+  "connection.notReady": "Failed",
 
   "settings.title": "Settings",
   "settings.language": "Language",

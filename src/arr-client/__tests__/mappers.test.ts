@@ -526,6 +526,25 @@ describe("mappers", () => {
     });
   });
 
+  it("rejects health when appName does not match expected service", () => {
+    setI18nLocale("en");
+    const actual = mapHealth("radarr", {
+      version: "4.0.0",
+      appName: "Sonarr",
+    });
+    expect(actual.online).toBe(false);
+    expect(actual.version).toBe("4.0.0");
+    expect(actual.message).toMatch(/Sonarr/i);
+    expect(actual.message).toMatch(/Radarr/i);
+  });
+
+  it("rejects health when appName is missing", () => {
+    setI18nLocale("en");
+    const actual = mapHealth("sonarr", { version: "4.0.0" });
+    expect(actual.online).toBe(false);
+    expect(actual.message).toBeTruthy();
+  });
+
   it("maps sonarr series tvMazeId when present", () => {
     const actual = mapSonarrSeries(
       {

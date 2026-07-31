@@ -79,6 +79,10 @@ export const frMessages = {
   "connection.unauthorizedService": "{{service}} a refusé la clé d’accès.",
   "connection.notFoundService":
     "Introuvable côté {{service}} ({{detail}}). Vérifie l’adresse (sans /api) et que {{entity}} existe.",
+  "connection.wrongService":
+    "Ce serveur est « {{actual}} », pas {{expected}}. Vérifie l’adresse et la clé.",
+  "connection.unknownApp": "inconnu",
+  "connection.notReady": "Échec",
 
   // Settings
   "settings.title": "Réglages",

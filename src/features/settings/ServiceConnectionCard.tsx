@@ -32,6 +32,11 @@ const SERVICE_LABELS: Record<ArrService, string> = {
   sonarr: "Sonarr",
 };
 
+const URL_PLACEHOLDERS: Record<ArrService, string> = {
+  radarr: "http://192.168.1.10:7878",
+  sonarr: "http://192.168.1.10:8989",
+};
+
 export const ServiceConnectionCard = ({
   service,
   url,
@@ -86,6 +91,13 @@ export const ServiceConnectionCard = ({
         </Chip>
       );
     }
+    if (showReadyBadge && !isReady) {
+      return (
+        <Chip tone="danger" style={{ alignSelf: "flex-start" }}>
+          {t("connection.notReady")}
+        </Chip>
+      );
+    }
     if (!showReadyBadge) {
       return <ServiceHealthDot health={health} />;
     }
@@ -114,7 +126,7 @@ export const ServiceConnectionCard = ({
           autoCorrect={false}
           keyboardType="url"
           onChangeText={onUrlChange}
-          placeholder="http://192.168.1.10:7878"
+          placeholder={URL_PLACEHOLDERS[service]}
           value={url}
         />
       </View>
