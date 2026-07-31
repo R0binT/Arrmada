@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
     FlatList,
     Pressable,
+    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
@@ -45,10 +46,27 @@ export default function MoviesScreen() {
   const moviesQuery = useMovies();
   const quick = useMediaQuickController();
   const filterChips = useMemo(() => getLibraryFilterChips(), [locale]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filteredMovies = moviesQuery.data
     ? filterMovies(moviesQuery.data, filter, search)
     : [];
+
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    void moviesQuery.refetch().finally(() => {
+      setIsRefreshing(false);
+    });
+  }, [moviesQuery.refetch]);
+
+  const refreshControl = (
+    <RefreshControl
+      colors={[colors.text]}
+      onRefresh={handleRefresh}
+      refreshing={isRefreshing}
+      tintColor={colors.text}
+    />
+  );
 
   const handleOpenAdd = useCallback(() => {
     router.push("/(tabs)/movies/add");
@@ -82,11 +100,17 @@ export default function MoviesScreen() {
             variant="outline"
           />
         </View>
-        <ErrorBanner
-          message={getErrorMessage(moviesQuery.error)}
-          onRetry={() => void moviesQuery.refetch()}
-          onSettings={handleOpenSettings}
-        />
+        <ScrollView
+          contentContainerStyle={styles.refreshableFill}
+          refreshControl={refreshControl}
+          style={styles.refreshableScroll}
+        >
+          <ErrorBanner
+            message={getErrorMessage(moviesQuery.error)}
+            onRetry={() => void moviesQuery.refetch()}
+            onSettings={handleOpenSettings}
+          />
+        </ScrollView>
       </Screen>
     );
   }
@@ -158,26 +182,38 @@ export default function MoviesScreen() {
       </ScrollView>
 
       {moviesQuery.isLoading ? (
-        <PosterGridSkeleton cardWidth={CARD_WIDTH} />
+        <ScrollView
+          contentContainerStyle={styles.refreshableFill}
+          refreshControl={refreshControl}
+          style={styles.refreshableScroll}
+        >
+          <PosterGridSkeleton cardWidth={CARD_WIDTH} />
+        </ScrollView>
       ) : filteredMovies.length === 0 ? (
-        <EmptyState
-          actionLabel={
-            moviesQuery.data?.length === 0
-              ? t("library.addMovieA11y")
-              : undefined
-          }
-          message={
-            moviesQuery.data?.length === 0
-              ? t("library.emptyMoviesBody")
-              : t("library.emptyFilterMoviesBody")
-          }
-          onAction={moviesQuery.data?.length === 0 ? handleOpenAdd : undefined}
-          title={
-            moviesQuery.data?.length === 0
-              ? t("library.emptyMoviesTitle")
-              : t("library.emptyFilterTitle")
-          }
-        />
+        <ScrollView
+          contentContainerStyle={styles.refreshableFill}
+          refreshControl={refreshControl}
+          style={styles.refreshableScroll}
+        >
+          <EmptyState
+            actionLabel={
+              moviesQuery.data?.length === 0
+                ? t("library.addMovieA11y")
+                : undefined
+            }
+            message={
+              moviesQuery.data?.length === 0
+                ? t("library.emptyMoviesBody")
+                : t("library.emptyFilterMoviesBody")
+            }
+            onAction={moviesQuery.data?.length === 0 ? handleOpenAdd : undefined}
+            title={
+              moviesQuery.data?.length === 0
+                ? t("library.emptyMoviesTitle")
+                : t("library.emptyFilterTitle")
+            }
+          />
+        </ScrollView>
       ) : (
         <FlatList
           columnWrapperStyle={styles.row}
@@ -186,6 +222,7 @@ export default function MoviesScreen() {
           extraData={quick.selected?.key}
           keyExtractor={(item) => String(item.id)}
           numColumns={3}
+          refreshControl={refreshControl}
           renderItem={({ item }) => {
             const selection = selectionFromMovie(item);
             return (
@@ -248,6 +285,12 @@ const styles = StyleSheet.create({
     paddingBottom: space.xl,
   },
   list: {
+    flex: 1,
+  },
+  refreshableFill: {
+    flexGrow: 1,
+  },
+  refreshableScroll: {
     flex: 1,
   },
   row: {

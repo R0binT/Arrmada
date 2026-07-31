@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
     FlatList,
     Pressable,
+    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
@@ -49,10 +50,27 @@ export default function SeriesScreen() {
   const seriesQuery = useSeriesList();
   const quick = useMediaQuickController();
   const filterChips = useMemo(() => getLibraryFilterChips(), [locale]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filteredSeries = seriesQuery.data
     ? filterSeries(seriesQuery.data, filter, search)
     : [];
+
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    void seriesQuery.refetch().finally(() => {
+      setIsRefreshing(false);
+    });
+  }, [seriesQuery.refetch]);
+
+  const refreshControl = (
+    <RefreshControl
+      colors={[colors.text]}
+      onRefresh={handleRefresh}
+      refreshing={isRefreshing}
+      tintColor={colors.text}
+    />
+  );
 
   const handleOpenAdd = useCallback(() => {
     router.push("/(tabs)/series/add");
@@ -86,11 +104,17 @@ export default function SeriesScreen() {
             variant="outline"
           />
         </View>
-        <ErrorBanner
-          message={getErrorMessage(seriesQuery.error)}
-          onRetry={() => void seriesQuery.refetch()}
-          onSettings={handleOpenSettings}
-        />
+        <ScrollView
+          contentContainerStyle={styles.refreshableFill}
+          refreshControl={refreshControl}
+          style={styles.refreshableScroll}
+        >
+          <ErrorBanner
+            message={getErrorMessage(seriesQuery.error)}
+            onRetry={() => void seriesQuery.refetch()}
+            onSettings={handleOpenSettings}
+          />
+        </ScrollView>
       </Screen>
     );
   }
@@ -162,26 +186,38 @@ export default function SeriesScreen() {
       </ScrollView>
 
       {seriesQuery.isLoading ? (
-        <PosterGridSkeleton cardWidth={CARD_WIDTH} />
+        <ScrollView
+          contentContainerStyle={styles.refreshableFill}
+          refreshControl={refreshControl}
+          style={styles.refreshableScroll}
+        >
+          <PosterGridSkeleton cardWidth={CARD_WIDTH} />
+        </ScrollView>
       ) : filteredSeries.length === 0 ? (
-        <EmptyState
-          actionLabel={
-            seriesQuery.data?.length === 0
-              ? t("library.addSeriesA11y")
-              : undefined
-          }
-          message={
-            seriesQuery.data?.length === 0
-              ? t("library.emptySeriesBody")
-              : t("library.emptyFilterSeriesBody")
-          }
-          onAction={seriesQuery.data?.length === 0 ? handleOpenAdd : undefined}
-          title={
-            seriesQuery.data?.length === 0
-              ? t("library.emptySeriesTitle")
-              : t("library.emptyFilterTitle")
-          }
-        />
+        <ScrollView
+          contentContainerStyle={styles.refreshableFill}
+          refreshControl={refreshControl}
+          style={styles.refreshableScroll}
+        >
+          <EmptyState
+            actionLabel={
+              seriesQuery.data?.length === 0
+                ? t("library.addSeriesA11y")
+                : undefined
+            }
+            message={
+              seriesQuery.data?.length === 0
+                ? t("library.emptySeriesBody")
+                : t("library.emptyFilterSeriesBody")
+            }
+            onAction={seriesQuery.data?.length === 0 ? handleOpenAdd : undefined}
+            title={
+              seriesQuery.data?.length === 0
+                ? t("library.emptySeriesTitle")
+                : t("library.emptyFilterTitle")
+            }
+          />
+        </ScrollView>
       ) : (
         <FlatList
           columnWrapperStyle={styles.row}
@@ -190,6 +226,7 @@ export default function SeriesScreen() {
           extraData={quick.selected?.key}
           keyExtractor={(item) => String(item.id)}
           numColumns={3}
+          refreshControl={refreshControl}
           renderItem={({ item }) => {
             const selection = selectionFromSeries(item);
             return (
@@ -252,6 +289,12 @@ const styles = StyleSheet.create({
     paddingBottom: space.xl,
   },
   list: {
+    flex: 1,
+  },
+  refreshableFill: {
+    flexGrow: 1,
+  },
+  refreshableScroll: {
     flex: 1,
   },
   row: {

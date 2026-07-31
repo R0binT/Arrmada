@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 
 import type { QueueItem } from "@/arr-client";
@@ -19,6 +19,7 @@ import {
 import { openSettingsServices } from "@/features/settings/open-settings";
 import { useI18n } from "@/i18n";
 import { queryKeys } from "@/lib/query-keys";
+import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
 import { createFadeSlideUp, Surface, Text, useReduceMotion } from "@/ui";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,6 +33,7 @@ export default function QueueScreen() {
   const queueQuery = useQueue({ enabled: true, poll: isFocused });
   const mutations = useQueueMutations();
   const [toast, setToast] = useState<string | undefined>();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -39,6 +41,22 @@ export default function QueueScreen() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.queue.all });
       return () => setIsFocused(false);
     }, [queryClient]),
+  );
+
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    void queueQuery.refetch().finally(() => {
+      setIsRefreshing(false);
+    });
+  }, [queueQuery.refetch]);
+
+  const refreshControl = (
+    <RefreshControl
+      colors={[colors.text]}
+      onRefresh={handleRefresh}
+      refreshing={isRefreshing}
+      tintColor={colors.text}
+    />
   );
 
   useEffect(() => {
@@ -94,35 +112,41 @@ export default function QueueScreen() {
     return (
       <Screen>
         {renderHeader()}
-        {queueQuery.radarrError ? (
-          <View style={styles.bannerWrap}>
+        <ScrollView
+          contentContainerStyle={styles.refreshableFill}
+          refreshControl={refreshControl}
+          style={styles.refreshableScroll}
+        >
+          {queueQuery.radarrError ? (
+            <View style={styles.bannerWrap}>
+              <ErrorBanner
+                message={t("queue.moviesError", {
+                  message: getQueueErrorMessage(queueQuery.radarrError),
+                })}
+                onRetry={() => queueQuery.refetchRadarr()}
+                onSettings={handleOpenSettings}
+              />
+            </View>
+          ) : null}
+          {queueQuery.sonarrError ? (
+            <View style={styles.bannerWrap}>
+              <ErrorBanner
+                message={t("queue.seriesError", {
+                  message: getQueueErrorMessage(queueQuery.sonarrError),
+                })}
+                onRetry={() => queueQuery.refetchSonarr()}
+                onSettings={handleOpenSettings}
+              />
+            </View>
+          ) : null}
+          {!queueQuery.radarrError && !queueQuery.sonarrError ? (
             <ErrorBanner
-              message={t("queue.moviesError", {
-                message: getQueueErrorMessage(queueQuery.radarrError),
-              })}
-              onRetry={() => queueQuery.refetchRadarr()}
+              message={getQueueErrorMessage(queueQuery.error)}
+              onRetry={() => void queueQuery.refetch()}
               onSettings={handleOpenSettings}
             />
-          </View>
-        ) : null}
-        {queueQuery.sonarrError ? (
-          <View style={styles.bannerWrap}>
-            <ErrorBanner
-              message={t("queue.seriesError", {
-                message: getQueueErrorMessage(queueQuery.sonarrError),
-              })}
-              onRetry={() => queueQuery.refetchSonarr()}
-              onSettings={handleOpenSettings}
-            />
-          </View>
-        ) : null}
-        {!queueQuery.radarrError && !queueQuery.sonarrError ? (
-          <ErrorBanner
-            message={getQueueErrorMessage(queueQuery.error)}
-            onRetry={() => queueQuery.refetch()}
-            onSettings={handleOpenSettings}
-          />
-        ) : null}
+          ) : null}
+        </ScrollView>
       </Screen>
     );
   }
@@ -155,14 +179,26 @@ export default function QueueScreen() {
       ) : null}
 
       {queueQuery.isLoading ? (
-        <QueueSkeleton />
+        <ScrollView
+          contentContainerStyle={styles.refreshableFill}
+          refreshControl={refreshControl}
+          style={styles.refreshableScroll}
+        >
+          <QueueSkeleton />
+        </ScrollView>
       ) : queueQuery.items.length === 0 ? (
-        <EmptyState
-          actionLabel={t("queue.seeMovies")}
-          message={t("queue.emptyBody")}
-          onAction={handleOpenMovies}
-          title={t("queue.emptyTitle")}
-        />
+        <ScrollView
+          contentContainerStyle={styles.refreshableFill}
+          refreshControl={refreshControl}
+          style={styles.refreshableScroll}
+        >
+          <EmptyState
+            actionLabel={t("queue.seeMovies")}
+            message={t("queue.emptyBody")}
+            onAction={handleOpenMovies}
+            title={t("queue.emptyTitle")}
+          />
+        </ScrollView>
       ) : (
         <FlatList
           contentContainerStyle={[
@@ -171,6 +207,7 @@ export default function QueueScreen() {
           ]}
           data={queueQuery.items}
           keyExtractor={(item) => `${item.service}-${item.id}`}
+          refreshControl={refreshControl}
           renderItem={({ item, index }) => (
             <Animated.View entering={createFadeSlideUp(reduceMotion, index)}>
               <QueueRow
@@ -213,6 +250,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   list: {},
+  refreshableFill: {
+    flexGrow: 1,
+  },
+  refreshableScroll: {
+    flex: 1,
+  },
   toast: {
     alignSelf: "center",
     position: "absolute",
