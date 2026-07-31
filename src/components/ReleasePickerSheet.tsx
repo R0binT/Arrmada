@@ -137,6 +137,7 @@ export const ReleasePickerSheet = ({
 
     return (
       <Pressable
+        accessibilityLabel={meta.length > 0 ? `${item.title}. ${meta}` : item.title}
         accessibilityRole="button"
         disabled={isGrabbing}
         onPress={() => {
@@ -269,6 +270,7 @@ const styles = StyleSheet.create({
   },
   list: {
     flexGrow: 0,
+    flexShrink: 1,
   },
   centered: {
     alignItems: "center",
