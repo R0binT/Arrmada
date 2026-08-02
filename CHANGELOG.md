@@ -5,6 +5,13 @@ All notable changes to Arrmada are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0](https://github.com/R0binT/Arrmada/compare/v1.4.0...v1.5.0) (2026-08-02)
+
+
+### Added
+
+* TMDB-first franchise search on Add screens ([#69](https://github.com/R0binT/Arrmada/issues/69)) ([9d17a3e](https://github.com/R0binT/Arrmada/commit/9d17a3ef1b94039808ca16225ee7b57d2ab8b04a))
+
 ## [1.4.0](https://github.com/R0binT/Arrmada/compare/v1.3.2...v1.4.0) (2026-07-31)
 
 
