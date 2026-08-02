@@ -31,7 +31,12 @@ const enrichHit = async (
   tmdb: TmdbSeriesSearchPort,
   lookupByTvdbId: (tvdbId: number) => Promise<SeriesCandidate | null>,
 ): Promise<SeriesCandidate | null> => {
-  const external = await tmdb.getTvExternalIds(hit.tmdbId);
+  let external: TmdbTvExternalIds;
+  try {
+    external = await tmdb.getTvExternalIds(hit.tmdbId);
+  } catch {
+    return null;
+  }
   if (external.tvdbId === undefined) {
     return null;
   }

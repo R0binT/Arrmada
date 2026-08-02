@@ -70,6 +70,57 @@ describe("lookupSeriesWithTmdb", () => {
     expect(actual).toEqual([]);
   });
 
+  it("omits a hit when getTvExternalIds throws and still enriches siblings", async () => {
+    const siblingHit: TmdbMediaHit = {
+      tmdbId: 1396,
+      title: "Breaking Bad",
+      year: 2008,
+      posterUrl: undefined,
+      overview: "A chemistry teacher turns to crime.",
+    };
+    const siblingArr: SeriesCandidate = {
+      tvdbId: 81189,
+      title: "Breaking Bad",
+      year: 2008,
+      posterUrl: undefined,
+      overview: "A chemistry teacher turns to crime.",
+      inLibrary: false,
+      episodeFileCount: 0,
+      episodeCount: 0,
+      genres: ["Drama"],
+      runtimeMinutes: 47,
+      libraryId: undefined,
+    };
+    const lookupByTerm = jest.fn(async () => []);
+    const lookupByTvdbId = jest.fn(async (tvdbId: number) => {
+      if (tvdbId === 81189) {
+        return siblingArr;
+      }
+      return null;
+    });
+    const getTvExternalIds = jest.fn(async (tmdbId: number) => {
+      if (tmdbId === 1399) {
+        throw new Error("external ids unavailable");
+      }
+      return { tvdbId: 81189 };
+    });
+
+    const actual = await lookupSeriesWithTmdb({
+      term: "drama",
+      tmdb: createPort({
+        searchTv: async () => [gotHit, siblingHit],
+        getTvExternalIds,
+      }),
+      lookupByTvdbId,
+      lookupByTerm,
+    });
+
+    expect(getTvExternalIds).toHaveBeenCalledWith(1399);
+    expect(getTvExternalIds).toHaveBeenCalledWith(1396);
+    expect(lookupByTerm).not.toHaveBeenCalled();
+    expect(actual).toEqual([siblingArr]);
+  });
+
   it("enriches company discover hits via Arr when TVDB is present", async () => {
     const discoverTvByCompany = jest.fn(async () => [gotHit]);
     const getTvExternalIds = jest.fn(async () => ({ tvdbId: 121361 }));
