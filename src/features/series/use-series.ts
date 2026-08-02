@@ -20,7 +20,11 @@ import {
 import { startQueueBurstFromCache } from "@/features/queue/start-queue-burst";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { t } from "@/i18n";
+import { readTmdbApiKeyFromProcessEnv } from "@/lib/env-tmdb-api-key";
 import { queryKeys } from "@/lib/query-keys";
+import { createTmdbClient } from "@/tmdb-client";
+
+import { lookupSeriesWithTmdb } from "./lookup-series-with-tmdb";
 
 export type SeriesFilter = LibraryFilter;
 
@@ -125,7 +129,16 @@ export const useSeriesLookup = (term: string) => {
     queryKey: queryKeys.series.lookup(trimmed),
     queryFn: async () => {
       if (!sonarr) throw new Error("Sonarr is not configured.");
-      return sonarr.lookupCandidates(trimmed);
+      const apiKey = readTmdbApiKeyFromProcessEnv();
+      if (!apiKey) {
+        return sonarr.lookupCandidates(trimmed);
+      }
+      return lookupSeriesWithTmdb({
+        term: trimmed,
+        tmdb: createTmdbClient(apiKey),
+        lookupByTvdbId: (tvdbId) => sonarr.lookupCandidateByTvdbId(tvdbId),
+        lookupByTerm: (lookupTerm) => sonarr.lookupCandidates(lookupTerm),
+      });
     },
     enabled: Boolean(sonarr) && trimmed.length >= 2,
   });
