@@ -8,6 +8,7 @@ export {
   mapTvExternalIds,
   mapTvResult,
 } from "./mappers";
+export { mergeMediaHits } from "./merge-media-hits";
 export { pickBestNamedMatch } from "./pick-best-named-match";
 export { scoreNameMatch, type NameMatchScore } from "./score-name-match";
 export type {
