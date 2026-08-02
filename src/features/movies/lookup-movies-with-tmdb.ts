@@ -11,13 +11,13 @@ import { movieCandidateFromTmdbHit } from "./movie-candidate-from-tmdb-hit";
 export const LOOKUP_ENRICH_CAP = 25;
 
 export type TmdbMovieSearchPort = {
-  searchCompanies(q: string): Promise<TmdbNamedMatch[]>;
-  searchKeywords(q: string): Promise<TmdbNamedMatch[]>;
-  searchCollections(q: string): Promise<TmdbNamedMatch[]>;
-  searchMovies(q: string): Promise<TmdbMediaHit[]>;
-  discoverMoviesByCompany(id: number): Promise<TmdbMediaHit[]>;
-  discoverMoviesByKeyword(id: number): Promise<TmdbMediaHit[]>;
-  getCollectionParts(id: number): Promise<TmdbMediaHit[]>;
+  searchCompanies(q: string): Promise<readonly TmdbNamedMatch[]>;
+  searchKeywords(q: string): Promise<readonly TmdbNamedMatch[]>;
+  searchCollections(q: string): Promise<readonly TmdbNamedMatch[]>;
+  searchMovies(q: string): Promise<readonly TmdbMediaHit[]>;
+  discoverMoviesByCompany(id: number): Promise<readonly TmdbMediaHit[]>;
+  discoverMoviesByKeyword(id: number): Promise<readonly TmdbMediaHit[]>;
+  getCollectionParts(id: number): Promise<readonly TmdbMediaHit[]>;
 };
 
 export type LookupMoviesWithTmdbInput = {
@@ -42,7 +42,7 @@ const enrichHit = async (
 const collectHits = async (
   term: string,
   tmdb: TmdbMovieSearchPort,
-): Promise<TmdbMediaHit[]> => {
+): Promise<readonly TmdbMediaHit[]> => {
   const [companies, keywords, collections, movieSearch] = await Promise.all([
     tmdb.searchCompanies(term),
     tmdb.searchKeywords(term),
@@ -52,16 +52,17 @@ const collectHits = async (
   const company = pickBestNamedMatch(term, companies);
   const keyword = pickBestNamedMatch(term, keywords);
   const collection = pickBestNamedMatch(term, collections);
+  const emptyHits: readonly TmdbMediaHit[] = [];
   const [discoverCompany, discoverKeyword, collectionParts] = await Promise.all([
     company !== undefined
       ? tmdb.discoverMoviesByCompany(company.id)
-      : Promise.resolve([] as TmdbMediaHit[]),
+      : Promise.resolve(emptyHits),
     keyword !== undefined
       ? tmdb.discoverMoviesByKeyword(keyword.id)
-      : Promise.resolve([] as TmdbMediaHit[]),
+      : Promise.resolve(emptyHits),
     collection !== undefined
       ? tmdb.getCollectionParts(collection.id)
-      : Promise.resolve([] as TmdbMediaHit[]),
+      : Promise.resolve(emptyHits),
   ]);
   return mergeMediaHits(
     [movieSearch, discoverCompany, discoverKeyword, collectionParts],
