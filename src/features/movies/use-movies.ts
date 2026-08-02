@@ -18,7 +18,11 @@ import {
 import { startQueueBurstFromCache } from "@/features/queue/start-queue-burst";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { t } from "@/i18n";
+import { readTmdbApiKeyFromProcessEnv } from "@/lib/env-tmdb-api-key";
 import { queryKeys } from "@/lib/query-keys";
+import { createTmdbClient } from "@/tmdb-client";
+
+import { lookupMoviesWithTmdb } from "./lookup-movies-with-tmdb";
 
 export type MovieFilter = LibraryFilter;
 
@@ -85,7 +89,16 @@ export const useMovieLookup = (term: string) => {
     queryKey: queryKeys.movies.lookup(trimmed),
     queryFn: async () => {
       if (!radarr) throw new Error("Radarr is not configured.");
-      return radarr.lookupCandidates(trimmed);
+      const apiKey = readTmdbApiKeyFromProcessEnv();
+      if (!apiKey) {
+        return radarr.lookupCandidates(trimmed);
+      }
+      return lookupMoviesWithTmdb({
+        term: trimmed,
+        tmdb: createTmdbClient(apiKey),
+        lookupByTmdbId: (tmdbId) => radarr.lookupCandidateByTmdbId(tmdbId),
+        lookupByTerm: (lookupTerm) => radarr.lookupCandidates(lookupTerm),
+      });
     },
     enabled: Boolean(radarr) && trimmed.length >= 2,
   });
