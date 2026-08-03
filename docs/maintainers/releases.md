@@ -18,6 +18,18 @@ Run **Actions → Release please → Run workflow** and set `version` (e.g. `1.2
 
 Merges to `master` do **not** open a release PR. Commits accumulate until a labeled merge or a manual workflow dispatch. Merging an existing `release-please--*` PR still creates the GitHub Release.
 
+## TMDB API key (franchise search on Add)
+
+GitHub Release APKs need `EXPO_PUBLIC_TMDB_API_KEY` at **build** time so Metro can inline it (same variable as local `.env`).
+
+1. Create a free key at [TMDB API settings](https://www.themoviedb.org/settings/api).
+2. Repo **Settings → Secrets and variables → Actions** → New repository secret named **`EXPO_PUBLIC_TMDB_API_KEY`** (or `gh secret set EXPO_PUBLIC_TMDB_API_KEY`).
+3. **Publish release** reads that secret into the job env for `expo prebuild` / `assembleRelease`.
+
+Without the secret, the APK still builds; Add search falls back to Arr term lookup only. The value is an `EXPO_PUBLIC_*` string, so it is extractable from the JS bundle — acceptable for a free TMDB key, not for Arr LAN credentials (those stay out of CI).
+
+To rebuild an existing tag’s APK after setting or rotating the secret: **Actions → Publish release → Run workflow** with that tag (e.g. `v1.5.0`).
+
 ## Local hooks
 
 `prepare` sets `core.hooksPath` to `.githooks` (`pre-commit` typecheck, `commit-msg` commitlint). Skip with `SKIP_GIT_HOOKS=1`.

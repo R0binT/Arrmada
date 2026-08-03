@@ -30,6 +30,8 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      # Metro-inlined at bundle time (same name as local .env).
+      EXPO_PUBLIC_TMDB_API_KEY: ${{ secrets.EXPO_PUBLIC_TMDB_API_KEY }}
     steps:
       - name: Resolve release tag
         id: tag
@@ -73,6 +75,15 @@ jobs:
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
           echo "✅ Version ${VERSION}"
+
+      - name: Check TMDB API key secret
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_PUBLIC_TMDB_API_KEY:-}" ]; then
+            echo "::warning::EXPO_PUBLIC_TMDB_API_KEY secret is empty. Franchise search will fall back to Arr-only lookup in this APK."
+          else
+            echo "✅ EXPO_PUBLIC_TMDB_API_KEY is set for this build"
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
