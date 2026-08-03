@@ -261,6 +261,10 @@ export const useDeleteMovie = () => {
       });
       await queryClient.invalidateQueries({ queryKey: queryKeys.movies.all });
     },
+    onError: async () => {
+      // Server may have deleted already if the client timed out mid-request.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.movies.all });
+    },
   });
 };
 
