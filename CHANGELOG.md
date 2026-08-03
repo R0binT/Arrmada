@@ -5,6 +5,18 @@ All notable changes to Arrmada are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1](https://github.com/R0binT/Arrmada/compare/v1.6.0...v1.6.1) (2026-08-03)
+
+
+### Fixed
+
+* wait longer for Radarr/Sonarr delete-with-files ([#79](https://github.com/R0binT/Arrmada/issues/79)) ([9e87849](https://github.com/R0binT/Arrmada/commit/9e87849bb57e99f48528cf5037529fbe0c9d98a0))
+
+
+### Maintenance
+
+* **deps-dev:** bump fast-uri from 3.1.4 to 3.1.5 ([#78](https://github.com/R0binT/Arrmada/issues/78)) ([abc6d41](https://github.com/R0binT/Arrmada/commit/abc6d410395952a0566bd47725ba4fb993eab8e6))
+
 ## [1.6.0](https://github.com/R0binT/Arrmada/compare/v1.5.0...v1.6.0) (2026-08-03)
 
 
