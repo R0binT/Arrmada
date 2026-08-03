@@ -14,5 +14,6 @@ export { scoreNameMatch, type NameMatchScore } from "./score-name-match";
 export type {
   TmdbMediaHit,
   TmdbNamedMatch,
+  TmdbPagedHits,
   TmdbTvExternalIds,
 } from "./types";

@@ -14,3 +14,10 @@ export type TmdbNamedMatch = {
 export type TmdbTvExternalIds = {
   readonly tvdbId: number | undefined;
 };
+
+/** One page of TMDB search/discover media results. */
+export type TmdbPagedHits = {
+  readonly hits: readonly TmdbMediaHit[];
+  readonly page: number;
+  readonly totalPages: number;
+};

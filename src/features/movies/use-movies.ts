@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import {
@@ -85,23 +90,46 @@ export const useMovieLookup = (term: string) => {
   const { radarr } = useArrClients();
   const trimmed = term.trim();
 
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: queryKeys.movies.lookup(trimmed),
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       if (!radarr) throw new Error("Radarr is not configured.");
       const apiKey = readTmdbApiKeyFromProcessEnv();
       if (!apiKey) {
-        return radarr.lookupCandidates(trimmed);
+        if (pageParam !== 1) {
+          return {
+            items: [] as MovieCandidate[],
+            page: pageParam,
+            totalPages: 1,
+            hasMore: false,
+          };
+        }
+        const items = await radarr.lookupCandidates(trimmed);
+        return { items, page: 1, totalPages: 1, hasMore: false };
       }
       return lookupMoviesWithTmdb({
         term: trimmed,
+        page: pageParam,
         tmdb: createTmdbClient(apiKey),
         lookupByTmdbId: (tmdbId) => radarr.lookupCandidateByTmdbId(tmdbId),
         lookupByTerm: (lookupTerm) => radarr.lookupCandidates(lookupTerm),
       });
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.page + 1 : undefined,
     enabled: Boolean(radarr) && trimmed.length >= 2,
   });
+
+  const data = useMemo(
+    () => query.data?.pages.flatMap((page) => page.items) ?? [],
+    [query.data],
+  );
+
+  return {
+    ...query,
+    data,
+  };
 };
 
 export const useMovieCandidatePreview = (tmdbId: number) => {
