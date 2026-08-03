@@ -1,7 +1,7 @@
 export { ArrHttpError, isAbortError, kindFromStatus } from "./errors";
 export type { ArrErrorKind } from "./errors";
-export { createArrHttp } from "./http";
-export type { ArrHttp } from "./http";
+export { createArrHttp, DELETE_WITH_FILES_TIMEOUT_MS } from "./http";
+export type { ArrHttp, ArrHttpRequestOptions } from "./http";
 export { createRadarrClient } from "./radarr/client";
 export type { RadarrClient } from "./radarr/client";
 export { createSonarrClient } from "./sonarr/client";

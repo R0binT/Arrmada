@@ -3,12 +3,23 @@ import { ArrHttpError, isAbortError, kindFromStatus } from "./errors";
 /** Sonarr/Radarr add + indexer search often need more than a few seconds. */
 const TIMEOUT_MS = 60_000;
 
+/**
+ * Deleting a movie/series with `deleteFiles=true` can take minutes on slow
+ * disks/NAS. Aborting early leaves Radarr mid-delete (library gone, files left).
+ */
+export const DELETE_WITH_FILES_TIMEOUT_MS = 300_000;
+
+export type ArrHttpRequestOptions = {
+  readonly timeoutMs?: number;
+};
+
 export type ArrHttp = {
   readonly getJson: <T>(path: string) => Promise<T>;
   readonly postJson: <T>(path: string, body?: unknown) => Promise<T>;
   readonly deleteJson: <T>(
     path: string,
     query?: Record<string, string>,
+    options?: ArrHttpRequestOptions,
   ) => Promise<T>;
   readonly putJson: <T>(path: string, body?: unknown) => Promise<T>;
 };
@@ -25,7 +36,9 @@ export const createArrHttp = (baseUrl: string, apiKey: string): ArrHttp => {
     path: string,
     body?: unknown,
     query?: Record<string, string>,
+    options?: ArrHttpRequestOptions,
   ): Promise<T> => {
+    const timeoutMs = options?.timeoutMs ?? TIMEOUT_MS;
     const url = new URL(joinUrl(baseUrl, path));
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -33,7 +46,7 @@ export const createArrHttp = (baseUrl: string, apiKey: string): ArrHttp => {
       });
     }
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url.toString(), {
         method,
@@ -58,9 +71,11 @@ export const createArrHttp = (baseUrl: string, apiKey: string): ArrHttp => {
       return (await response.json()) as T;
     } catch (err) {
       if (err instanceof ArrHttpError) throw err;
-      if (isAbortError(err)) {
+      // React Native often surfaces AbortController abort as TypeError
+      // "Network request failed" instead of AbortError.
+      if (controller.signal.aborted || isAbortError(err)) {
         throw new ArrHttpError(
-          `Timed out after ${TIMEOUT_MS}ms · ${method} ${path}`,
+          `Timed out after ${timeoutMs}ms · ${method} ${path}`,
           0,
           "timeout",
         );
@@ -80,7 +95,10 @@ export const createArrHttp = (baseUrl: string, apiKey: string): ArrHttp => {
     postJson: <T>(path: string, body?: unknown) =>
       request<T>("POST", path, body),
     putJson: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
-    deleteJson: <T>(path: string, query?: Record<string, string>) =>
-      request<T>("DELETE", path, undefined, query),
+    deleteJson: <T>(
+      path: string,
+      query?: Record<string, string>,
+      options?: ArrHttpRequestOptions,
+    ) => request<T>("DELETE", path, undefined, query, options),
   };
 };

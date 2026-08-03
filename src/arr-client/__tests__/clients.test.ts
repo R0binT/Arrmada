@@ -150,6 +150,7 @@ describe("createRadarrClient", () => {
     expect(url).toContain("deleteFiles=true");
     expect(url).toContain("addImportExclusion=false");
     expect(init.method).toBe("DELETE");
+    expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 });
 

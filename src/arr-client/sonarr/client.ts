@@ -1,4 +1,4 @@
-import { createArrHttp } from "../http";
+import { createArrHttp, DELETE_WITH_FILES_TIMEOUT_MS } from "../http";
 import { mapCalendarEpisode } from "../mappers/calendar";
 import { mapTvMazeCast, mapTvMazeMediaCredits } from "../mappers/cast";
 import { mapHealth } from "../mappers/health";
@@ -262,15 +262,25 @@ export const createSonarrClient = (baseUrl: string, apiKey: string) => {
       return mapSonarrEpisode(updated);
     },
     deleteEpisodeFile: (episodeFileId: number): Promise<void> =>
-      http.deleteJson<void>(`/api/v3/episodefile/${episodeFileId}`),
+      http.deleteJson<void>(
+        `/api/v3/episodefile/${episodeFileId}`,
+        undefined,
+        { timeoutMs: DELETE_WITH_FILES_TIMEOUT_MS },
+      ),
     deleteSeries: (
       id: number,
       options: { readonly deleteFiles: boolean },
     ): Promise<void> =>
-      http.deleteJson<void>(`/api/v3/series/${id}`, {
-        deleteFiles: String(options.deleteFiles),
-        addImportExclusion: "false",
-      }),
+      http.deleteJson<void>(
+        `/api/v3/series/${id}`,
+        {
+          deleteFiles: String(options.deleteFiles),
+          addImportExclusion: "false",
+        },
+        options.deleteFiles
+          ? { timeoutMs: DELETE_WITH_FILES_TIMEOUT_MS }
+          : undefined,
+      ),
     getCalendar: async (range: {
       readonly start: string;
       readonly end: string;

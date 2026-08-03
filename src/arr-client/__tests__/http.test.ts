@@ -6,6 +6,7 @@ describe("createArrHttp", () => {
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    jest.useRealTimers();
   });
 
   it("sends X-Api-Key and returns JSON", async () => {
@@ -62,5 +63,57 @@ describe("createArrHttp", () => {
       status: 0,
     });
     await expect(http.getJson("/api/v3/movie")).rejects.toBeInstanceOf(ArrHttpError);
+  });
+
+  it("maps aborted fetch Network request failed to timeout", async () => {
+    jest.useFakeTimers();
+    globalThis.fetch = jest.fn().mockImplementation((_url, init) => {
+      const signal = (init as RequestInit | undefined)?.signal;
+      return new Promise((_resolve, reject) => {
+        signal?.addEventListener("abort", () => {
+          reject(new TypeError("Network request failed"));
+        });
+      });
+    }) as unknown as typeof fetch;
+
+    const http = createArrHttp("http://192.168.1.10:7878", "secret");
+    const pending = http.deleteJson("/api/v3/movie/1", undefined, {
+      timeoutMs: 20,
+    });
+    const expectation = expect(pending).rejects.toMatchObject({
+      kind: "timeout",
+      status: 0,
+    });
+    await jest.advanceTimersByTimeAsync(20);
+    await expectation;
+    jest.useRealTimers();
+  });
+
+  it("passes custom timeoutMs to abort timer for deleteJson", async () => {
+    jest.useFakeTimers();
+    globalThis.fetch = jest.fn().mockImplementation((_url, init) => {
+      const signal = (init as RequestInit | undefined)?.signal;
+      return new Promise((_resolve, reject) => {
+        signal?.addEventListener("abort", () => {
+          const err = new Error("Aborted");
+          err.name = "AbortError";
+          reject(err);
+        });
+      });
+    }) as unknown as typeof fetch;
+
+    const http = createArrHttp("http://192.168.1.10:7878", "secret");
+    const pending = http.deleteJson(
+      "/api/v3/movie/1",
+      { deleteFiles: "true" },
+      { timeoutMs: 5_000 },
+    );
+    const expectation = expect(pending).rejects.toMatchObject({
+      kind: "timeout",
+    });
+    await jest.advanceTimersByTimeAsync(4_999);
+    await jest.advanceTimersByTimeAsync(1);
+    await expectation;
+    jest.useRealTimers();
   });
 });

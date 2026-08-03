@@ -1,4 +1,4 @@
-import { createArrHttp } from "../http";
+import { createArrHttp, DELETE_WITH_FILES_TIMEOUT_MS } from "../http";
 import { mapCalendarMovie } from "../mappers/calendar";
 import { mapRadarrMediaCredits } from "../mappers/cast";
 import { mapHealth } from "../mappers/health";
@@ -148,10 +148,16 @@ export const createRadarrClient = (baseUrl: string, apiKey: string) => {
       id: number,
       options: { readonly deleteFiles: boolean },
     ): Promise<void> =>
-      http.deleteJson<void>(`/api/v3/movie/${id}`, {
-        deleteFiles: String(options.deleteFiles),
-        addImportExclusion: "false",
-      }),
+      http.deleteJson<void>(
+        `/api/v3/movie/${id}`,
+        {
+          deleteFiles: String(options.deleteFiles),
+          addImportExclusion: "false",
+        },
+        options.deleteFiles
+          ? { timeoutMs: DELETE_WITH_FILES_TIMEOUT_MS }
+          : undefined,
+      ),
     getCalendar: async (range: {
       readonly start: string;
       readonly end: string;

@@ -376,6 +376,16 @@ export const useDeleteEpisodeFile = () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.series.all }),
       ]);
     },
+    onError: async (_error, input) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.series.seasons(input.seriesId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.series.detail(input.seriesId),
+        }),
+      ]);
+    },
   });
 };
 
@@ -400,6 +410,10 @@ export const useDeleteSeries = () => {
       queryClient.removeQueries({
         queryKey: queryKeys.series.seasons(input.seriesId),
       });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.series.all });
+    },
+    onError: async () => {
+      // Server may have deleted already if the client timed out mid-request.
       await queryClient.invalidateQueries({ queryKey: queryKeys.series.all });
     },
   });
