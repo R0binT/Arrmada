@@ -2,7 +2,7 @@
   "expo": {
     "name": "Arrmada",
     "slug": "arrmada",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "arrmada",
@@ -15,7 +15,7 @@
     },
     "android": {
       "package": "com.arrmada.mobile",
-      "versionCode": 15,
+      "versionCode": 16,
       "permissions": [
         "REQUEST_INSTALL_PACKAGES"
       ],

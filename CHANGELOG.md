@@ -5,6 +5,25 @@ All notable changes to Arrmada are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0](https://github.com/R0binT/Arrmada/compare/v1.5.0...v1.6.0) (2026-08-03)
+
+
+### Added
+
+* paginate TMDB add-search results on scroll ([#76](https://github.com/R0binT/Arrmada/issues/76)) ([88fe331](https://github.com/R0binT/Arrmada/commit/88fe331f2ce1dea0b240a4280d51ccdde2663b8f))
+
+
+### Fixed
+
+* **ci:** inject TMDB API key into release APK builds ([#75](https://github.com/R0binT/Arrmada/issues/75)) ([322249c](https://github.com/R0binT/Arrmada/commit/322249cb7f9290dc4ea290ff0dca3ee419f043f8))
+
+
+### Maintenance
+
+* **deps:** bump github/codeql-action from 4 to 4.37.4 ([#73](https://github.com/R0binT/Arrmada/issues/73)) ([ba864f9](https://github.com/R0binT/Arrmada/commit/ba864f9a347caa18797a160f04b261b4f81ff641))
+* **deps:** bump googleapis/release-please-action from 4 to 5 ([#74](https://github.com/R0binT/Arrmada/issues/74)) ([df4c868](https://github.com/R0binT/Arrmada/commit/df4c86888bc75b6ca8eabcc5f68cf4cab6c00ff4))
+* **deps:** bump gradle/actions from 4 to 6.2.0 ([#72](https://github.com/R0binT/Arrmada/issues/72)) ([6085f99](https://github.com/R0binT/Arrmada/commit/6085f99b00e918ac4ef8fc19eda4b69c895922ae))
+
 ## [1.5.0](https://github.com/R0binT/Arrmada/compare/v1.4.0...v1.5.0) (2026-08-02)
 
 
