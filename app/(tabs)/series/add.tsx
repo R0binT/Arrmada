@@ -229,7 +229,7 @@ export default function AddSeriesScreen() {
         />
       ) : null}
 
-      {lookupQuery.isFetching ? (
+      {lookupQuery.isFetching && !lookupQuery.isFetchingNextPage ? (
         <View style={[styles.loading, { marginBottom: scaledSpace.sm }]}>
           <ActivityIndicator color={colors.accent} />
         </View>
@@ -237,7 +237,8 @@ export default function AddSeriesScreen() {
 
       {term.trim().length >= 2 &&
       !lookupQuery.isFetching &&
-      lookupQuery.data?.length === 0 ? (
+      !lookupQuery.isFetchingNextPage &&
+      lookupQuery.data.length === 0 ? (
         <EmptyState
           message={t("add.tryAnotherTitle")}
           title={t("add.noResults")}
@@ -246,6 +247,17 @@ export default function AddSeriesScreen() {
     </>
   );
 
+  const handleLoadMore = useCallback(() => {
+    if (!lookupQuery.hasNextPage || lookupQuery.isFetchingNextPage) {
+      return;
+    }
+    void lookupQuery.fetchNextPage();
+  }, [
+    lookupQuery.fetchNextPage,
+    lookupQuery.hasNextPage,
+    lookupQuery.isFetchingNextPage,
+  ]);
+
   return (
     <Screen>
       <FlatList
@@ -253,11 +265,20 @@ export default function AddSeriesScreen() {
           styles.results,
           { gap: scaledSpace.sm, paddingBottom: scaledSpace.md },
         ]}
-        data={lookupQuery.data ?? []}
+        data={lookupQuery.data}
         extraData={selected?.tvdbId}
         keyExtractor={(item) => String(item.tvdbId)}
         keyboardShouldPersistTaps="handled"
+        ListFooterComponent={
+          lookupQuery.isFetchingNextPage ? (
+            <View style={[styles.loading, { marginVertical: scaledSpace.md }]}>
+              <ActivityIndicator color={colors.accent} />
+            </View>
+          ) : null
+        }
         ListHeaderComponent={listHeader}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.4}
         renderItem={({ item }) => {
           const isSelected = selected?.tvdbId === item.tvdbId;
           const status = getSeriesLookupLibraryStatus(item);

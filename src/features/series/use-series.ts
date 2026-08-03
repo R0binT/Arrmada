@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import {
@@ -125,23 +130,46 @@ export const useSeriesLookup = (term: string) => {
   const { sonarr } = useArrClients();
   const trimmed = term.trim();
 
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: queryKeys.series.lookup(trimmed),
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       if (!sonarr) throw new Error("Sonarr is not configured.");
       const apiKey = readTmdbApiKeyFromProcessEnv();
       if (!apiKey) {
-        return sonarr.lookupCandidates(trimmed);
+        if (pageParam !== 1) {
+          return {
+            items: [] as SeriesCandidate[],
+            page: pageParam,
+            totalPages: 1,
+            hasMore: false,
+          };
+        }
+        const items = await sonarr.lookupCandidates(trimmed);
+        return { items, page: 1, totalPages: 1, hasMore: false };
       }
       return lookupSeriesWithTmdb({
         term: trimmed,
+        page: pageParam,
         tmdb: createTmdbClient(apiKey),
         lookupByTvdbId: (tvdbId) => sonarr.lookupCandidateByTvdbId(tvdbId),
         lookupByTerm: (lookupTerm) => sonarr.lookupCandidates(lookupTerm),
       });
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.page + 1 : undefined,
     enabled: Boolean(sonarr) && trimmed.length >= 2,
   });
+
+  const data = useMemo(
+    () => query.data?.pages.flatMap((page) => page.items) ?? [],
+    [query.data],
+  );
+
+  return {
+    ...query,
+    data,
+  };
 };
 
 export const useSeriesCandidatePreview = (tvdbId: number) => {

@@ -14,11 +14,14 @@ import {
 import type {
   TmdbMediaHit,
   TmdbNamedMatch,
+  TmdbPagedHits,
   TmdbTvExternalIds,
 } from "./types";
 
 type PaginatedResults<T> = {
   readonly results: readonly T[];
+  readonly page?: number;
+  readonly total_pages?: number;
 };
 
 type CollectionResponse = {
@@ -26,9 +29,25 @@ type CollectionResponse = {
 };
 
 const SEARCH_DISCOVER_DEFAULTS: Record<string, string> = {
-  page: "1",
   include_adult: "false",
   language: "fr-FR",
+};
+
+const toPagedHits = <T>(
+  response: PaginatedResults<T>,
+  mapHit: (raw: T) => TmdbMediaHit,
+): TmdbPagedHits => {
+  const page =
+    typeof response.page === "number" && response.page > 0 ? response.page : 1;
+  const totalPages =
+    typeof response.total_pages === "number" && response.total_pages > 0
+      ? response.total_pages
+      : 1;
+  return {
+    hits: response.results.map(mapHit),
+    page,
+    totalPages,
+  };
 };
 
 export type TmdbClient = {
@@ -37,20 +56,27 @@ export type TmdbClient = {
   readonly searchCollections: (
     query: string,
   ) => Promise<readonly TmdbNamedMatch[]>;
-  readonly searchMovies: (query: string) => Promise<readonly TmdbMediaHit[]>;
-  readonly searchTv: (query: string) => Promise<readonly TmdbMediaHit[]>;
+  readonly searchMovies: (
+    query: string,
+    page?: number,
+  ) => Promise<TmdbPagedHits>;
+  readonly searchTv: (query: string, page?: number) => Promise<TmdbPagedHits>;
   readonly discoverMoviesByCompany: (
     companyId: number,
-  ) => Promise<readonly TmdbMediaHit[]>;
+    page?: number,
+  ) => Promise<TmdbPagedHits>;
   readonly discoverMoviesByKeyword: (
     keywordId: number,
-  ) => Promise<readonly TmdbMediaHit[]>;
+    page?: number,
+  ) => Promise<TmdbPagedHits>;
   readonly discoverTvByCompany: (
     companyId: number,
-  ) => Promise<readonly TmdbMediaHit[]>;
+    page?: number,
+  ) => Promise<TmdbPagedHits>;
   readonly discoverTvByKeyword: (
     keywordId: number,
-  ) => Promise<readonly TmdbMediaHit[]>;
+    page?: number,
+  ) => Promise<TmdbPagedHits>;
   readonly getCollectionParts: (
     collectionId: number,
   ) => Promise<readonly TmdbMediaHit[]>;
@@ -64,6 +90,7 @@ const searchNamed = async (
 ): Promise<readonly TmdbNamedMatch[]> => {
   const response = await http.getJson<PaginatedResults<TmdbNamedResult>>(path, {
     ...SEARCH_DISCOVER_DEFAULTS,
+    page: "1",
     query,
   });
   return response.results.map(mapNamedMatch);
@@ -72,57 +99,65 @@ const searchNamed = async (
 const searchMediaMovies = async (
   http: TmdbHttp,
   query: string,
-): Promise<readonly TmdbMediaHit[]> => {
+  page: number,
+): Promise<TmdbPagedHits> => {
   const response = await http.getJson<PaginatedResults<TmdbMovieResult>>(
     "/search/movie",
     {
       ...SEARCH_DISCOVER_DEFAULTS,
+      page: String(page),
       query,
     },
   );
-  return response.results.map(mapMovieResult);
+  return toPagedHits(response, mapMovieResult);
 };
 
 const searchMediaTv = async (
   http: TmdbHttp,
   query: string,
-): Promise<readonly TmdbMediaHit[]> => {
+  page: number,
+): Promise<TmdbPagedHits> => {
   const response = await http.getJson<PaginatedResults<TmdbTvResult>>(
     "/search/tv",
     {
       ...SEARCH_DISCOVER_DEFAULTS,
+      page: String(page),
       query,
     },
   );
-  return response.results.map(mapTvResult);
+  return toPagedHits(response, mapTvResult);
 };
 
 const discoverMovies = async (
   http: TmdbHttp,
+  page: number,
   query: Record<string, string>,
-): Promise<readonly TmdbMediaHit[]> => {
+): Promise<TmdbPagedHits> => {
   const response = await http.getJson<PaginatedResults<TmdbMovieResult>>(
     "/discover/movie",
     {
       ...SEARCH_DISCOVER_DEFAULTS,
+      page: String(page),
       ...query,
     },
   );
-  return response.results.map(mapMovieResult);
+  return toPagedHits(response, mapMovieResult);
 };
 
 const discoverTv = async (
   http: TmdbHttp,
+  page: number,
   query: Record<string, string>,
-): Promise<readonly TmdbMediaHit[]> => {
+): Promise<TmdbPagedHits> => {
   const response = await http.getJson<PaginatedResults<TmdbTvResult>>(
     "/discover/tv",
     {
       ...SEARCH_DISCOVER_DEFAULTS,
+      page: String(page),
       ...query,
     },
   );
-  return response.results.map(mapTvResult);
+  return toPagedHits(response, mapTvResult);
 };
 
 export const createTmdbClient = (apiKey: string): TmdbClient => {
@@ -135,16 +170,17 @@ export const createTmdbClient = (apiKey: string): TmdbClient => {
       searchNamed(http, "/search/keyword", query),
     searchCollections: (query: string) =>
       searchNamed(http, "/search/collection", query),
-    searchMovies: (query: string) => searchMediaMovies(http, query),
-    searchTv: (query: string) => searchMediaTv(http, query),
-    discoverMoviesByCompany: (companyId: number) =>
-      discoverMovies(http, { with_companies: String(companyId) }),
-    discoverMoviesByKeyword: (keywordId: number) =>
-      discoverMovies(http, { with_keywords: String(keywordId) }),
-    discoverTvByCompany: (companyId: number) =>
-      discoverTv(http, { with_companies: String(companyId) }),
-    discoverTvByKeyword: (keywordId: number) =>
-      discoverTv(http, { with_keywords: String(keywordId) }),
+    searchMovies: (query: string, page = 1) =>
+      searchMediaMovies(http, query, page),
+    searchTv: (query: string, page = 1) => searchMediaTv(http, query, page),
+    discoverMoviesByCompany: (companyId: number, page = 1) =>
+      discoverMovies(http, page, { with_companies: String(companyId) }),
+    discoverMoviesByKeyword: (keywordId: number, page = 1) =>
+      discoverMovies(http, page, { with_keywords: String(keywordId) }),
+    discoverTvByCompany: (companyId: number, page = 1) =>
+      discoverTv(http, page, { with_companies: String(companyId) }),
+    discoverTvByKeyword: (keywordId: number, page = 1) =>
+      discoverTv(http, page, { with_keywords: String(keywordId) }),
     getCollectionParts: async (collectionId: number) => {
       const response = await http.getJson<CollectionResponse>(
         `/collection/${collectionId}`,
