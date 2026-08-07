@@ -4,7 +4,7 @@ import {
     Figtree_600SemiBold,
 } from "@expo-google-fonts/figtree";
 import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { useFonts } from "expo-font";
 import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -19,6 +19,7 @@ import { colors, fonts } from "@/lib/theme";
 import { UiSizeProvider } from "@/lib/UiSizeProvider";
 import { configureNotificationHandler } from "@/notifications/present";
 import { useQueueNotifications } from "@/notifications/use-queue-notifications";
+import { arrPersistOptions } from "@/offline/query-persister";
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -61,7 +62,10 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={arrPersistOptions}
+    >
       <I18nProvider>
         <UiSizeProvider>
           <VerrouProvider>
@@ -69,7 +73,7 @@ export default function RootLayout() {
           </VerrouProvider>
         </UiSizeProvider>
       </I18nProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 

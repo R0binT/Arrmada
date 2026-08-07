@@ -2,6 +2,7 @@ import { focusManager, QueryClient } from "@tanstack/react-query";
 import { AppState, Platform, type AppStateStatus } from "react-native";
 
 import { LIBRARY_STALE_TIME_MS } from "@/features/queue/queue-poll-policy";
+import { LIBRARY_GC_TIME_MS } from "@/offline/constants";
 
 export {
   LIBRARY_STALE_TIME_MS,
@@ -31,6 +32,7 @@ export const createQueryClient = (): QueryClient =>
       queries: {
         retry: 1,
         staleTime: LIBRARY_STALE_TIME_MS,
+        gcTime: LIBRARY_GC_TIME_MS,
       },
     },
   });
