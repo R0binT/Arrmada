@@ -162,9 +162,12 @@ export const createOutboxDispatcher = (
     if (target === undefined || target.status !== "failed") {
       return;
     }
+    const { lastError: _clearedError, ...withoutError } = target;
+    void _clearedError;
     items[index] = {
-      ...target,
+      ...withoutError,
       status: "pending",
+      attempts: 0,
       updatedAt: deps.now().toISOString(),
     };
     await save(items);

@@ -150,4 +150,42 @@ describe("outbox dispatcher", () => {
     ).rejects.toEqual({ status: 503, message: "nope" });
     expect(await dispatcher.list()).toEqual([]);
   });
+
+  it("retry resets attempts so flush runs immediately", async () => {
+    let online = false;
+    let nowMs = Date.parse("2026-08-07T00:00:00.000Z");
+    let executeCount = 0;
+    const dispatcher = createTestDispatcher({
+      isServiceOnline: () => online,
+      now: () => new Date(nowMs),
+      executors: {
+        addMovie: {
+          execute: async () => {
+            executeCount += 1;
+            if (executeCount <= 2) {
+              throw { status: 503, message: "nope" };
+            }
+          },
+        },
+      },
+      maxAttempts: 2,
+    });
+    await dispatcher.enqueue({
+      service: "radarr",
+      type: "addMovie",
+      payload: { tmdbId: 1, qualityProfileId: 1, rootFolderPath: "/" },
+    });
+    online = true;
+    await dispatcher.flush("radarr");
+    nowMs += 60_000;
+    await dispatcher.flush("radarr");
+    const failed = (await dispatcher.list())[0];
+    expect(failed?.status).toBe("failed");
+    expect(failed?.attempts).toBeGreaterThanOrEqual(2);
+    expect(failed?.lastError).toBe("nope");
+    // Same clock as failure — without resetting attempts, backoff would block flush.
+    await dispatcher.retry(failed!.id);
+    expect(executeCount).toBe(3);
+    expect(await dispatcher.list()).toEqual([]);
+  });
 });
