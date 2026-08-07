@@ -12,6 +12,7 @@ import type {
 type Listener = () => void;
 
 let machineState: ConnectivityMachineState = createInitialOfflineStatus();
+let snapshot: OfflineStatus = toOfflineStatus(machineState);
 const listeners = new Set<Listener>();
 
 const notifyListeners = (): void => {
@@ -20,8 +21,7 @@ const notifyListeners = (): void => {
   }
 };
 
-export const getOfflineStatus = (): OfflineStatus =>
-  toOfflineStatus(machineState);
+export const getOfflineStatus = (): OfflineStatus => snapshot;
 
 export const subscribeOfflineStatus = (listener: Listener): (() => void) => {
   listeners.add(listener);
@@ -34,6 +34,7 @@ export const dispatchOfflineEvent = (
   event: OfflineConnectivityEvent,
 ): OfflineStatus => {
   machineState = reduceOfflineStatus(machineState, event);
+  snapshot = toOfflineStatus(machineState);
   notifyListeners();
-  return toOfflineStatus(machineState);
+  return snapshot;
 };
