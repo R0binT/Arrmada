@@ -352,6 +352,9 @@ export const enMessages: Record<MessageKey, string> = {
   "notFound.homeLink": "Back to home",
   "health.online": "Online",
   "health.offline": "Offline",
+  "offline.missingDefaults":
+    "Connect to Arr once to load folders and profiles",
+  "offline.addQueued": "Add queued — will sync when Arr is reachable",
   "a11y.loadingLibrary": "Loading library",
   "a11y.loadingQueue": "Loading queue",
   "units.mb": "{{n}} MB",

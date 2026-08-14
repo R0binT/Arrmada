@@ -27,6 +27,17 @@ import { useArrClients } from "@/hooks/use-arr-clients";
 import { t } from "@/i18n";
 import { readTmdbApiKeyFromProcessEnv } from "@/lib/env-tmdb-api-key";
 import { queryKeys } from "@/lib/query-keys";
+import type { OptimisticAddSeriesPayload } from "@/offline/optimistic/pending-meta";
+import {
+  isDeviceOffline,
+  shouldEnqueueArrWrite,
+} from "@/offline/should-enqueue-arr-write";
+import {
+  assertArrAddDefaults,
+  isQueuedArrWrite,
+  useOutboxDispatcher,
+} from "@/offline/use-arr-mutation";
+import { useOfflineStatus } from "@/offline/use-offline-status";
 import { createTmdbClient } from "@/tmdb-client";
 
 import { lookupSeriesWithTmdb } from "./lookup-series-with-tmdb";
@@ -128,13 +139,25 @@ export const useSeriesSeasons = (id: number) => {
 
 export const useSeriesLookup = (term: string) => {
   const { sonarr } = useArrClients();
+  const status = useOfflineStatus();
   const trimmed = term.trim();
+  const hasTmdbKey = Boolean(readTmdbApiKeyFromProcessEnv());
 
   const query = useInfiniteQuery({
     queryKey: queryKeys.series.lookup(trimmed),
     queryFn: async ({ pageParam }) => {
-      if (!sonarr) throw new Error("Sonarr is not configured.");
       const apiKey = readTmdbApiKeyFromProcessEnv();
+      const arrUnreachable = !sonarr || status.sonarr === "unreachable";
+      if (arrUnreachable && apiKey) {
+        return lookupSeriesWithTmdb({
+          term: trimmed,
+          page: pageParam,
+          tmdb: createTmdbClient(apiKey),
+          lookupByTvdbId: async () => null,
+          lookupByTerm: async () => [],
+        });
+      }
+      if (!sonarr) throw new Error("Sonarr is not configured.");
       if (!apiKey) {
         if (pageParam !== 1) {
           return {
@@ -158,7 +181,9 @@ export const useSeriesLookup = (term: string) => {
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.page + 1 : undefined,
-    enabled: Boolean(sonarr) && trimmed.length >= 2,
+    enabled:
+      trimmed.length >= 2 &&
+      (Boolean(sonarr) || (hasTmdbKey && !isDeviceOffline(status))),
   });
 
   const data = useMemo(
@@ -174,43 +199,72 @@ export const useSeriesLookup = (term: string) => {
 
 export const useSeriesCandidatePreview = (tvdbId: number) => {
   const { sonarr } = useArrClients();
+  const status = useOfflineStatus();
+  const arrUnreachable = status.sonarr === "unreachable";
   return useQuery({
     queryKey: queryKeys.series.preview(tvdbId),
     queryFn: async () => {
       if (!sonarr) throw new Error("Sonarr is not configured.");
+      if (arrUnreachable) {
+        throw new Error("Sonarr is not reachable.");
+      }
       return sonarr.lookupCandidateByTvdbId(tvdbId);
     },
-    enabled: Boolean(sonarr) && Number.isFinite(tvdbId) && tvdbId > 0,
+    enabled:
+      Boolean(sonarr) &&
+      !arrUnreachable &&
+      Number.isFinite(tvdbId) &&
+      tvdbId > 0,
   });
 };
 
 export const useSeriesDefaults = () => {
   const { sonarr } = useArrClients();
-
-  return useQuery({
+  const status = useOfflineStatus();
+  const arrUnreachable = status.sonarr === "unreachable";
+  const query = useQuery({
     queryKey: queryKeys.series.defaults,
     queryFn: async (): Promise<SeriesDefaults> => {
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.getAddDefaults();
     },
-    enabled: Boolean(sonarr),
+    enabled: Boolean(sonarr) && !arrUnreachable,
   });
+  return {
+    ...query,
+    isError: arrUnreachable ? false : query.isError,
+  };
 };
 
 export const useAddSeries = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      tvdbId: number;
-      qualityProfileId: number;
-      rootFolderPath: string;
-    }) => {
+    mutationFn: async (input: OptimisticAddSeriesPayload) => {
+      assertArrAddDefaults(input);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "addSeries",
+          payload: input,
+          optimisticKey: `series:${input.tvdbId}`,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
-      return sonarr.addSeries(input);
+      return sonarr.addSeries({
+        tvdbId: input.tvdbId,
+        qualityProfileId: input.qualityProfileId,
+        rootFolderPath: input.rootFolderPath,
+      });
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       await queryClient.invalidateQueries({ queryKey: queryKeys.series.all });
     },
   });

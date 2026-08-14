@@ -25,6 +25,17 @@ import { useArrClients } from "@/hooks/use-arr-clients";
 import { t } from "@/i18n";
 import { readTmdbApiKeyFromProcessEnv } from "@/lib/env-tmdb-api-key";
 import { queryKeys } from "@/lib/query-keys";
+import type { OptimisticAddMoviePayload } from "@/offline/optimistic/pending-meta";
+import {
+  isDeviceOffline,
+  shouldEnqueueArrWrite,
+} from "@/offline/should-enqueue-arr-write";
+import {
+  assertArrAddDefaults,
+  isQueuedArrWrite,
+  useOutboxDispatcher,
+} from "@/offline/use-arr-mutation";
+import { useOfflineStatus } from "@/offline/use-offline-status";
 import { createTmdbClient } from "@/tmdb-client";
 
 import { lookupMoviesWithTmdb } from "./lookup-movies-with-tmdb";
@@ -88,13 +99,25 @@ export const useMovieCast = (id: number) => {
 
 export const useMovieLookup = (term: string) => {
   const { radarr } = useArrClients();
+  const status = useOfflineStatus();
   const trimmed = term.trim();
+  const hasTmdbKey = Boolean(readTmdbApiKeyFromProcessEnv());
 
   const query = useInfiniteQuery({
     queryKey: queryKeys.movies.lookup(trimmed),
     queryFn: async ({ pageParam }) => {
-      if (!radarr) throw new Error("Radarr is not configured.");
       const apiKey = readTmdbApiKeyFromProcessEnv();
+      const arrUnreachable = !radarr || status.radarr === "unreachable";
+      if (arrUnreachable && apiKey) {
+        return lookupMoviesWithTmdb({
+          term: trimmed,
+          page: pageParam,
+          tmdb: createTmdbClient(apiKey),
+          lookupByTmdbId: async () => null,
+          lookupByTerm: async () => [],
+        });
+      }
+      if (!radarr) throw new Error("Radarr is not configured.");
       if (!apiKey) {
         if (pageParam !== 1) {
           return {
@@ -118,7 +141,9 @@ export const useMovieLookup = (term: string) => {
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.page + 1 : undefined,
-    enabled: Boolean(radarr) && trimmed.length >= 2,
+    enabled:
+      trimmed.length >= 2 &&
+      (Boolean(radarr) || (hasTmdbKey && !isDeviceOffline(status))),
   });
 
   const data = useMemo(
@@ -134,43 +159,72 @@ export const useMovieLookup = (term: string) => {
 
 export const useMovieCandidatePreview = (tmdbId: number) => {
   const { radarr } = useArrClients();
+  const status = useOfflineStatus();
+  const arrUnreachable = status.radarr === "unreachable";
   return useQuery({
     queryKey: queryKeys.movies.preview(tmdbId),
     queryFn: async () => {
       if (!radarr) throw new Error("Radarr is not configured.");
+      if (arrUnreachable) {
+        throw new Error("Radarr is not reachable.");
+      }
       return radarr.lookupCandidateByTmdbId(tmdbId);
     },
-    enabled: Boolean(radarr) && Number.isFinite(tmdbId) && tmdbId > 0,
+    enabled:
+      Boolean(radarr) &&
+      !arrUnreachable &&
+      Number.isFinite(tmdbId) &&
+      tmdbId > 0,
   });
 };
 
 export const useMovieDefaults = () => {
   const { radarr } = useArrClients();
-
-  return useQuery({
+  const status = useOfflineStatus();
+  const arrUnreachable = status.radarr === "unreachable";
+  const query = useQuery({
     queryKey: queryKeys.movies.defaults,
     queryFn: async (): Promise<MovieDefaults> => {
       if (!radarr) throw new Error("Radarr is not configured.");
       return radarr.getAddDefaults();
     },
-    enabled: Boolean(radarr),
+    enabled: Boolean(radarr) && !arrUnreachable,
   });
+  return {
+    ...query,
+    isError: arrUnreachable ? false : query.isError,
+  };
 };
 
 export const useAddMovie = () => {
   const { radarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      tmdbId: number;
-      qualityProfileId: number;
-      rootFolderPath: string;
-    }) => {
+    mutationFn: async (input: OptimisticAddMoviePayload) => {
+      assertArrAddDefaults(input);
+      if (shouldEnqueueArrWrite(status, "radarr")) {
+        const item = await dispatcher.enqueue({
+          service: "radarr",
+          type: "addMovie",
+          payload: input,
+          optimisticKey: `movie:${input.tmdbId}`,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!radarr) throw new Error("Radarr is not configured.");
-      return radarr.addMovie(input);
+      return radarr.addMovie({
+        tmdbId: input.tmdbId,
+        qualityProfileId: input.qualityProfileId,
+        rootFolderPath: input.rootFolderPath,
+      });
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       await queryClient.invalidateQueries({ queryKey: queryKeys.movies.all });
     },
   });

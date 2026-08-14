@@ -29,6 +29,7 @@ export type OutboxDispatcherDeps = {
   readonly getExecutor: (type: ArrOutboxOpType) => OpExecutor;
   readonly isServiceOnline: (service: "radarr" | "sonarr") => boolean;
   readonly executeOnline: (item: ArrOutboxItem) => Promise<void>;
+  readonly getQueryClient?: () => unknown;
   readonly onOptimisticApply?: (item: ArrOutboxItem) => void;
   readonly onOptimisticRollback?: (item: ArrOutboxItem) => void;
   readonly loadOutbox?: () => Promise<readonly ArrOutboxItem[]>;
@@ -53,6 +54,7 @@ export const createOutboxDispatcher = (
   const load = deps.loadOutbox ?? defaultLoadOutbox;
   const save = deps.saveOutbox ?? defaultSaveOutbox;
   const maxAttempts = deps.maxAttempts ?? OUTBOX_MAX_ATTEMPTS;
+  const resolveQueryClient = (): unknown => deps.getQueryClient?.();
 
   const list = async (): Promise<readonly ArrOutboxItem[]> => load();
 
@@ -79,7 +81,7 @@ export const createOutboxDispatcher = (
     await save([...items, item]);
     deps.onOptimisticApply?.(item);
     const executor = deps.getExecutor(item.type);
-    executor.applyOptimistic?.(item, undefined);
+    executor.applyOptimistic?.(item, resolveQueryClient());
     return item;
   };
 
@@ -105,7 +107,9 @@ export const createOutboxDispatcher = (
       items[index] = running;
       await save(items);
       try {
-        await deps.getExecutor(running.type).execute(running, {});
+        await deps.getExecutor(running.type).execute(running, {
+          queryClient: resolveQueryClient(),
+        });
         const afterSuccess = (await load()).filter((item) => item.id !== running.id);
         await save(afterSuccess);
       } catch (error: unknown) {
@@ -148,7 +152,7 @@ export const createOutboxDispatcher = (
     }
     deps.onOptimisticRollback?.(target);
     const executor = deps.getExecutor(target.type);
-    executor.rollbackOptimistic?.(target, undefined);
+    executor.rollbackOptimistic?.(target, resolveQueryClient());
     await save(items.filter((item) => item.id !== id));
   };
 

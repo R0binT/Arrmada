@@ -41,6 +41,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
 import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { isQueuedArrWrite } from "@/offline/use-arr-mutation";
 import {
   pressScaleStyle,
   Surface,
@@ -149,7 +150,17 @@ export default function AddSeriesScreen() {
         tvdbId: selected.tvdbId,
         qualityProfileId,
         rootFolderPath,
+        title: selected.title,
+        year: selected.year,
+        posterUrl: selected.posterUrl,
+        overview: selected.overview,
       });
+      await lookupQuery.refetch();
+      if (isQueuedArrWrite(created)) {
+        setSelected(undefined);
+        setFeedback(t("offline.addQueued"));
+        return;
+      }
       const createdId =
         typeof created === "object" &&
         created !== null &&
@@ -157,7 +168,6 @@ export default function AddSeriesScreen() {
         typeof (created as { id: unknown }).id === "number"
           ? (created as { id: number }).id
           : undefined;
-      await lookupQuery.refetch();
       if (createdId && sonarr) {
         setFeedback(t("action.searching"));
         await startSeriesDownloadAfterAdd({
