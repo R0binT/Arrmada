@@ -28,7 +28,8 @@ import { readTmdbApiKeyFromProcessEnv } from "@/lib/env-tmdb-api-key";
 import { queryKeys } from "@/lib/query-keys";
 import type { OptimisticAddSeriesPayload } from "@/offline/optimistic/pending-meta";
 import {
-  isDeviceOffline,
+  assertCanMutateArr,
+  assertCanUseTmdb,
   shouldEnqueueArrWrite,
 } from "@/offline/should-enqueue-arr-write";
 import {
@@ -182,7 +183,8 @@ export const useSeriesLookup = (term: string) => {
       lastPage.hasMore ? lastPage.page + 1 : undefined,
     enabled:
       trimmed.length >= 2 &&
-      (Boolean(sonarr) || (hasTmdbKey && !isDeviceOffline(status))),
+      assertCanUseTmdb(status) &&
+      (Boolean(sonarr) || hasTmdbKey),
   });
 
   const data = useMemo(
@@ -243,6 +245,7 @@ export const useAddSeries = () => {
 
   return useMutation({
     mutationFn: async (input: OptimisticAddSeriesPayload) => {
+      assertCanMutateArr(status);
       assertArrAddDefaults(input);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
         const item = await dispatcher.enqueue({
@@ -277,6 +280,7 @@ export const useSeriesSearch = () => {
 
   return useMutation({
     mutationFn: async (seriesId: number) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
         const item = await dispatcher.enqueue({
           service: "sonarr",
@@ -305,6 +309,7 @@ export const useSeasonSearch = () => {
 
   return useMutation({
     mutationFn: async (input: { seriesId: number; seasonNumber: number }) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
         const item = await dispatcher.enqueue({
           service: "sonarr",
@@ -336,6 +341,7 @@ export const useEpisodeSearch = () => {
 
   return useMutation({
     mutationFn: async (episodeId: number) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
         const item = await dispatcher.enqueue({
           service: "sonarr",
@@ -394,6 +400,7 @@ export const useGrabSeriesRelease = () => {
 
   return useMutation({
     mutationFn: async (release: Pick<ReleaseOffer, "guid" | "indexerId">) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
         const item = await dispatcher.enqueue({
           service: "sonarr",
@@ -422,6 +429,7 @@ export const useUpdateSeriesMonitored = () => {
 
   return useMutation({
     mutationFn: async (input: { seriesId: number; monitored: boolean }) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
         const item = await dispatcher.enqueue({
           service: "sonarr",
@@ -457,6 +465,7 @@ export const useUpdateEpisodeMonitored = () => {
       episodeId: number;
       monitored: boolean;
     }) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
         const item = await dispatcher.enqueue({
           service: "sonarr",
@@ -489,6 +498,7 @@ export const useDeleteEpisodeFile = () => {
 
   return useMutation({
     mutationFn: async (input: { seriesId: number; episodeFileId: number }) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
         const item = await dispatcher.enqueue({
           service: "sonarr",
@@ -535,6 +545,7 @@ export const useDeleteSeries = () => {
 
   return useMutation({
     mutationFn: async (input: { seriesId: number; deleteFiles: boolean }) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
         const item = await dispatcher.enqueue({
           service: "sonarr",

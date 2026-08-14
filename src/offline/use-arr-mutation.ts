@@ -11,6 +11,8 @@ import { shouldEnqueueArrWrite } from "./should-enqueue-arr-write";
 import { useOfflineStatus } from "./use-offline-status";
 
 export {
+  assertCanMutateArr,
+  assertCanUseTmdb,
   isDeviceOffline,
   shouldEnqueueArrWrite,
 } from "./should-enqueue-arr-write";

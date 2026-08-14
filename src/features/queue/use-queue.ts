@@ -18,6 +18,7 @@ import { useArrClients } from "@/hooks/use-arr-clients";
 import { t } from "@/i18n";
 import { queryKeys } from "@/lib/query-keys";
 import {
+  assertCanMutateArr,
   isQueuedArrWrite,
   shouldEnqueueArrWrite,
   useOutboxDispatcher,
@@ -181,6 +182,7 @@ export const useQueueMutations = () => {
 
   const removeMutation = useMutation({
     mutationFn: async (item: QueueItem) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, item.service)) {
         const queued = await dispatcher.enqueue({
           service: item.service,
@@ -204,6 +206,7 @@ export const useQueueMutations = () => {
 
   const pauseMutation = useMutation({
     mutationFn: async (item: QueueItem) => {
+      assertCanMutateArr(status);
       if (!item.downloadId) {
         throw new Error("Download id is missing.");
       }

@@ -27,7 +27,8 @@ import { readTmdbApiKeyFromProcessEnv } from "@/lib/env-tmdb-api-key";
 import { queryKeys } from "@/lib/query-keys";
 import type { OptimisticAddMoviePayload } from "@/offline/optimistic/pending-meta";
 import {
-  isDeviceOffline,
+  assertCanMutateArr,
+  assertCanUseTmdb,
   shouldEnqueueArrWrite,
 } from "@/offline/should-enqueue-arr-write";
 import {
@@ -143,7 +144,8 @@ export const useMovieLookup = (term: string) => {
       lastPage.hasMore ? lastPage.page + 1 : undefined,
     enabled:
       trimmed.length >= 2 &&
-      (Boolean(radarr) || (hasTmdbKey && !isDeviceOffline(status))),
+      assertCanUseTmdb(status) &&
+      (Boolean(radarr) || hasTmdbKey),
   });
 
   const data = useMemo(
@@ -204,6 +206,7 @@ export const useAddMovie = () => {
 
   return useMutation({
     mutationFn: async (input: OptimisticAddMoviePayload) => {
+      assertCanMutateArr(status);
       assertArrAddDefaults(input);
       if (shouldEnqueueArrWrite(status, "radarr")) {
         const item = await dispatcher.enqueue({
@@ -238,6 +241,7 @@ export const useMovieSearch = () => {
 
   return useMutation({
     mutationFn: async (movieId: number) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "radarr")) {
         const item = await dispatcher.enqueue({
           service: "radarr",
@@ -280,6 +284,7 @@ export const useGrabMovieRelease = () => {
 
   return useMutation({
     mutationFn: async (release: Pick<ReleaseOffer, "guid" | "indexerId">) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "radarr")) {
         const item = await dispatcher.enqueue({
           service: "radarr",
@@ -308,6 +313,7 @@ export const useUpdateMovieMonitored = () => {
 
   return useMutation({
     mutationFn: async (input: { movieId: number; monitored: boolean }) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "radarr")) {
         const item = await dispatcher.enqueue({
           service: "radarr",
@@ -339,6 +345,7 @@ export const useDeleteMovie = () => {
 
   return useMutation({
     mutationFn: async (input: { movieId: number; deleteFiles: boolean }) => {
+      assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "radarr")) {
         const item = await dispatcher.enqueue({
           service: "radarr",

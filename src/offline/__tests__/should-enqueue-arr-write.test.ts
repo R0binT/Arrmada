@@ -1,5 +1,9 @@
+import { t } from "@/i18n";
+
 import { isDeviceOffline as isDeviceOfflineFromReduce } from "../connectivity/reduce-offline-status";
 import {
+  assertCanMutateArr,
+  assertCanUseTmdb,
   isDeviceOffline,
   shouldEnqueueArrWrite,
 } from "../should-enqueue-arr-write";
@@ -54,5 +58,49 @@ describe("shouldEnqueueArrWrite", () => {
         "radarr",
       ),
     ).toBe(false);
+  });
+});
+
+describe("assertCanUseTmdb", () => {
+  it("returns false when the device is offline", () => {
+    expect(
+      assertCanUseTmdb({
+        device: "offline",
+        radarr: "online",
+        sonarr: "online",
+      }),
+    ).toBe(false);
+  });
+
+  it("returns true when the device is online even if Arr is unreachable", () => {
+    expect(
+      assertCanUseTmdb({
+        device: "online",
+        radarr: "unreachable",
+        sonarr: "unreachable",
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("assertCanMutateArr", () => {
+  it("throws deviceOffline when the device is offline", () => {
+    expect(() =>
+      assertCanMutateArr({
+        device: "offline",
+        radarr: "online",
+        sonarr: "online",
+      }),
+    ).toThrow(t("offline.deviceOffline"));
+  });
+
+  it("allows writes when the device is online", () => {
+    expect(() =>
+      assertCanMutateArr({
+        device: "online",
+        radarr: "unreachable",
+        sonarr: "online",
+      }),
+    ).not.toThrow();
   });
 });
