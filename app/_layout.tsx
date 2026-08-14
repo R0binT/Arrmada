@@ -19,6 +19,7 @@ import { colors, fonts } from "@/lib/theme";
 import { UiSizeProvider } from "@/lib/UiSizeProvider";
 import { configureNotificationHandler } from "@/notifications/present";
 import { useQueueNotifications } from "@/notifications/use-queue-notifications";
+import { OfflineBootstrap } from "@/offline/OfflineBootstrap";
 import { arrPersistOptions } from "@/offline/query-persister";
 
 export const unstable_settings = {
@@ -85,6 +86,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={ArrDarkTheme}>
+      <OfflineBootstrap />
       <Stack
         screenOptions={{
           contentStyle: { backgroundColor: colors.bg },
