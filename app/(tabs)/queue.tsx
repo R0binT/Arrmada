@@ -77,7 +77,7 @@ export default function QueueScreen() {
     openSettingsServices();
   }, []);
 
-  const runMutation = useCallback(async (action: () => Promise<void>) => {
+  const runMutation = useCallback(async (action: () => Promise<unknown>) => {
     try {
       await action();
     } catch (error) {

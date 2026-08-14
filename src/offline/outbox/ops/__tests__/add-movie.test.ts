@@ -135,8 +135,8 @@ describe("addMovie / addSeries ops", () => {
     const addMovie = jest.fn().mockResolvedValue({});
     const addSeries = jest.fn().mockResolvedValue({});
     configureOpRegistry({
-      radarr: { addMovie },
-      sonarr: { addSeries },
+      radarr: { addMovie } as never,
+      sonarr: { addSeries } as never,
     });
 
     const executor = getOpExecutor("addMovie");
@@ -151,13 +151,10 @@ describe("addMovie / addSeries ops", () => {
   });
 
   it("registry still throws for unregistered op types", async () => {
-    configureOpRegistry({
-      radarr: { addMovie: jest.fn() },
-      sonarr: { addSeries: jest.fn() },
-    });
+    configureOpRegistry({});
     const executor = getOpExecutor("deleteMovie");
-    await expect(executor.execute(makeAddMovieItem({ type: "deleteMovie" }), {})).rejects.toThrow(
-      "unregistered op: deleteMovie",
-    );
+    await expect(
+      executor.execute(makeAddMovieItem({ type: "deleteMovie" }), {}),
+    ).rejects.toThrow("unregistered op: deleteMovie");
   });
 });

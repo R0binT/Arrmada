@@ -17,6 +17,12 @@ import { useAppIsActive } from "@/hooks/use-app-is-active";
 import { useArrClients } from "@/hooks/use-arr-clients";
 import { t } from "@/i18n";
 import { queryKeys } from "@/lib/query-keys";
+import {
+  isQueuedArrWrite,
+  shouldEnqueueArrWrite,
+  useOutboxDispatcher,
+} from "@/offline/use-arr-mutation";
+import { useOfflineStatus } from "@/offline/use-offline-status";
 
 type ArrQueueClient = RadarrClient | SonarrClient;
 
@@ -163,13 +169,30 @@ export const useQueue = ({ enabled, poll }: UseQueueOptions) => {
 export const useQueueMutations = () => {
   const { radarr, sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
-  const onSettled = async (): Promise<void> => {
+  const onSettled = async (result: unknown): Promise<void> => {
+    if (isQueuedArrWrite(result)) {
+      return;
+    }
     await invalidateQueue(queryClient);
   };
 
   const removeMutation = useMutation({
     mutationFn: async (item: QueueItem) => {
+      if (shouldEnqueueArrWrite(status, item.service)) {
+        const queued = await dispatcher.enqueue({
+          service: item.service,
+          type: "queueRemove",
+          payload: {
+            id: item.id,
+            removeFromClient: true,
+            blocklist: false,
+          },
+        });
+        return { queued: true as const, id: queued.id };
+      }
       const client = getClientForItem(item, radarr, sonarr);
       await client.removeQueueItem(item.id, {
         removeFromClient: true,
@@ -183,6 +206,17 @@ export const useQueueMutations = () => {
     mutationFn: async (item: QueueItem) => {
       if (!item.downloadId) {
         throw new Error("Download id is missing.");
+      }
+      if (shouldEnqueueArrWrite(status, item.service)) {
+        const queued = await dispatcher.enqueue({
+          service: item.service,
+          type: "queuePauseOrResume",
+          payload: {
+            downloadId: item.downloadId,
+            isPaused: item.status === "paused",
+          },
+        });
+        return { queued: true as const, id: queued.id };
       }
       const client = getClientForItem(item, radarr, sonarr);
       const commandName =

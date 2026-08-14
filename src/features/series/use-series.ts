@@ -9,7 +9,6 @@ import { useMemo } from "react";
 import {
     classifySeries,
     type ArrAddDefaults,
-    type Episode,
     type QualityProfileOption,
     type ReleaseOffer,
     type RootFolderOption,
@@ -273,13 +272,26 @@ export const useAddSeries = () => {
 export const useSeriesSearch = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (seriesId: number) => {
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "seriesSearch",
+          payload: { seriesId },
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.command("SeriesSearch", { seriesId });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -288,16 +300,29 @@ export const useSeriesSearch = () => {
 export const useSeasonSearch = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (input: { seriesId: number; seasonNumber: number }) => {
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "seasonSearch",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.command("SeasonSearch", {
         seriesId: input.seriesId,
         seasonNumber: input.seasonNumber,
       });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -306,13 +331,26 @@ export const useSeasonSearch = () => {
 export const useEpisodeSearch = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (episodeId: number) => {
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "episodeSearch",
+          payload: { episodeId },
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.command("EpisodeSearch", { episodeIds: [episodeId] });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -351,13 +389,26 @@ export const useEpisodeReleases = (episodeId: number, enabled: boolean) => {
 export const useGrabSeriesRelease = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (release: Pick<ReleaseOffer, "guid" | "indexerId">) => {
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "grabSeriesRelease",
+          payload: { guid: release.guid, indexerId: release.indexerId },
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.grabRelease(release);
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -366,19 +417,29 @@ export const useGrabSeriesRelease = () => {
 export const useUpdateSeriesMonitored = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      seriesId: number;
-      monitored: boolean;
-    }): Promise<Series> => {
+    mutationFn: async (input: { seriesId: number; monitored: boolean }) => {
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "updateSeriesMonitored",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.updateSeries(input.seriesId, {
         monitored: input.monitored,
       });
     },
-    onSuccess: async (series) => {
-      queryClient.setQueryData(queryKeys.series.detail(series.id), series);
+    onSuccess: async (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
+      queryClient.setQueryData(queryKeys.series.detail(result.id), result);
       await queryClient.invalidateQueries({ queryKey: queryKeys.series.all });
     },
   });
@@ -387,19 +448,32 @@ export const useUpdateSeriesMonitored = () => {
 export const useUpdateEpisodeMonitored = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (input: {
       seriesId: number;
       episodeId: number;
       monitored: boolean;
-    }): Promise<Episode> => {
+    }) => {
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "updateEpisodeMonitored",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.updateEpisode(input.episodeId, {
         monitored: input.monitored,
       });
     },
-    onSuccess: async (_episode, input) => {
+    onSuccess: async (result, input) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       await queryClient.invalidateQueries({
         queryKey: queryKeys.series.seasons(input.seriesId),
       });
@@ -410,16 +484,26 @@ export const useUpdateEpisodeMonitored = () => {
 export const useDeleteEpisodeFile = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      seriesId: number;
-      episodeFileId: number;
-    }): Promise<void> => {
+    mutationFn: async (input: { seriesId: number; episodeFileId: number }) => {
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "deleteEpisodeFile",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.deleteEpisodeFile(input.episodeFileId);
     },
-    onSuccess: async (_void, input) => {
+    onSuccess: async (result, input) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.series.seasons(input.seriesId),
@@ -446,18 +530,28 @@ export const useDeleteEpisodeFile = () => {
 export const useDeleteSeries = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      seriesId: number;
-      deleteFiles: boolean;
-    }): Promise<void> => {
+    mutationFn: async (input: { seriesId: number; deleteFiles: boolean }) => {
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "deleteSeries",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.deleteSeries(input.seriesId, {
         deleteFiles: input.deleteFiles,
       });
     },
-    onSuccess: async (_void, input) => {
+    onSuccess: async (result, input) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       queryClient.removeQueries({
         queryKey: queryKeys.series.detail(input.seriesId),
       });

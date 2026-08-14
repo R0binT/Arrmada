@@ -233,13 +233,26 @@ export const useAddMovie = () => {
 export const useMovieSearch = () => {
   const { radarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (movieId: number) => {
+      if (shouldEnqueueArrWrite(status, "radarr")) {
+        const item = await dispatcher.enqueue({
+          service: "radarr",
+          type: "movieSearch",
+          payload: { movieId },
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!radarr) throw new Error("Radarr is not configured.");
       return radarr.command("MoviesSearch", { movieIds: [movieId] });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -262,13 +275,26 @@ export const useMovieReleases = (movieId: number, enabled: boolean) => {
 export const useGrabMovieRelease = () => {
   const { radarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (release: Pick<ReleaseOffer, "guid" | "indexerId">) => {
+      if (shouldEnqueueArrWrite(status, "radarr")) {
+        const item = await dispatcher.enqueue({
+          service: "radarr",
+          type: "grabMovieRelease",
+          payload: { guid: release.guid, indexerId: release.indexerId },
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!radarr) throw new Error("Radarr is not configured.");
       return radarr.grabRelease(release);
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -277,19 +303,29 @@ export const useGrabMovieRelease = () => {
 export const useUpdateMovieMonitored = () => {
   const { radarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      movieId: number;
-      monitored: boolean;
-    }): Promise<Movie> => {
+    mutationFn: async (input: { movieId: number; monitored: boolean }) => {
+      if (shouldEnqueueArrWrite(status, "radarr")) {
+        const item = await dispatcher.enqueue({
+          service: "radarr",
+          type: "updateMovieMonitored",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!radarr) throw new Error("Radarr is not configured.");
       return radarr.updateMovie(input.movieId, {
         monitored: input.monitored,
       });
     },
-    onSuccess: async (movie) => {
-      queryClient.setQueryData(queryKeys.movies.detail(movie.id), movie);
+    onSuccess: async (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
+      queryClient.setQueryData(queryKeys.movies.detail(result.id), result);
       await queryClient.invalidateQueries({ queryKey: queryKeys.movies.all });
     },
   });
@@ -298,18 +334,28 @@ export const useUpdateMovieMonitored = () => {
 export const useDeleteMovie = () => {
   const { radarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      movieId: number;
-      deleteFiles: boolean;
-    }): Promise<void> => {
+    mutationFn: async (input: { movieId: number; deleteFiles: boolean }) => {
+      if (shouldEnqueueArrWrite(status, "radarr")) {
+        const item = await dispatcher.enqueue({
+          service: "radarr",
+          type: "deleteMovie",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!radarr) throw new Error("Radarr is not configured.");
       return radarr.deleteMovie(input.movieId, {
         deleteFiles: input.deleteFiles,
       });
     },
-    onSuccess: async (_void, input) => {
+    onSuccess: async (result, input) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       queryClient.removeQueries({
         queryKey: queryKeys.movies.detail(input.movieId),
       });
