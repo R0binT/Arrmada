@@ -15,6 +15,7 @@ import {
 } from "@/offline/connectivity/offline-status-store";
 import { HEALTH_PROBE_INTERVAL_MS } from "@/offline/constants";
 import { ensureOutboxDispatcher } from "@/offline/outbox/get-dispatcher";
+import { loadOutbox } from "@/offline/outbox/storage";
 
 /**
  * Subscribes to NetInfo and Arr health probes; flushes the outbox on reconnect.
@@ -24,6 +25,7 @@ export const OfflineBootstrap = (): null => {
   const { radarr, sonarr } = useArrClients();
 
   useEffect(() => {
+    void loadOutbox();
     const dispatcher = ensureOutboxDispatcher({
       queryClient,
       radarr,

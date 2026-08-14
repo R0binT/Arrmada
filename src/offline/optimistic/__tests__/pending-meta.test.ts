@@ -14,6 +14,7 @@ import {
   getPendingSyncState,
   resetPendingSyncIndex,
   setPendingSyncState,
+  subscribePendingSync,
 } from "../pending-sync-index";
 
 describe("pending-meta", () => {
@@ -98,6 +99,14 @@ describe("pending-meta", () => {
     expect(getPendingSyncState("movie:550")).toBe("failed");
     clearPendingSyncState("movie:550");
     expect(getPendingSyncState("movie:550")).toBeUndefined();
+  });
+
+  it("notifies subscribers when pending sync state changes", () => {
+    const listener = jest.fn();
+    const unsubscribe = subscribePendingSync(listener);
+    setPendingSyncState("movie:550", "pending");
+    expect(listener).toHaveBeenCalled();
+    unsubscribe();
   });
 });
 

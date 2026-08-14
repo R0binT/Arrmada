@@ -6,6 +6,7 @@ export {
   getPendingSyncState,
   resetPendingSyncIndex,
   setPendingSyncState,
+  subscribePendingSync,
 } from "./pending-sync-index";
 
 /**

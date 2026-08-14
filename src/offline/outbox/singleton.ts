@@ -53,6 +53,9 @@ export const ensureOutboxDispatcher = (
   return dispatcher;
 };
 
+export const getOutboxDispatcher = (): OutboxDispatcher | undefined =>
+  dispatcher;
+
 /** Resets the singleton (tests only). */
 export const resetOutboxDispatcherForTests = (): void => {
   dispatcher = undefined;

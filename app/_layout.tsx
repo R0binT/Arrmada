@@ -9,6 +9,7 @@ import { useFonts } from "expo-font";
 import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { View } from "react-native";
 import "react-native-reanimated";
 
 import { UnlockOverlay } from "@/features/verrou/UnlockOverlay";
@@ -19,6 +20,7 @@ import { colors, fonts } from "@/lib/theme";
 import { UiSizeProvider } from "@/lib/UiSizeProvider";
 import { configureNotificationHandler } from "@/notifications/present";
 import { useQueueNotifications } from "@/notifications/use-queue-notifications";
+import { OfflineBanner } from "@/offline/OfflineBanner";
 import { OfflineBootstrap } from "@/offline/OfflineBootstrap";
 import { arrPersistOptions } from "@/offline/query-persister";
 
@@ -86,20 +88,25 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={ArrDarkTheme}>
-      <OfflineBootstrap />
-      <Stack
-        screenOptions={{
-          contentStyle: { backgroundColor: colors.bg },
-        }}
-      >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="onboarding"
-          options={{ headerShown: false, gestureEnabled: false }}
-        />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-      <UnlockOverlay />
+      <View style={{ flex: 1 }}>
+        <OfflineBootstrap />
+        <OfflineBanner />
+        <View style={{ flex: 1 }}>
+          <Stack
+            screenOptions={{
+              contentStyle: { backgroundColor: colors.bg },
+            }}
+          >
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="onboarding"
+              options={{ headerShown: false, gestureEnabled: false }}
+            />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </View>
+        <UnlockOverlay />
+      </View>
     </ThemeProvider>
   );
 }

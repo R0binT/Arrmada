@@ -352,6 +352,11 @@ export const enMessages: Record<MessageKey, string> = {
   "notFound.homeLink": "Back to home",
   "health.online": "Online",
   "health.offline": "Offline",
+  "offline.arrUnreachable": "Arr server unreachable",
+  "offline.pendingCount": "{{count}} pending action(s)",
+  "offline.deviceOffline": "Offline — cached data only",
+  "offline.syncPending": "Syncing",
+  "offline.syncFailed": "Sync failed",
   "offline.missingDefaults":
     "Connect to Arr once to load folders and profiles",
   "offline.addQueued": "Add queued — will sync when Arr is reachable",

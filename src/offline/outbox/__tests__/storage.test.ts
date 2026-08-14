@@ -1,11 +1,18 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { OUTBOX_STORAGE_KEY } from "../../constants";
-import { loadOutbox, saveOutbox } from "../storage";
+import {
+  getOutboxSnapshot,
+  loadOutbox,
+  resetOutboxSnapshotForTests,
+  saveOutbox,
+  subscribeOutbox,
+} from "../storage";
 import type { ArrOutboxItem } from "../types";
 
 describe("outbox storage", () => {
   beforeEach(async () => {
+    resetOutboxSnapshotForTests();
     await AsyncStorage.clear();
   });
 
@@ -42,5 +49,27 @@ describe("outbox storage", () => {
     expect(await loadOutbox()).toEqual([]);
     await AsyncStorage.setItem(OUTBOX_STORAGE_KEY, "{not-json");
     expect(await loadOutbox()).toEqual([]);
+  });
+
+  it("notifies subscribers when saveOutbox updates the snapshot", async () => {
+    const listener = jest.fn();
+    const unsubscribe = subscribeOutbox(listener);
+    const items: readonly ArrOutboxItem[] = [
+      {
+        id: "op-2",
+        service: "sonarr",
+        type: "addSeries",
+        payload: {},
+        status: "failed",
+        attempts: 1,
+        createdAt: "2026-08-14T00:00:00.000Z",
+        updatedAt: "2026-08-14T00:00:00.000Z",
+        optimisticKey: "series:78804",
+      },
+    ];
+    await saveOutbox(items);
+    expect(getOutboxSnapshot()).toEqual(items);
+    expect(listener).toHaveBeenCalled();
+    unsubscribe();
   });
 });
