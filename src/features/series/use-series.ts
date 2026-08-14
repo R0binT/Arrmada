@@ -41,6 +41,11 @@ import { useOfflineStatus } from "@/offline/use-offline-status";
 import { createTmdbClient } from "@/tmdb-client";
 
 import { lookupSeriesWithTmdb } from "./lookup-series-with-tmdb";
+import {
+  findSeriesCandidateInLookupPages,
+  resolveSeriesCandidatePreview,
+  type LookupCandidatePage,
+} from "./resolve-series-candidate-preview";
 
 export type SeriesFilter = LibraryFilter;
 
@@ -200,22 +205,34 @@ export const useSeriesLookup = (term: string) => {
 
 export const useSeriesCandidatePreview = (tvdbId: number) => {
   const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
   const status = useOfflineStatus();
-  const arrUnreachable = status.sonarr === "unreachable";
+  const arrUnreachable = !sonarr || status.sonarr === "unreachable";
   return useQuery({
     queryKey: queryKeys.series.preview(tvdbId),
     queryFn: async () => {
-      if (!sonarr) throw new Error("Sonarr is not configured.");
-      if (arrUnreachable) {
-        throw new Error("Sonarr is not reachable.");
+      const cachedEntries = queryClient.getQueriesData<{
+        readonly pages: readonly LookupCandidatePage[];
+      }>({ queryKey: ["series", "lookup"] });
+      let cachedCandidate: SeriesCandidate | null = null;
+      for (const [, data] of cachedEntries) {
+        const found = findSeriesCandidateInLookupPages(data?.pages, tvdbId);
+        if (found !== null) {
+          cachedCandidate = found;
+          break;
+        }
       }
-      return sonarr.lookupCandidateByTvdbId(tvdbId);
+      return resolveSeriesCandidatePreview({
+        tvdbId,
+        arrUnreachable,
+        lookupByTvdbId: sonarr
+          ? (id) => sonarr.lookupCandidateByTvdbId(id)
+          : undefined,
+        cachedCandidate,
+      });
     },
     enabled:
-      Boolean(sonarr) &&
-      !arrUnreachable &&
-      Number.isFinite(tvdbId) &&
-      tvdbId > 0,
+      Number.isFinite(tvdbId) && tvdbId > 0 && assertCanUseTmdb(status),
   });
 };
 
@@ -547,10 +564,24 @@ export const useDeleteSeries = () => {
     mutationFn: async (input: { seriesId: number; deleteFiles: boolean }) => {
       assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const snapshot =
+          queryClient.getQueryData<Series>(
+            queryKeys.series.detail(input.seriesId),
+          ) ??
+          queryClient
+            .getQueryData<Series[]>(queryKeys.series.all)
+            ?.find((series) => series.id === input.seriesId);
+        const seasons = queryClient.getQueryData<Season[]>(
+          queryKeys.series.seasons(input.seriesId),
+        );
         const item = await dispatcher.enqueue({
           service: "sonarr",
           type: "deleteSeries",
-          payload: input,
+          payload: {
+            ...input,
+            ...(snapshot !== undefined ? { snapshot } : {}),
+            ...(seasons !== undefined ? { seasons } : {}),
+          },
         });
         return { queued: true as const, id: item.id };
       }

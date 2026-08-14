@@ -10,6 +10,7 @@ import { asQueryClient } from "./as-query-client";
 type DeleteMoviePayload = {
   readonly movieId: number;
   readonly deleteFiles: boolean;
+  readonly snapshot?: Movie;
 };
 
 export type DeleteMovieClient = {
@@ -56,6 +57,23 @@ const removeMovieFromCache = (
   queryClient.removeQueries({ queryKey: queryKeys.movies.detail(movieId) });
 };
 
+const restoreMovieFromPayload = (
+  queryClient: QueryClient,
+  movieId: number,
+  payloadSnapshot: Movie,
+): void => {
+  queryClient.setQueryData<Movie[]>(queryKeys.movies.all, (current) => {
+    if (current === undefined) {
+      return [payloadSnapshot];
+    }
+    if (current.some((movie) => movie.id === payloadSnapshot.id)) {
+      return current;
+    }
+    return [...current, payloadSnapshot];
+  });
+  queryClient.setQueryData(queryKeys.movies.detail(movieId), payloadSnapshot);
+};
+
 /**
  * Outbox executor for movie deletes.
  */
@@ -81,17 +99,23 @@ export const createDeleteMovieExecutor = (
     const queryClient = asQueryClient(qc);
     const snapshot = snapshots.get(item.id);
     snapshots.delete(item.id);
-    if (queryClient === undefined || snapshot === undefined) {
+    if (queryClient === undefined) {
       return;
     }
-    if (snapshot.list !== undefined) {
-      queryClient.setQueryData(queryKeys.movies.all, snapshot.list);
+    if (snapshot !== undefined) {
+      if (snapshot.list !== undefined) {
+        queryClient.setQueryData(queryKeys.movies.all, snapshot.list);
+      }
+      if (snapshot.detail !== undefined) {
+        queryClient.setQueryData(
+          queryKeys.movies.detail(payload.movieId),
+          snapshot.detail,
+        );
+      }
+      return;
     }
-    if (snapshot.detail !== undefined) {
-      queryClient.setQueryData(
-        queryKeys.movies.detail(payload.movieId),
-        snapshot.detail,
-      );
+    if (payload.snapshot !== undefined) {
+      restoreMovieFromPayload(queryClient, payload.movieId, payload.snapshot);
     }
   },
   execute: async (

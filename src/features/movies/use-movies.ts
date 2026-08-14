@@ -40,6 +40,7 @@ import { useOfflineStatus } from "@/offline/use-offline-status";
 import { createTmdbClient } from "@/tmdb-client";
 
 import { lookupMoviesWithTmdb } from "./lookup-movies-with-tmdb";
+import { resolveMovieCandidatePreview } from "./resolve-movie-candidate-preview";
 
 export type MovieFilter = LibraryFilter;
 
@@ -162,21 +163,29 @@ export const useMovieLookup = (term: string) => {
 export const useMovieCandidatePreview = (tmdbId: number) => {
   const { radarr } = useArrClients();
   const status = useOfflineStatus();
-  const arrUnreachable = status.radarr === "unreachable";
+  const hasTmdbKey = Boolean(readTmdbApiKeyFromProcessEnv());
+  const arrUnreachable = !radarr || status.radarr === "unreachable";
   return useQuery({
     queryKey: queryKeys.movies.preview(tmdbId),
     queryFn: async () => {
-      if (!radarr) throw new Error("Radarr is not configured.");
-      if (arrUnreachable) {
-        throw new Error("Radarr is not reachable.");
-      }
-      return radarr.lookupCandidateByTmdbId(tmdbId);
+      const apiKey = readTmdbApiKeyFromProcessEnv();
+      return resolveMovieCandidatePreview({
+        tmdbId,
+        arrUnreachable,
+        lookupByTmdbId: radarr
+          ? (id) => radarr.lookupCandidateByTmdbId(id)
+          : undefined,
+        getTmdbMovie:
+          apiKey === undefined || apiKey.length === 0
+            ? undefined
+            : (id) => createTmdbClient(apiKey).getMovie(id),
+      });
     },
     enabled:
-      Boolean(radarr) &&
-      !arrUnreachable &&
       Number.isFinite(tmdbId) &&
-      tmdbId > 0,
+      tmdbId > 0 &&
+      assertCanUseTmdb(status) &&
+      ((!arrUnreachable && Boolean(radarr)) || hasTmdbKey),
   });
 };
 
@@ -347,10 +356,20 @@ export const useDeleteMovie = () => {
     mutationFn: async (input: { movieId: number; deleteFiles: boolean }) => {
       assertCanMutateArr(status);
       if (shouldEnqueueArrWrite(status, "radarr")) {
+        const snapshot =
+          queryClient.getQueryData<Movie>(
+            queryKeys.movies.detail(input.movieId),
+          ) ??
+          queryClient
+            .getQueryData<Movie[]>(queryKeys.movies.all)
+            ?.find((movie) => movie.id === input.movieId);
         const item = await dispatcher.enqueue({
           service: "radarr",
           type: "deleteMovie",
-          payload: input,
+          payload: {
+            ...input,
+            ...(snapshot !== undefined ? { snapshot } : {}),
+          },
         });
         return { queued: true as const, id: item.id };
       }

@@ -1,10 +1,11 @@
 import { QueryClient } from "@tanstack/react-query";
 
-import type { Movie } from "@/arr-client/types";
+import type { Movie, Series } from "@/arr-client/types";
 import { queryKeys } from "@/lib/query-keys";
 
 import type { ArrOutboxItem, ArrOutboxOpType } from "../../types";
 import { createDeleteMovieExecutor } from "../delete-movie";
+import { createDeleteSeriesExecutor } from "../delete-series";
 import { createGrabMovieReleaseExecutor } from "../grab-movie-release";
 import { createMovieSearchExecutor } from "../movie-search";
 import { createQueuePauseOrResumeExecutor } from "../queue-pause-or-resume";
@@ -50,6 +51,52 @@ describe("remaining Arr outbox ops", () => {
 
     await executor.execute(item, {});
     expect(deleteMovie).toHaveBeenCalledWith(12, { deleteFiles: true });
+  });
+
+  it("deleteMovie rollback restores from payload snapshot without the in-memory Map", () => {
+    const executor = createDeleteMovieExecutor({
+      deleteMovie: jest.fn().mockResolvedValue(undefined),
+    });
+    const queryClient = new QueryClient();
+    const movie = { id: 12, title: "Heat", monitored: true } as Movie;
+    queryClient.setQueryData(queryKeys.movies.all, [] as Movie[]);
+    const item = baseItem("deleteMovie", {
+      movieId: 12,
+      deleteFiles: true,
+      snapshot: movie,
+    });
+
+    executor.rollbackOptimistic?.(item, queryClient);
+
+    expect(queryClient.getQueryData<Movie[]>(queryKeys.movies.all)).toEqual([
+      movie,
+    ]);
+    expect(queryClient.getQueryData<Movie>(queryKeys.movies.detail(12))).toEqual(
+      movie,
+    );
+  });
+
+  it("deleteSeries rollback restores from payload snapshot without the in-memory Map", () => {
+    const executor = createDeleteSeriesExecutor({
+      deleteSeries: jest.fn().mockResolvedValue(undefined),
+    });
+    const queryClient = new QueryClient();
+    const series = { id: 4, title: "The Wire", monitored: true } as Series;
+    queryClient.setQueryData(queryKeys.series.all, [] as Series[]);
+    const item = baseItem(
+      "deleteSeries",
+      { seriesId: 4, deleteFiles: false, snapshot: series },
+      "sonarr",
+    );
+
+    executor.rollbackOptimistic?.(item, queryClient);
+
+    expect(queryClient.getQueryData<Series[]>(queryKeys.series.all)).toEqual([
+      series,
+    ]);
+    expect(
+      queryClient.getQueryData<Series>(queryKeys.series.detail(4)),
+    ).toEqual(series);
   });
 
   it("movieSearch and grabMovieRelease call the matching client methods", async () => {

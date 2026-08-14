@@ -80,6 +80,8 @@ export type TmdbClient = {
   readonly getCollectionParts: (
     collectionId: number,
   ) => Promise<readonly TmdbMediaHit[]>;
+  readonly getMovie: (tmdbId: number) => Promise<TmdbMediaHit>;
+  readonly getTv: (tmdbId: number) => Promise<TmdbMediaHit>;
   readonly getTvExternalIds: (tmdbId: number) => Promise<TmdbTvExternalIds>;
 };
 
@@ -187,6 +189,18 @@ export const createTmdbClient = (apiKey: string): TmdbClient => {
         { language: "fr-FR" },
       );
       return response.parts.map(mapCollectionPart);
+    },
+    getMovie: async (tmdbId: number) => {
+      const response = await http.getJson<TmdbMovieResult>(`/movie/${tmdbId}`, {
+        language: "fr-FR",
+      });
+      return mapMovieResult(response);
+    },
+    getTv: async (tmdbId: number) => {
+      const response = await http.getJson<TmdbTvResult>(`/tv/${tmdbId}`, {
+        language: "fr-FR",
+      });
+      return mapTvResult(response);
     },
     getTvExternalIds: async (tmdbId: number) => {
       const response = await http.getJson<TmdbExternalIdsResult>(

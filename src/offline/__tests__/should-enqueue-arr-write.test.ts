@@ -81,6 +81,16 @@ describe("assertCanUseTmdb", () => {
       }),
     ).toBe(true);
   });
+
+  it("returns true when the device is unknown (not fail-closed)", () => {
+    expect(
+      assertCanUseTmdb({
+        device: "unknown",
+        radarr: "unreachable",
+        sonarr: "unreachable",
+      }),
+    ).toBe(true);
+  });
 });
 
 describe("assertCanMutateArr", () => {
@@ -98,6 +108,16 @@ describe("assertCanMutateArr", () => {
     expect(() =>
       assertCanMutateArr({
         device: "online",
+        radarr: "unreachable",
+        sonarr: "online",
+      }),
+    ).not.toThrow();
+  });
+
+  it("allows writes when the device is unknown", () => {
+    expect(() =>
+      assertCanMutateArr({
+        device: "unknown",
         radarr: "unreachable",
         sonarr: "online",
       }),

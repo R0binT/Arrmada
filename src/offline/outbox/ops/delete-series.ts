@@ -10,6 +10,8 @@ import { asQueryClient } from "./as-query-client";
 type DeleteSeriesPayload = {
   readonly seriesId: number;
   readonly deleteFiles: boolean;
+  readonly snapshot?: Series;
+  readonly seasons?: readonly Season[];
 };
 
 export type DeleteSeriesClient = {
@@ -59,6 +61,35 @@ const removeSeriesFromCache = (
   queryClient.removeQueries({ queryKey: queryKeys.series.seasons(seriesId) });
 };
 
+const restoreSeriesFromPayload = (
+  queryClient: QueryClient,
+  payload: DeleteSeriesPayload,
+): void => {
+  if (payload.snapshot === undefined) {
+    return;
+  }
+  const payloadSnapshot = payload.snapshot;
+  queryClient.setQueryData<Series[]>(queryKeys.series.all, (current) => {
+    if (current === undefined) {
+      return [payloadSnapshot];
+    }
+    if (current.some((series) => series.id === payloadSnapshot.id)) {
+      return current;
+    }
+    return [...current, payloadSnapshot];
+  });
+  queryClient.setQueryData(
+    queryKeys.series.detail(payload.seriesId),
+    payloadSnapshot,
+  );
+  if (payload.seasons !== undefined) {
+    queryClient.setQueryData(
+      queryKeys.series.seasons(payload.seriesId),
+      payload.seasons,
+    );
+  }
+};
+
 /**
  * Outbox executor for series deletes.
  */
@@ -87,24 +118,28 @@ export const createDeleteSeriesExecutor = (
     const queryClient = asQueryClient(qc);
     const snapshot = snapshots.get(item.id);
     snapshots.delete(item.id);
-    if (queryClient === undefined || snapshot === undefined) {
+    if (queryClient === undefined) {
       return;
     }
-    if (snapshot.list !== undefined) {
-      queryClient.setQueryData(queryKeys.series.all, snapshot.list);
+    if (snapshot !== undefined) {
+      if (snapshot.list !== undefined) {
+        queryClient.setQueryData(queryKeys.series.all, snapshot.list);
+      }
+      if (snapshot.detail !== undefined) {
+        queryClient.setQueryData(
+          queryKeys.series.detail(payload.seriesId),
+          snapshot.detail,
+        );
+      }
+      if (snapshot.seasons !== undefined) {
+        queryClient.setQueryData(
+          queryKeys.series.seasons(payload.seriesId),
+          snapshot.seasons,
+        );
+      }
+      return;
     }
-    if (snapshot.detail !== undefined) {
-      queryClient.setQueryData(
-        queryKeys.series.detail(payload.seriesId),
-        snapshot.detail,
-      );
-    }
-    if (snapshot.seasons !== undefined) {
-      queryClient.setQueryData(
-        queryKeys.series.seasons(payload.seriesId),
-        snapshot.seasons,
-      );
-    }
+    restoreSeriesFromPayload(queryClient, payload);
   },
   execute: async (
     item: ArrOutboxItem,

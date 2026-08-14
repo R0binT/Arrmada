@@ -99,7 +99,7 @@ describe("probeAndDispatchArrHealth", () => {
     expect(flush).toHaveBeenCalledWith("radarr");
   });
 
-  it("does not flush when the service was already online", async () => {
+  it("flushes when the service is already online so due retries run", async () => {
     const flush = jest.fn(async () => undefined);
     const status: OfflineStatus = {
       device: "online",
@@ -112,7 +112,7 @@ describe("probeAndDispatchArrHealth", () => {
       dispatch: () => status,
       flush,
     });
-    expect(flush).not.toHaveBeenCalled();
+    expect(flush).toHaveBeenCalledWith("radarr");
   });
 });
 

@@ -54,8 +54,8 @@ export const probeArrHealth = async (
 };
 
 /**
- * Runs health probes unless the device is offline, then flushes a service
- * that just became online.
+ * Probes Arr health unless the device is offline, then flushes each service
+ * that is currently online (including already-online, so due retries run).
  */
 export const probeAndDispatchArrHealth = async (
   input: ProbeAndDispatchArrHealthInput,
@@ -68,9 +68,8 @@ export const probeAndDispatchArrHealth = async (
     if (event === undefined) {
       continue;
     }
-    const wasOnline = input.getStatus()[service] === "online";
     const next = input.dispatch(event);
-    if (!wasOnline && next[service] === "online") {
+    if (next[service] === "online") {
       await input.flush(service);
     }
   }

@@ -10,10 +10,11 @@ type CreateTestDispatcherOptions = {
   readonly executors: TestExecutorMap;
   readonly maxAttempts?: number;
   readonly now?: () => Date;
+  readonly seed?: readonly ArrOutboxItem[];
 };
 
 const createTestDispatcher = (options: CreateTestDispatcherOptions) => {
-  let items: ArrOutboxItem[] = [];
+  let items: ArrOutboxItem[] = options.seed ? [...options.seed] : [];
   let idCounter = 0;
   const now = options.now ?? (() => new Date("2026-08-07T00:00:00.000Z"));
   const getExecutor = (type: ArrOutboxOpType): OpExecutor => {
@@ -187,5 +188,104 @@ describe("outbox dispatcher", () => {
     await dispatcher.retry(failed!.id);
     expect(executeCount).toBe(3);
     expect(await dispatcher.list()).toEqual([]);
+  });
+
+  it("joins in-flight flush so a slow op runs once", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let calls = 0;
+    let online = false;
+    const dispatcher = createTestDispatcher({
+      isServiceOnline: () => online,
+      executors: {
+        addMovie: {
+          execute: async () => {
+            calls += 1;
+            await gate;
+          },
+        },
+      },
+    });
+    await dispatcher.enqueue({
+      service: "radarr",
+      type: "addMovie",
+      payload: { tmdbId: 1, qualityProfileId: 1, rootFolderPath: "/" },
+    });
+    online = true;
+    const first = dispatcher.flush("radarr");
+    const second = dispatcher.flush("radarr");
+    release();
+    await Promise.all([first, second]);
+    expect(calls).toBe(1);
+  });
+
+  it("executes a durable running item on the next flush", async () => {
+    const executed: number[] = [];
+    const dispatcher = createTestDispatcher({
+      isServiceOnline: () => true,
+      seed: [
+        {
+          id: "op-running",
+          service: "radarr",
+          type: "addMovie",
+          payload: { tmdbId: 9, qualityProfileId: 1, rootFolderPath: "/" },
+          status: "running",
+          attempts: 0,
+          createdAt: "2026-08-07T00:00:00.000Z",
+          updatedAt: "2026-08-07T00:00:00.000Z",
+        },
+      ],
+      executors: {
+        addMovie: {
+          execute: async (item) => {
+            executed.push((item.payload as { tmdbId: number }).tmdbId);
+          },
+        },
+      },
+    });
+    await dispatcher.flush("radarr");
+    expect(executed).toEqual([9]);
+    expect(await dispatcher.list()).toEqual([]);
+  });
+
+  it("continues FIFO after a terminal 4xx and rolls back the failed item", async () => {
+    const executed: number[] = [];
+    const rollbackOptimistic = jest.fn();
+    let online = false;
+    const dispatcher = createTestDispatcher({
+      isServiceOnline: () => online,
+      executors: {
+        addMovie: {
+          execute: async (item) => {
+            const tmdbId = (item.payload as { tmdbId: number }).tmdbId;
+            executed.push(tmdbId);
+            if (tmdbId === 1) {
+              throw { status: 400, message: "bad request" };
+            }
+          },
+          rollbackOptimistic,
+        },
+      },
+    });
+    await dispatcher.enqueue({
+      service: "radarr",
+      type: "addMovie",
+      payload: { tmdbId: 1, qualityProfileId: 1, rootFolderPath: "/" },
+    });
+    await dispatcher.enqueue({
+      service: "radarr",
+      type: "addMovie",
+      payload: { tmdbId: 2, qualityProfileId: 1, rootFolderPath: "/" },
+    });
+    online = true;
+    await dispatcher.flush("radarr");
+    expect(executed).toEqual([1, 2]);
+    expect(rollbackOptimistic).toHaveBeenCalledTimes(1);
+    const leftover = await dispatcher.list();
+    expect(leftover).toHaveLength(1);
+    expect(leftover[0]?.status).toBe("failed");
+    expect((leftover[0]?.payload as { tmdbId: number }).tmdbId).toBe(1);
   });
 });

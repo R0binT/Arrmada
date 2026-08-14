@@ -55,8 +55,36 @@ export const createOutboxDispatcher = (
   const save = deps.saveOutbox ?? defaultSaveOutbox;
   const maxAttempts = deps.maxAttempts ?? OUTBOX_MAX_ATTEMPTS;
   const resolveQueryClient = (): unknown => deps.getQueryClient?.();
+  const inflightFlushes: Partial<
+    Record<"radarr" | "sonarr", Promise<void>>
+  > = {};
+  const rerunRequested = new Set<"radarr" | "sonarr">();
 
   const list = async (): Promise<readonly ArrOutboxItem[]> => load();
+
+  const recoverStaleRunning = async (
+    service: "radarr" | "sonarr",
+  ): Promise<void> => {
+    const items = [...(await load())];
+    let changed = false;
+    const recovered = items.map((item) => {
+      if (item.service !== service || item.status !== "running") {
+        return item;
+      }
+      changed = true;
+      return { ...item, status: "pending" as const };
+    });
+    if (changed) {
+      await save(recovered);
+    }
+  };
+
+  const rollbackFailedItem = (item: ArrOutboxItem): void => {
+    deps.onOptimisticRollback?.(item);
+    deps
+      .getExecutor(item.type)
+      .rollbackOptimistic?.(item, resolveQueryClient());
+  };
 
   const enqueue = async (input: EnqueueOutboxInput): Promise<ArrOutboxItem> => {
     const timestamp = deps.now().toISOString();
@@ -85,10 +113,11 @@ export const createOutboxDispatcher = (
     return item;
   };
 
-  const flush = async (service: "radarr" | "sonarr"): Promise<void> => {
+  const flushOnce = async (service: "radarr" | "sonarr"): Promise<void> => {
     if (!deps.isServiceOnline(service)) {
       return;
     }
+    await recoverStaleRunning(service);
     for (;;) {
       const items = [...(await load())];
       const index = findNextDueIndex(items, service, deps.now());
@@ -123,25 +152,43 @@ export const createOutboxDispatcher = (
         const updatedAt = deps.now().toISOString();
         const shouldFail =
           !isRetryableArrError(error) || attempts >= maxAttempts;
-        afterFailure[failureIndex] = {
+        const failedItem: ArrOutboxItem = {
           ...running,
           attempts,
           lastError,
           updatedAt,
           status: shouldFail ? "failed" : "pending",
         };
+        afterFailure[failureIndex] = failedItem;
         await save(afterFailure);
-        if (shouldFail && !isRetryableArrError(error)) {
-          // Terminal failure: stop FIFO for this service.
-          return;
-        }
         if (!shouldFail) {
           // Retryable with remaining attempts: keep FIFO head, stop until backoff.
           return;
         }
-        // Cap reached (failed): continue to next pending item.
+        rollbackFailedItem(failedItem);
+        // Terminal failure (4xx or attempt cap): continue to the next due item.
       }
     }
+  };
+
+  const flush = async (service: "radarr" | "sonarr"): Promise<void> => {
+    const existing = inflightFlushes[service];
+    if (existing !== undefined) {
+      rerunRequested.add(service);
+      return existing;
+    }
+    const run = (async () => {
+      try {
+        do {
+          rerunRequested.delete(service);
+          await flushOnce(service);
+        } while (rerunRequested.has(service));
+      } finally {
+        delete inflightFlushes[service];
+      }
+    })();
+    inflightFlushes[service] = run;
+    return run;
   };
 
   const cancel = async (id: string): Promise<void> => {
