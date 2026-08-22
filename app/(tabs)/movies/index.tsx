@@ -17,7 +17,6 @@ import {
     ErrorBanner,
     IconButton,
     MediaQuickSheet,
-    PosterCard,
     PosterGridSkeleton,
     Screen,
 } from "@/components";
@@ -34,6 +33,8 @@ import {
 import { useI18n } from "@/i18n";
 import { colors, fonts, radii, space } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { LibrarySyncPosterCard } from "@/offline/LibrarySyncPosterCard";
+import { resolveMovieOptimisticKey } from "@/offline/offline-ui-selectors";
 
 const CARD_WIDTH = 108;
 const CARD_GAP = space.sm;
@@ -227,10 +228,11 @@ export default function MoviesScreen() {
             const selection = selectionFromMovie(item);
             return (
               <View style={styles.cardCell}>
-                <PosterCard
+                <LibrarySyncPosterCard
                   availability={selection.availability}
                   onLongPress={() => quick.openPrimaryFromSelection(selection)}
                   onPress={() => quick.toggle(selection)}
+                  optimisticKey={resolveMovieOptimisticKey(item)}
                   posterUrl={item.posterUrl}
                   selected={quick.selected?.key === selection.key}
                   title={`${item.title} (${item.year})`}

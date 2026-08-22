@@ -9,7 +9,6 @@ import { useMemo } from "react";
 import {
     classifySeries,
     type ArrAddDefaults,
-    type Episode,
     type QualityProfileOption,
     type ReleaseOffer,
     type RootFolderOption,
@@ -27,9 +26,26 @@ import { useArrClients } from "@/hooks/use-arr-clients";
 import { t } from "@/i18n";
 import { readTmdbApiKeyFromProcessEnv } from "@/lib/env-tmdb-api-key";
 import { queryKeys } from "@/lib/query-keys";
+import type { OptimisticAddSeriesPayload } from "@/offline/optimistic/pending-meta";
+import {
+  assertCanMutateArr,
+  assertCanUseTmdb,
+  shouldEnqueueArrWrite,
+} from "@/offline/should-enqueue-arr-write";
+import {
+  assertArrAddDefaults,
+  isQueuedArrWrite,
+  useOutboxDispatcher,
+} from "@/offline/use-arr-mutation";
+import { useOfflineStatus } from "@/offline/use-offline-status";
 import { createTmdbClient } from "@/tmdb-client";
 
 import { lookupSeriesWithTmdb } from "./lookup-series-with-tmdb";
+import {
+  findSeriesCandidateInLookupPages,
+  resolveSeriesCandidatePreview,
+  type LookupCandidatePage,
+} from "./resolve-series-candidate-preview";
 
 export type SeriesFilter = LibraryFilter;
 
@@ -128,13 +144,25 @@ export const useSeriesSeasons = (id: number) => {
 
 export const useSeriesLookup = (term: string) => {
   const { sonarr } = useArrClients();
+  const status = useOfflineStatus();
   const trimmed = term.trim();
+  const hasTmdbKey = Boolean(readTmdbApiKeyFromProcessEnv());
 
   const query = useInfiniteQuery({
     queryKey: queryKeys.series.lookup(trimmed),
     queryFn: async ({ pageParam }) => {
-      if (!sonarr) throw new Error("Sonarr is not configured.");
       const apiKey = readTmdbApiKeyFromProcessEnv();
+      const arrUnreachable = !sonarr || status.sonarr === "unreachable";
+      if (arrUnreachable && apiKey) {
+        return lookupSeriesWithTmdb({
+          term: trimmed,
+          page: pageParam,
+          tmdb: createTmdbClient(apiKey),
+          lookupByTvdbId: async () => null,
+          lookupByTerm: async () => [],
+        });
+      }
+      if (!sonarr) throw new Error("Sonarr is not configured.");
       if (!apiKey) {
         if (pageParam !== 1) {
           return {
@@ -158,7 +186,10 @@ export const useSeriesLookup = (term: string) => {
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.page + 1 : undefined,
-    enabled: Boolean(sonarr) && trimmed.length >= 2,
+    enabled:
+      trimmed.length >= 2 &&
+      assertCanUseTmdb(status) &&
+      (Boolean(sonarr) || hasTmdbKey),
   });
 
   const data = useMemo(
@@ -174,43 +205,85 @@ export const useSeriesLookup = (term: string) => {
 
 export const useSeriesCandidatePreview = (tvdbId: number) => {
   const { sonarr } = useArrClients();
+  const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const arrUnreachable = !sonarr || status.sonarr === "unreachable";
   return useQuery({
     queryKey: queryKeys.series.preview(tvdbId),
     queryFn: async () => {
-      if (!sonarr) throw new Error("Sonarr is not configured.");
-      return sonarr.lookupCandidateByTvdbId(tvdbId);
+      const cachedEntries = queryClient.getQueriesData<{
+        readonly pages: readonly LookupCandidatePage[];
+      }>({ queryKey: ["series", "lookup"] });
+      let cachedCandidate: SeriesCandidate | null = null;
+      for (const [, data] of cachedEntries) {
+        const found = findSeriesCandidateInLookupPages(data?.pages, tvdbId);
+        if (found !== null) {
+          cachedCandidate = found;
+          break;
+        }
+      }
+      return resolveSeriesCandidatePreview({
+        tvdbId,
+        arrUnreachable,
+        lookupByTvdbId: sonarr
+          ? (id) => sonarr.lookupCandidateByTvdbId(id)
+          : undefined,
+        cachedCandidate,
+      });
     },
-    enabled: Boolean(sonarr) && Number.isFinite(tvdbId) && tvdbId > 0,
+    enabled:
+      Number.isFinite(tvdbId) && tvdbId > 0 && assertCanUseTmdb(status),
   });
 };
 
 export const useSeriesDefaults = () => {
   const { sonarr } = useArrClients();
-
-  return useQuery({
+  const status = useOfflineStatus();
+  const arrUnreachable = status.sonarr === "unreachable";
+  const query = useQuery({
     queryKey: queryKeys.series.defaults,
     queryFn: async (): Promise<SeriesDefaults> => {
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.getAddDefaults();
     },
-    enabled: Boolean(sonarr),
+    enabled: Boolean(sonarr) && !arrUnreachable,
   });
+  return {
+    ...query,
+    isError: arrUnreachable ? false : query.isError,
+  };
 };
 
 export const useAddSeries = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      tvdbId: number;
-      qualityProfileId: number;
-      rootFolderPath: string;
-    }) => {
+    mutationFn: async (input: OptimisticAddSeriesPayload) => {
+      assertCanMutateArr(status);
+      assertArrAddDefaults(input);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "addSeries",
+          payload: input,
+          optimisticKey: `series:${input.tvdbId}`,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
-      return sonarr.addSeries(input);
+      return sonarr.addSeries({
+        tvdbId: input.tvdbId,
+        qualityProfileId: input.qualityProfileId,
+        rootFolderPath: input.rootFolderPath,
+      });
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       await queryClient.invalidateQueries({ queryKey: queryKeys.series.all });
     },
   });
@@ -219,13 +292,27 @@ export const useAddSeries = () => {
 export const useSeriesSearch = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (seriesId: number) => {
+      assertCanMutateArr(status);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "seriesSearch",
+          payload: { seriesId },
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.command("SeriesSearch", { seriesId });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -234,16 +321,30 @@ export const useSeriesSearch = () => {
 export const useSeasonSearch = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (input: { seriesId: number; seasonNumber: number }) => {
+      assertCanMutateArr(status);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "seasonSearch",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.command("SeasonSearch", {
         seriesId: input.seriesId,
         seasonNumber: input.seasonNumber,
       });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -252,13 +353,27 @@ export const useSeasonSearch = () => {
 export const useEpisodeSearch = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (episodeId: number) => {
+      assertCanMutateArr(status);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "episodeSearch",
+          payload: { episodeId },
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.command("EpisodeSearch", { episodeIds: [episodeId] });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -297,13 +412,27 @@ export const useEpisodeReleases = (episodeId: number, enabled: boolean) => {
 export const useGrabSeriesRelease = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (release: Pick<ReleaseOffer, "guid" | "indexerId">) => {
+      assertCanMutateArr(status);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "grabSeriesRelease",
+          payload: { guid: release.guid, indexerId: release.indexerId },
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.grabRelease(release);
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       startQueueBurstFromCache(queryClient);
     },
   });
@@ -312,19 +441,30 @@ export const useGrabSeriesRelease = () => {
 export const useUpdateSeriesMonitored = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      seriesId: number;
-      monitored: boolean;
-    }): Promise<Series> => {
+    mutationFn: async (input: { seriesId: number; monitored: boolean }) => {
+      assertCanMutateArr(status);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "updateSeriesMonitored",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.updateSeries(input.seriesId, {
         monitored: input.monitored,
       });
     },
-    onSuccess: async (series) => {
-      queryClient.setQueryData(queryKeys.series.detail(series.id), series);
+    onSuccess: async (result) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
+      queryClient.setQueryData(queryKeys.series.detail(result.id), result);
       await queryClient.invalidateQueries({ queryKey: queryKeys.series.all });
     },
   });
@@ -333,19 +473,33 @@ export const useUpdateSeriesMonitored = () => {
 export const useUpdateEpisodeMonitored = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
     mutationFn: async (input: {
       seriesId: number;
       episodeId: number;
       monitored: boolean;
-    }): Promise<Episode> => {
+    }) => {
+      assertCanMutateArr(status);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "updateEpisodeMonitored",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.updateEpisode(input.episodeId, {
         monitored: input.monitored,
       });
     },
-    onSuccess: async (_episode, input) => {
+    onSuccess: async (result, input) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       await queryClient.invalidateQueries({
         queryKey: queryKeys.series.seasons(input.seriesId),
       });
@@ -356,16 +510,27 @@ export const useUpdateEpisodeMonitored = () => {
 export const useDeleteEpisodeFile = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      seriesId: number;
-      episodeFileId: number;
-    }): Promise<void> => {
+    mutationFn: async (input: { seriesId: number; episodeFileId: number }) => {
+      assertCanMutateArr(status);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "deleteEpisodeFile",
+          payload: input,
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.deleteEpisodeFile(input.episodeFileId);
     },
-    onSuccess: async (_void, input) => {
+    onSuccess: async (result, input) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.series.seasons(input.seriesId),
@@ -392,18 +557,43 @@ export const useDeleteEpisodeFile = () => {
 export const useDeleteSeries = () => {
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const status = useOfflineStatus();
+  const dispatcher = useOutboxDispatcher();
 
   return useMutation({
-    mutationFn: async (input: {
-      seriesId: number;
-      deleteFiles: boolean;
-    }): Promise<void> => {
+    mutationFn: async (input: { seriesId: number; deleteFiles: boolean }) => {
+      assertCanMutateArr(status);
+      if (shouldEnqueueArrWrite(status, "sonarr")) {
+        const snapshot =
+          queryClient.getQueryData<Series>(
+            queryKeys.series.detail(input.seriesId),
+          ) ??
+          queryClient
+            .getQueryData<Series[]>(queryKeys.series.all)
+            ?.find((series) => series.id === input.seriesId);
+        const seasons = queryClient.getQueryData<Season[]>(
+          queryKeys.series.seasons(input.seriesId),
+        );
+        const item = await dispatcher.enqueue({
+          service: "sonarr",
+          type: "deleteSeries",
+          payload: {
+            ...input,
+            ...(snapshot !== undefined ? { snapshot } : {}),
+            ...(seasons !== undefined ? { seasons } : {}),
+          },
+        });
+        return { queued: true as const, id: item.id };
+      }
       if (!sonarr) throw new Error("Sonarr is not configured.");
       return sonarr.deleteSeries(input.seriesId, {
         deleteFiles: input.deleteFiles,
       });
     },
-    onSuccess: async (_void, input) => {
+    onSuccess: async (result, input) => {
+      if (isQueuedArrWrite(result)) {
+        return;
+      }
       queryClient.removeQueries({
         queryKey: queryKeys.series.detail(input.seriesId),
       });

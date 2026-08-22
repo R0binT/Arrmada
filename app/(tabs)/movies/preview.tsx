@@ -32,6 +32,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
 import { colors } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { isQueuedArrWrite } from "@/offline/use-arr-mutation";
 import {
   Button,
   createFadeIn,
@@ -142,7 +143,16 @@ export default function MoviePreviewScreen() {
         tmdbId: candidate.tmdbId,
         qualityProfileId,
         rootFolderPath,
+        title: candidate.title,
+        year: candidate.year,
+        posterUrl: candidate.posterUrl,
+        overview: candidate.overview,
       });
+      if (isQueuedArrWrite(created)) {
+        setFeedback(t("offline.addQueued"));
+        setTimeout(() => router.back(), 1500);
+        return;
+      }
       const createdId =
         typeof created === "object" &&
         created !== null &&

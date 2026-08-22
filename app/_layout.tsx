@@ -4,11 +4,12 @@ import {
     Figtree_600SemiBold,
 } from "@expo-google-fonts/figtree";
 import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { useFonts } from "expo-font";
 import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { View } from "react-native";
 import "react-native-reanimated";
 
 import { UnlockOverlay } from "@/features/verrou/UnlockOverlay";
@@ -19,6 +20,9 @@ import { colors, fonts } from "@/lib/theme";
 import { UiSizeProvider } from "@/lib/UiSizeProvider";
 import { configureNotificationHandler } from "@/notifications/present";
 import { useQueueNotifications } from "@/notifications/use-queue-notifications";
+import { OfflineBanner } from "@/offline/OfflineBanner";
+import { OfflineBootstrap } from "@/offline/OfflineBootstrap";
+import { arrPersistOptions } from "@/offline/query-persister";
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -61,7 +65,10 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={arrPersistOptions}
+    >
       <I18nProvider>
         <UiSizeProvider>
           <VerrouProvider>
@@ -69,7 +76,7 @@ export default function RootLayout() {
           </VerrouProvider>
         </UiSizeProvider>
       </I18nProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 
@@ -81,19 +88,25 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={ArrDarkTheme}>
-      <Stack
-        screenOptions={{
-          contentStyle: { backgroundColor: colors.bg },
-        }}
-      >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="onboarding"
-          options={{ headerShown: false, gestureEnabled: false }}
-        />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-      <UnlockOverlay />
+      <View style={{ flex: 1 }}>
+        <OfflineBootstrap />
+        <OfflineBanner />
+        <View style={{ flex: 1 }}>
+          <Stack
+            screenOptions={{
+              contentStyle: { backgroundColor: colors.bg },
+            }}
+          >
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="onboarding"
+              options={{ headerShown: false, gestureEnabled: false }}
+            />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </View>
+        <UnlockOverlay />
+      </View>
     </ThemeProvider>
   );
 }

@@ -41,6 +41,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
 import { colors, radii } from "@/lib/theme";
 import { useUiSize } from "@/lib/UiSizeProvider";
+import { isDeviceOffline } from "@/offline/should-enqueue-arr-write";
+import { isQueuedArrWrite } from "@/offline/use-arr-mutation";
+import { useOfflineStatus } from "@/offline/use-offline-status";
 import {
   pressScaleStyle,
   Surface,
@@ -64,6 +67,8 @@ export default function AddSeriesScreen() {
   >();
   const { sonarr } = useArrClients();
   const queryClient = useQueryClient();
+  const offlineStatus = useOfflineStatus();
+  const deviceOffline = isDeviceOffline(offlineStatus);
 
   const lookupQuery = useSeriesLookup(term);
   const defaultsQuery = useSeriesDefaults();
@@ -78,11 +83,11 @@ export default function AddSeriesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (term.trim().length === 0) {
+      if (deviceOffline || term.trim().length === 0) {
         return;
       }
       void lookupQuery.refetch();
-    }, [lookupQuery.refetch, term]),
+    }, [deviceOffline, lookupQuery.refetch, term]),
   );
 
   const qualityProfileId = defaultsQuery.data?.defaultQualityProfileId;
@@ -96,10 +101,12 @@ export default function AddSeriesScreen() {
       rootFolderPath !== undefined &&
       !addMutation.isPending &&
       !searchBusy &&
-      !defaultsQuery.isLoading,
+      !defaultsQuery.isLoading &&
+      !deviceOffline,
     [
       addMutation.isPending,
       defaultsQuery.isLoading,
+      deviceOffline,
       qualityProfileId,
       rootFolderPath,
       searchBusy,
@@ -134,6 +141,7 @@ export default function AddSeriesScreen() {
 
   const handleAdd = useCallback(async () => {
     if (
+      deviceOffline ||
       !selected ||
       selected.inLibrary ||
       qualityProfileId === undefined ||
@@ -149,7 +157,17 @@ export default function AddSeriesScreen() {
         tvdbId: selected.tvdbId,
         qualityProfileId,
         rootFolderPath,
+        title: selected.title,
+        year: selected.year,
+        posterUrl: selected.posterUrl,
+        overview: selected.overview,
       });
+      await lookupQuery.refetch();
+      if (isQueuedArrWrite(created)) {
+        setSelected(undefined);
+        setFeedback(t("offline.addQueued"));
+        return;
+      }
       const createdId =
         typeof created === "object" &&
         created !== null &&
@@ -157,7 +175,6 @@ export default function AddSeriesScreen() {
         typeof (created as { id: unknown }).id === "number"
           ? (created as { id: number }).id
           : undefined;
-      await lookupQuery.refetch();
       if (createdId && sonarr) {
         setFeedback(t("action.searching"));
         await startSeriesDownloadAfterAdd({
@@ -179,6 +196,7 @@ export default function AddSeriesScreen() {
     }
   }, [
     addMutation,
+    deviceOffline,
     grabMutation,
     lookupQuery.refetch,
     qualityProfileId,
@@ -207,11 +225,16 @@ export default function AddSeriesScreen() {
         accessibilityLabel={t("library.addSeriesA11y")}
         autoCapitalize="none"
         autoCorrect={false}
+        editable={!deviceOffline}
         onChangeText={setTerm}
         placeholder={t("add.searchPlaceholder")}
         style={{ marginBottom: scaledSpace.md }}
         value={term}
       />
+
+      {deviceOffline ? (
+        <ErrorBanner message={t("offline.deviceOffline")} />
+      ) : null}
 
       {defaultsQuery.isError ? (
         <ErrorBanner

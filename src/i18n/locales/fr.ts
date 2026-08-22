@@ -371,6 +371,15 @@ export const frMessages = {
   "notFound.homeLink": "Retour à l’accueil",
   "health.online": "En ligne",
   "health.offline": "Hors ligne",
+  "offline.arrUnreachable": "Serveur Arr injoignable",
+  "offline.pendingCount": "{{count}} action(s) en attente",
+  "offline.deviceOffline": "Hors ligne — cache uniquement",
+  "offline.syncPending": "Sync",
+  "offline.syncFailed": "Échec sync",
+  "offline.missingDefaults":
+    "Reconnecte Arr une fois pour charger dossiers et profils",
+  "offline.addQueued":
+    "Ajout mis en file — sync dès que Arr est joignable",
   "a11y.loadingLibrary": "Chargement de la bibliothèque",
   "a11y.loadingQueue": "Chargement des téléchargements",
   "units.mb": "{{n}} Mo",
